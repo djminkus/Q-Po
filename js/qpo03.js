@@ -782,6 +782,7 @@ function detectCollisions(){
       splicers[i] -= 1;
     }
   }
+
   // Let's take care of the bombs array while we're at it.
   while (bsplicers.length > 0) {
     bombs.splice(bsplicers[0],1);
@@ -960,9 +961,9 @@ function endGame(){
   if (blueDead == redDead) {
     gameOver.attr({"text":"tie!"})
   } else if (blueDead > redDead) {
-    gameOver.attr({"text":"You lost!"})
+    gameOver.attr({"text":"You lost!", "fill":"red"})
   } else {
-    gameOver.attr({"text":"You won!"})
+    gameOver.attr({"text":"You won!", "fill":"green"})
   }
   menuScreen.blackness.attr({"opacity": .9 });
   var again = new button("New Round",300,160,newRound);

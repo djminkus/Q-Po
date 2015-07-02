@@ -1,30 +1,26 @@
 console.log("RESET " + Date());
 var c = new Raphael("raphContainer", 600, 600);
 
-/* Q-PO : a JS game by @akaDavidGarrett
-SHORT-TERM TODO:
-  Debug bombs
-LONG-TERM TODO:
-  Create a tutorial
-  Make menus keyboard-controlled
-  Make a server
-  Enable PVP
-  Implement Ranking System
-  Advertise ($$ tourney?)
-Contents of this code: (updated June 2)
-  VAR DECLARATIONS
-  UNIT CONSTRUCTORS
-  GUI ELEMENTS
-  INCREMENT FUNCTIONS
-  KEYDOWN HANDLER
-  SCREEN FUNCTIONS
-How to read this code:
-  Start with the startGame() and newTurn() functions. They will reference
-    the other functions in a logical order.
-  To understand the first thing you see when you load the page,
-    look at qpo-menuscreen.js. When a new game is started, countdownScreen()
-    is called. This leads to startGame() being called, which leads to newTurn()
-    being called every three seconds.
+/* TUTORIAL PAGE
+
+modules
+=======
+1. Text to display
+2. Highlighter
+3. Demonstration
+4. Interaction
+
+sequence
+========
+1. Welcome to QPO!
+2. Units
+3. Objective of the game
+4. Moving
+5. Shooting
+6. Bombs
+
+
+
 */
 
 var timeScale = 1; //for debugging. Bigger means slower
@@ -39,6 +35,7 @@ var blueMovesQueue = [];
 var redMovesQueue = [];
 var shots = [];
 var bombs = [];
+var bsplicers = [];
 var moves = ["moveUp","moveDown","moveLeft","moveRight","shoot","bomb","stay"];
 var gui = c.set();
 var activeUnit = 0;
@@ -147,7 +144,29 @@ function finishUnit(unit){
   }
   unit.bomb = function(){
     unit.status = "bomb";
-    new startBomb(unit);
+    var bomb;
+    //var anim = Raphael.animation({"height":25},1000*timeScale);
+    switch(unit.team){
+      case "blue":
+        bomb = c.rect(25 + 50*unit.x + 18,
+                      143 + 50*unit.y,14,14);
+        gui.push(bomb);
+        break;
+      case "red":
+        bomb = c.rect(25 + 50*unit.x + 18,
+                      43 + 50*unit.y,14,14);
+        gui.push(bomb);
+        break;
+    }
+
+    bomb.attr({"fill":COLOR_DICT["bomb color"],
+               "opacity":.5,
+               "stroke":COLOR_DICT["bomb color"]});
+    bomb.data("team",unit.team);
+    bomb.data("timer",3);
+    bomb.data("exploded",false);
+    //bomb.animate(anim);
+    bombs.push(bomb);
   }
   unit.shoot = function(){
     unit.status = "shoot";
@@ -182,9 +201,9 @@ function finishUnit(unit){
 //CREATE BOMB TYPE/CLASS
 function startBomb(su){ //su = source unit
   this.team = su.team;
+  this.timer = 3;
   this.exploded = false;
-  //create phys based on team:
-  switch(su.team){
+  switch(this.team){
     case "blue":
       this.phys = c.rect(25 + 50*su.x + 18,
                     143 + 50*su.y,14,14);
@@ -195,39 +214,18 @@ function startBomb(su){ //su = source unit
       break;
   }
   gui.push(this.phys);
-  //find where in array "bombs" we should store the reference to this bomb
-  this.number = (function(){
-    var index;
-    var i=0;
-
-    console.log("bombs is " + bombs);
-    for (var j =0;j<3;j++){
-      console.log("bombs["+j+"]: " + bombs[j]);
-    }
-    //console.log("index: " + index);
-
-    while (index === undefined){
-      if(bombs[i] === undefined ){
-        index = i;
-        bombs[index] = this;
-        }
-      i++;
-    }
-    return index;
-  }).call(this);
-  console.log("bomb " + this.number + " created, " + bombs[this.number]);
-  //make it purple:
-  this.phys.attr({"fill":COLOR_DICT["bomb color"],
+}
+function improveBomb(bomb){
+  bomb.phys.attr({"fill":COLOR_DICT["bomb color"],
              "opacity":.5,
              "stroke":COLOR_DICT["bomb color"]});
-  //give the bomb class an "explode()" method:
-  this.explode = (function(){
-    console.log(this);
-    console.log("bomb " +this.number +" exploded");
-    this.exploded = true;
-    var cx = bombs[this.number].phys.getBBox().x;
-    var cy = bombs[this.number].phys.getBBox().y;
-    bombs[this.number].phys.stop();
+  //bomb.phys.animate({})
+  bomb.explode = function(){
+    bomb.exploded = true;
+    bomb.timer = -1;
+    var cx = bomb.phys.getBBox().x;
+    var cy = bomb.phys.getBBox().y;
+    bomb.phys.stop();
 
     var anim = Raphael.animation({
       "16.6%": {
@@ -243,25 +241,78 @@ function startBomb(su){ //su = source unit
         "height":0
       }
     },3000*timeScale);
-    bombs[this.number].phys.animate(anim);
-    setTimeout(function(){bombs[this.number].destroy()},3000*timeScale)
-  }).call(this);
-  //give the bomb class a "destroy()" method:
-  this.destroy = (function(){
-    bombs[this.number].phys.remove();
-    bombs[this.number]=undefined;
-    console.log("bomb " + this.number + " destroyed, " + bombs[this.number]);
-  }).call(this)
-  switch(this.team){
-    case "blue":
-      this.phys.animate({'y':143+50*su.y+150},9000);
-      break;
-    case "red":
-      this.phys.animate({'y':43+50*su.y-150},9000);
-      break;
+    bomb.phys.animate(anim);
+
+    setTimeout(function(){
+      bsplicers.push(index);
+      console.log("bomb "+index+" splicing");
+    },3000*timeScale);
+
   }
-  this.exploder = setTimeout(this.explode,9000*timeScale);
-  return this;
+}
+function finishBomb(bomb){
+  bomb.next = function(){
+    if (bomb.timer == 0){
+      bomb.timer = bomb.timer - 1;
+      bomb.explode();
+    } else if (bomb.timer > 0 ){
+      var bombAnim;
+      bomb.timer = bomb.timer-1;
+      switch(bomb.team){
+        case "blue":
+          bombAnim = Raphael.animation({"y":50+bombs[i].attr('y')},3000*timeScale);
+          bombs[i].y += 50;
+          bombs[i].animate(bombAnim);
+          break;
+        case "red":
+          bombAnim = Raphael.animation({"y":bombs[i].attr('y')-50},3000*timeScale);
+          bombs[i].y -= 50;
+          bombs[i].animate(bombAnim);
+          break;
+      }
+    }
+  }
+}
+
+function explode(index){
+  bombs[index].data("exploded",true);
+  bombs[index].data("timer",-1);
+  var cx = bombs[index].getBBox().x;
+  var cy = bombs[index].getBBox().y;
+  bombs[index].stop();
+
+  var anim = Raphael.animation({
+    "16.6%": {
+      "y":cy-68,
+      "x":cx-68,
+      "width":150,
+      "height":150
+    },
+    "100%":{
+      "y":cy+7,
+      "x":cx+7,
+      "width":0,
+      "height":0
+    }
+  },3000*timeScale);
+  bombs[index].animate(anim);
+  console.log("bomb "+index+" exploded");
+  /*
+  var anim2 = Raphael.animation({
+    "y":cy+7,
+    "x":cx+7,
+    "width":0,
+    "height":0,
+  },2000*timeScale);
+  setTimeout(function(){
+    bombs[index].animate(anim2);
+    console.log("bomb "+index+" fading");
+  },500*timeScale);
+  */
+  setTimeout(function(){
+    bsplicers.push(index);
+    console.log("bomb "+index+" splicing");
+  },3000*timeScale);
 }
 
 //GUI ELEMENTS
@@ -564,10 +615,33 @@ function newTurn(){
     shots[i].animate(shotAnim);
   }
 
+  //animate all bombs:
+  for (var i = 0; i<bombs.length; i++){
+    console.log("bomb "+i+"'s timer reads " + bombs[i].data("timer"));
+    if (bombs[i].data("timer") == 0){
+      bombs[i].data("timer", bombs[i].data("timer")-1 ) ;
+      explode(i);
+    } else if (bombs[i].data("timer") > 0 ){
+      var bombAnim;
+      bombs[i].data("timer", bombs[i].data("timer")-1 ) ;
+      switch(bombs[i].data("team")){
+        case "blue":
+          bombAnim = Raphael.animation({"y":50+bombs[i].attr('y')},3000*timeScale);
+          bombs[i].y += 50;
+          bombs[i].animate(bombAnim);
+          break;
+        case "red":
+          bombAnim = Raphael.animation({"y":bombs[i].attr('y')-50},3000*timeScale);
+          bombs[i].y -= 50;
+          bombs[i].animate(bombAnim);
+          break;
+      }
+    }
+  }
   controlPanel.resetIcons();
   blueMovesQueue = [];
 }
-
+function detectCollisions(){
   /* COLLISION DETECTION, a function
   to be called every 17 ms */
   var splicers = [];
@@ -635,10 +709,10 @@ function newTurn(){
 
   if (bombs.length > 0){ //iterate over bombs
     for (var i=0; i<bombs.length; i++) {
-      var sBOB = bombs[i][1].phys.getBBox().y2;
-      var nBOB = bombs[i][1].phys.getBBox().y;
-      var eBOB = bombs[i][1].phys.getBBox().x2;
-      var wBOB = bombs[i][1].phys.getBBox().x;
+      var sBOB = bombs[i].getBBox().y2;
+      var nBOB = bombs[i].getBBox().y;
+      var eBOB = bombs[i].getBBox().x2;
+      var wBOB = bombs[i].getBBox().x;
       //if an unexploded bomb hits a wall, explode it:
       if ( !(bombs[i].data("exploded")) && (sBOB>425 || nBOB<75)){
         explode(i);
@@ -667,30 +741,30 @@ function newTurn(){
             (units[j].alive)) {
           units[j].kill();
           console.log("bomb " + i + " hit unit " +j);
-          if ( !(bombs[i][1].exploded)){
-            bombs[i][1].explode();
+          if ( !(bombs[i].data("exploded"))){
+            explode(i);
           }
         }
       }//end iterating over units within bombs
       for (var j=0; j<bombs.length; j++) { //iterate over bombs within bombs
         // When a bomb hits an unexploded bomb,
         // explode the bomb and get rid of the shot
-        var nBOB2 = bombs[j][1].phys.getBBox().y;
-        var wBOB2 = bombs[j][1].phys.getBBox().x;
-        var sBOB2 = bombs[j][1].phys.getBBox().y + bombs[j][1].phys.getBBox().height;
-        var eBOB2 = bombs[j][1].phys.getBBox().x + bombs[j][1].phys.getBBox().width;
+        var nBOB2 = bombs[j].getBBox().y;
+        var wBOB2 = bombs[j].getBBox().x;
+        var sBOB2 = bombs[j].getBBox().y + bombs[j].getBBox().height;
+        var eBOB2 = bombs[j].getBBox().x + bombs[j].getBBox().width;
 
         if( !(i==j) && //make sure we're really looking at 2 bombs.
               (( nBOB2 <= nBOB && nBOB <= sBOB2 ) || //vertical overlap
               ( nBOB2 <= sBOB && sBOB <= sBOB2 )) &&
               (( wBOB2 <= wBOB && wBOB <= eBOB2 ) || //horizontal overlap
               ( wBOB2 <= eBOB && eBOB <= eBOB2 )) &&
-              (!(bombs[i][1].exploded) || // make sure at least one is not-exploded
-              !(bombs[j][1].exploded))) {
+              (!(bombs[i].data("exploded")) || // make sure at least one is not-exploded
+              !(bombs[j].data("exploded")))) {
           //explode any un-exploded ones:
           console.log("bomb " + i + "hit bomb " + j);
-          if (!(bombs[i][1].exploded)) {bombs[i][1].explode()}
-          if (!(bombs[j][1].exploded)) {bombs[j][1].explode()}
+          if (!(bombs[i].data("exploded"))) {explode(i)}
+          if (!(bombs[j].data("exploded"))) {explode(j)}
         }
       }
     }//end iterating over bombs within bombs
@@ -704,7 +778,19 @@ function newTurn(){
       splicers[i] -= 1;
     }
   }
+  // Let's take care of the bombs array while we're at it.
+  while (bsplicers.length > 0) {
+    bombs.splice(bsplicers[0],1);
+    bsplicers.splice(0,1);
+    for (var i=0;i<bsplicers.length;i++){
+      bsplicers[i]-=1;
+    }
+  }
+  bsplicers = [];
+
 }
+
+
 
 //LISTEN FOR INPUT
 $(window).keydown(function(event){
@@ -856,9 +942,8 @@ function startGame(){
   controlPanel = new startControlPanel();
   finishControlPanel(controlPanel);
   setTimeout(function(){clockUpdater = setInterval(tick,1000*timeScale);},2000*timeScale);
-  //collisionDetector = setInterval(detectCollisions,17);
-  console.log('NEW GAME');
-  console.log("bombs.length is " + bombs.length);
+  collisionDetector = setInterval(detectCollisions,17);
+  console.log('NEW GAME')
 }
 function endGame(){
   clearInterval(clockUpdater);
