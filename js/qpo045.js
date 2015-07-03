@@ -1,5 +1,9 @@
 console.log("RESET " + Date());
 var c = new Raphael("raphContainer", 600, 600);
+/*
+How to modularize?
+*/
+
 
 /* Q-PO : a JS game by @akaDavidGarrett
 SHORT-TERM TODO:

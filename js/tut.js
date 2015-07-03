@@ -198,7 +198,7 @@ function finishUnit(unit){
 }
 
 
-//CREATE BOMB TYPE/CLASS
+//CREATE BOMB TYPE/CLASS -- not implemented (see explode() method)
 function startBomb(su){ //su = source unit
   this.team = su.team;
   this.timer = 3;
@@ -789,8 +789,6 @@ function detectCollisions(){
   bsplicers = [];
 
 }
-
-
 
 //LISTEN FOR INPUT
 $(window).keydown(function(event){

@@ -10,7 +10,8 @@ LONG-TERM TODO:
   Make a server
   Enable PVP
   Implement Ranking System
-  Advertise ($$ tourney?)
+  Implement Subscription System
+  $$ tourney
 Contents of this code: (updated June 2)
   VAR DECLARATIONS
   UNIT CONSTRUCTORS
@@ -202,7 +203,7 @@ function finishUnit(unit){
 }
 
 
-//CREATE BOMB TYPE/CLASS
+//CREATE BOMB TYPE/CLASS -- not implemented (see "explode()")
 function startBomb(su){ //su = source unit
   this.team = su.team;
   this.timer = 3;
