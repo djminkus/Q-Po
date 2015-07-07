@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
 	  <meta charset="utf-8"> </meta>
-	  <title>Q-Po 0.45</title>
+	  <title>Q-Po 0.3</title>
 
     <link rel="stylesheet" type="text/css" href="css/style.css"></link>
 	  <link rel="stylesheet" type="text/css" href="css/bootstrap.min.css"></link>
@@ -25,23 +25,42 @@
   </head>
 
   <body>
-    <div id="wrapper">
-      <div id="menuContainer" class="menu">
-        <p class="menu" id="game"><a href="#">Game</a></p>
-        <p class="menu" id="tutorial"><a href="tutorial.html">Tutorial</a></p>
-        <p class="menu" id="rankings"><a href="#">Rankings</a></p>
-      </div>
 
-      <div id="gameContainer">
-	      <div id="raphContainer"></div>
-      </div>
+    <nav id="header" class="navbar navbar-default">
+      <div class="container-fluid">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="# ">Q-Po</a>
+        </div>
 
+        <!-- Collect the nav links, forms, and other content for toggling -->
+        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+          <ul class="nav navbar-nav">
+            <li class="active"><a href="#"> Play<span class="sr-only">(current)</span > </a></li>
+            <li><a href="tutorial.html">Tutorial</a></li>
+            <!-- <li><a href="#">Rankings</a></li> -->
+
+          </ul>
+
+
+        </div><!-- /.navbar-collapse -->
+      </div><!-- /.container-fluid -->
+    </nav>
+
+    <div id="mainPane" class="jumbotron">
+      <div id="raphContainer"></div>
     </div>
 
     <script type="text/javascript" src="js/libs/raphael-min.js"></script>
     <script type="text/javascript" src="js/libs/jquery-1.11.1.min.js"></script>
     <script type="text/javascript" src="js/qpo03.js"></script>
-    <script type="text/javascript" src="js/qpo-menuscreen.js"></script>
+    <script type="text/javascript" src="js/qpo-menuScreen.js"></script>
 
   </body>
-</html>
+  </html>

@@ -7,57 +7,30 @@ p {
   font-size: 20px;
 }
 
-#wrapper {
-  background-color: #cc9900;
-  height:120vh;
+#header{
+  margin:0px;
 }
 
-#menuContainer{
-  width:20%;
-  position:inherit;
-  height:644px;
-  border:2px black solid;
-  padding:20px;
-  margin-top:20px;
-  margin-left:80px;
-  margin-right:40px;
-  display: inline-flex;
+.navbar-brand{
+  font-family: "Open Sans",sans-serif;
+}
+
+.nav{
+  font-family: "Open Sans",sans-serif;
+}
+
+#mainPane{
+  margin:0px;
+  padding:5px;
+  height:100vw;
   background-color: white;
-}
-
-.menu{
-  position:fixed;
-  font-family:"Open Sans",sans-serif;
-  font-size: 30px;
-}
-
-#game{
-  top:60px;
-  left:160px;
-}
-
-#tutorial{
-  top:130px;
-  left:150px;
-}
-
-#rankings{
-  top:200px;
-  left:145px;
-}
-
-#gameContainer{
-  width:70%;
-  display:inline-flex;
 }
 
 #raphContainer{
-  background-color: white;
-  border:2px black solid;
-  margin-top:20px;
-  padding:20px;
-  width:644px;
-  height:644px;
+  padding:0px;
+  width:600px;
+  height:600px;
+  margin:auto;
 }
 
 #textExplanation{

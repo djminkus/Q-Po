@@ -1,24 +1,42 @@
 console.log("RESET " + Date());
 var c = new Raphael("raphContainer", 600, 600);
 
-/* Q-PO : a JS game by @akaDavidGarrett
+/** Q-PO : a JS game by @akaDavidGarrett
 SHORT-TERM TODO:
   Debug bombs
 LONG-TERM TODO:
   Create a tutorial
   Make menus keyboard-controlled
   Make a server
-  Enable PVP
+  Enable PVP (Implement user login system)
   Implement Ranking System
   Implement Subscription System
-  $$ tourney
+  Throw $$ tourney
 Contents of this code: (updated June 2)
   VAR DECLARATIONS
+
   UNIT CONSTRUCTORS
+
   GUI ELEMENTS
+
+
   INCREMENT FUNCTIONS
-  KEYDOWN HANDLER
+    updateAU() -- updates which unit is highlighted with orange
+      (keyboard presses queue moves for the Active Unit)
+    tick() -- makes the seconds clock tick down
+    newTurn() -- starts a new turn, called every 3 seconds
+    detectCollisions() -- detects collisions between game objects, called every 17 ms
+
+  KEYDOWN HANDLER : detects and responds to keyboard input (arrows, spacebar, enter)
+
   SCREEN FUNCTIONS
+    countdownScreen() -- Shows 3,2,1, then calls startGame()
+    startGame() -- draws GUI, spawns units, and starts the game clock and collisionDetector
+    endGame() -- removes the game gui elements and shows a menu
+    newRound() -- called when player presses "new round" button --
+      hides the end-of-game menu and calls countdownScreen() again
+    goMainMenu() --
+
 How to read this code:
   Start with the startGame() and newTurn() functions. They will reference
     the other functions in a logical order.
@@ -45,7 +63,6 @@ var moves = ["moveUp","moveDown","moveLeft","moveRight","shoot","bomb","stay"];
 var gui = c.set();
 var activeUnit = 0;
 var newGames = 0;
-
 var playerColor = "blue";
 
 //CREATE UNIT TYPE/CLASS
@@ -320,11 +337,8 @@ function explode(index){
   },3000*timeScale);
 }
 
+
 //GUI ELEMENTS
-mtScaler= 15;
-RS = [1*mtScaler,3*mtScaler,4*mtScaler];
-//IDEA: MAKE DOTTED CIRCLES ROTATE,
-//  IN OPPOSITE DIRECTIONS
 function setUpGameClock(){
   var initialSeconds = 180;
   gameClock = c.text(450, 345, "" + initialSeconds)
@@ -386,10 +400,11 @@ function placeUnits(){
   }
 
   blueUnits[0].activate();
+  controlPanel.resetIcons();
 }
-gens = [85,475,20,10,40]; //centers and radius
-coords = [gens[0]+gens[2],gens[0]-gens[2], //x ends
-          gens[1]+gens[2],gens[1]-gens[2]]; //y ends
+gens = [85,475,20,10,40]; //centers and radius -- for controlPanel
+coords = [gens[0]+gens[2],gens[0]-gens[2], //x ends -- for controlPanel
+          gens[1]+gens[2],gens[1]-gens[2]]; //y ends --for controlPanel
 function startControlPanel(){
   this.outline = c.rect(25, 425, 350, 100).attr({
     "stroke-width": 3
@@ -462,10 +477,20 @@ function finishControlPanel(cp){
       cp.icons.downArrows[i].hide();
       cp.icons.rects[i].hide();
       cp.icons.bombs[i].hide();
+      cp.icons.circles[i].hide();
 
-      if (blueUnits[i].alive){
-        cp.icons.xs[i].hide();
-        cp.actives[i] = cp.icons.circles[i];
+      try {
+        if (blueUnits[i].alive){
+          cp.icons.xs[i].hide();
+          cp.actives[i] = cp.icons.circles[i];
+          gui.push(controlPanel.actives[i]);
+        } else {
+          cp.actives[i]=cp.icons.xs[i];
+          gui.push(controlPanel.actives[i]);
+        }
+      }
+      catch(e){ //if blueUnits doesn't exist... show xs.
+        cp.actives[i] = cp.icons.xs[i];
         gui.push(controlPanel.actives[i]);
       }
       cp.actives[i].show();
@@ -478,8 +503,32 @@ function finishControlPanel(cp){
     cp.icons.rects, cp.icons.bombs, cp.actives);
   gui.push(cp.all);
 }
+function turnTimer(){
+  //creates a global var "timer" that is a pie/clock-like thingy that
+  //  will start at full every three seconds, and changes color as it shrinks
+  c.customAttributes.segment = function (x, y, r, a1, a2) {
+    var flag = (a2 - a1) > 180,
+    color = (a2 - a1 + 120) / (360*5)  ;
+    a1 = (a1 % 360) * Math.PI / 180;
+    a2 = (a2 % 360) * Math.PI / 180;
+    return {
+      path: [["M", x, y], ["l", r * Math.cos(a1), r * Math.sin(a1)], ["A", r, r, 0, +flag, 1, x + r * Math.cos(a2), y + r * Math.sin(a2)], ["z"]],
+      fill: "hsb(" + color + ", .75, .8)"
+    };
+  };
+  timer = c.path().attr({segment: [450, 250, 70, -90, 269],"stroke":"none"});
+  gui.push(timer);
+}
+function drawGUI(){
+  turnTimer();
+  setUpGameClock();
+  drawBoard(); // create the board
+  controlPanel = new startControlPanel();
+  finishControlPanel(controlPanel);
+}
 
-//NON-GUI FUNCS (no new Raph elements created)
+
+//INCREMENT FUNCTIONS (no new Raph elements created)
 function updateAU(){
   /*
   highlight the new active unit and
@@ -541,9 +590,7 @@ function newTurn(){
   called every time the game
   clock is divisible by 3
    */
-  moveTimer.orangeOne.animate(moveTimer.orangeAnim);
   turnNumber++;
-  moveTimer.turnCounter.attr({"text":turnNumber});
   //execute all moves and reset control panel:
   for (var i=0; i<3; i++){
     //generate random moves for red
@@ -644,6 +691,8 @@ function newTurn(){
     }
   }
   controlPanel.resetIcons();
+  timer.attr({segment: [450, 250, 70, -90, 269]});
+  timer.animate({segment: [450, 250, 70, -90, -90]}, 3000);
   blueMovesQueue = [];
 }
 function detectCollisions(){
@@ -796,8 +845,6 @@ function detectCollisions(){
 
 }
 
-
-
 //LISTEN FOR INPUT
 $(window).keydown(function(event){
   switch (event.keyCode){
@@ -892,65 +939,19 @@ function startGame(){
   if (newGames > 0){
     moveTimer.redo();
   } */
-  moveTimer = {
-    all : c.set(),
-    litCircle : c.circle(200,37,RS[0]),
-    midCircle : c.circle(200,37,RS[1]).attr({
-      "stroke-dasharray": "- "
-    }),
-    bigCircle : c.circle(200,37,RS[2]).attr({
-      "stroke-dasharray":". "}),
-    orangeOne : c.circle(200, 37,RS[0]).attr({
-      "stroke-width": 2,
-      "stroke": COLOR_DICT["orange"],
-    }),
-    turnCounter : c.text(200,38,0),
-    orangeAnim :
-      Raphael.animation({
-        "50%": { r: RS[2] },
-        "100%": {  r: RS[0] }
-      }, 3000*timeScale),
-    finish : function(){
-      this.all.push(moveTimer.litCircle, moveTimer.midCircle, moveTimer.bigCircle,
-        moveTimer.orangeOne, moveTimer.turnCounter);
-      this.all.transform("t250,230");
-      gui.push(moveTimer.all);
-    },
-    redo : function(){
-      this.all = c.set();
-      this.litCircle = c.circle(200,37,RS[0]);
-      this.midCircle = c.circle(200,37,RS[1]).attr({
-        "stroke-dasharray": "- "
-      });
-      this.bigCircle = c.circle(200,37,RS[2]).attr({
-        "stroke-dasharray":". "});
-      this.orangeOne = c.circle(200, 37,RS[0]).attr({
-        "stroke-width": 2,
-        "stroke": COLOR_DICT["orange"],
-      });
-      this.turnCounter = c.text(200,38,0);
-      this.orangeAnim =
-        Raphael.animation({
-          "50%": { r: RS[2] },
-          "100%": {  r: RS[0] }
-        }, 3000*timeScale);
-    }
-  }
-  moveTimer.finish();
-  moveTimer.orangeOne.animate(moveTimer.orangeAnim);
+
   turnNumber = 0;
   redDead = 0;
   blueDead = 0;
-  setUpGameClock();
-  drawBoard(); // create the board
+  drawGUI();
   placeUnits(); // puts the units on the board
   activeUnit = 0;
-  controlPanel = new startControlPanel();
-  finishControlPanel(controlPanel);
   setTimeout(function(){clockUpdater = setInterval(tick,1000*timeScale);},2000*timeScale);
   collisionDetector = setInterval(detectCollisions,17);
-  console.log('NEW GAME')
+  timer.animate({segment: [450, 250, 70, -90, -90]}, 3000);
+  console.log('NEW GAME');
 }
+
 function endGame(){
   clearInterval(clockUpdater);
   clearInterval(collisionDetector);
@@ -978,4 +979,5 @@ function newRound(){
 }
 function goMainMenu(){
   endGameElements.remove();
+  menuScreen.showAll();
 }
