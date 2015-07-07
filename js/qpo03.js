@@ -46,24 +46,28 @@ How to read this code:
     being called every three seconds.
 */
 
-var timeScale = 1; //for debugging. Bigger means slower
-var COLOR_DICT = {
-  "blue": "#0055bb",
-  "red": "#bb0000",
-  "orange": "#ffbb66",
-  "shot color": "#00bb55",
-  "bomb color": "#bb00bb"
-};
-var blueMovesQueue = [];
-var redMovesQueue = [];
-var shots = [];
-var bombs = [];
-var bsplicers = [];
-var moves = ["moveUp","moveDown","moveLeft","moveRight","shoot","bomb","stay"];
-var gui = c.set();
-var activeUnit = 0;
-var newGames = 0;
-var playerColor = "blue";
+function setup(){ //set up global vars and stuff
+  activeScreen = "menu"; //can be "menu", "game", "tut", or "other"
+  timeScale = 1; //for debugging. Bigger means slower
+  COLOR_DICT = {
+    "blue": "#0055bb",
+    "red": "#bb0000",
+    "orange": "#ffbb66",
+    "shot color": "#00bb55",
+    "bomb color": "#bb00bb"
+  };
+  blueMovesQueue = [];
+  redMovesQueue = [];
+  shots = [];
+  bombs = [];
+  bsplicers = [];
+  moves = ["moveUp","moveDown","moveLeft","moveRight","shoot","bomb","stay"];
+  gui = c.set();
+  activeUnit = 0;
+  newGames = 0;
+  playerColor = "blue";
+}
+setup();
 
 //CREATE UNIT TYPE/CLASS
 function startUnit(color, gx, gy, num){
@@ -80,6 +84,7 @@ function startUnit(color, gx, gy, num){
   this.num = num; //which unit is it?
   this.status = "stay"; //what's it doing now?
   this.alive = true;
+  return this;
 }
 function improveUnit(unit){
   unit.phys.push(unit.rect);
@@ -337,7 +342,6 @@ function explode(index){
   },3000*timeScale);
 }
 
-
 //GUI ELEMENTS
 function setUpGameClock(){
   var initialSeconds = 180;
@@ -441,7 +445,8 @@ function startControlPanel(){
                     "L" + gens[0] + "," + gens[1] +
                     "L" + (gens[0] - 15) + "," + (gens[1] + 15) +
                     "L" + gens[0] + "," + gens[1] +
-                    "L" + (gens[0] + 15) + "," + (gens[1] + 15))] ,
+                    "L" + (gens[0] + 15) + "," + (gens[1] + 15))
+              .attr({"stroke":"red","stroke-width":2})] ,
     "bombs": [c.rect(gens[0]-gens[3], gens[1]-gens[3],
                      2*gens[3],2*gens[3])] ,
   }
@@ -516,7 +521,7 @@ function turnTimer(){
       fill: "hsb(" + color + ", .75, .8)"
     };
   };
-  timer = c.path().attr({segment: [450, 250, 70, -90, 269],"stroke":"none"});
+  timer = c.path().attr({segment: [450, 250, 50, -90, 269],"stroke":"none"});
   gui.push(timer);
 }
 function drawGUI(){
@@ -691,8 +696,8 @@ function newTurn(){
     }
   }
   controlPanel.resetIcons();
-  timer.attr({segment: [450, 250, 70, -90, 269]});
-  timer.animate({segment: [450, 250, 70, -90, -90]}, 3000);
+  timer.attr({segment: [450, 250, 50, -90, 269]});
+  timer.animate({segment: [450, 250, 50, -90, -90]}, 3000);
   blueMovesQueue = [];
 }
 function detectCollisions(){
@@ -847,73 +852,101 @@ function detectCollisions(){
 
 //LISTEN FOR INPUT
 $(window).keydown(function(event){
-  switch (event.keyCode){
-    case 13: //enter
-    	event.preventDefault();
-      blueMovesQueue[activeUnit] = "bomb";
-      controlPanel.actives[activeUnit].hide();
-      controlPanel.actives[activeUnit] =
-        controlPanel.icons.bombs[activeUnit];
-      gui.push(controlPanel.actives[activeUnit]);
-      controlPanel.actives[activeUnit].show();
-      updateAU();
+  switch (activeScreen){
+    case "menu":
+      switch(event.keyCode){
+        case 13: //enter
+          event.preventDefault();
+          //TODO: make it execute the highlighted button's onClick function
+          break;
+        default:
+          console.log("#EasterEgg");
+      }
       break;
-    case 32: //spacebar
-      event.preventDefault();
-      blueMovesQueue[activeUnit] ="shoot";
-      controlPanel.actives[activeUnit].hide();
-      controlPanel.actives[activeUnit] =
-        controlPanel.icons.rects[activeUnit];
-      gui.push(controlPanel.actives[activeUnit]);
-      controlPanel.actives[activeUnit].show();
-      updateAU();
+    case "game":
+      switch (event.keyCode){
+        case 81: //q
+          event.preventDefault();
+          blueMovesQueue[activeUnit] = "bomb";
+          controlPanel.actives[activeUnit].hide();
+          controlPanel.actives[activeUnit] =
+            controlPanel.icons.bombs[activeUnit];
+          gui.push(controlPanel.actives[activeUnit]);
+          controlPanel.actives[activeUnit].show();
+          updateAU();
+          break;
+        case 69: //e
+          event.preventDefault();
+          blueMovesQueue[activeUnit] ="shoot";
+          controlPanel.actives[activeUnit].hide();
+          controlPanel.actives[activeUnit] =
+            controlPanel.icons.rects[activeUnit];
+          gui.push(controlPanel.actives[activeUnit]);
+          controlPanel.actives[activeUnit].show();
+          updateAU();
+          break;
+        case 65: //a
+          event.preventDefault();
+          blueMovesQueue[activeUnit]="moveLeft";
+          controlPanel.actives[activeUnit].hide();
+          controlPanel.actives[activeUnit] =
+            controlPanel.icons.leftArrows[activeUnit];
+          gui.push(controlPanel.actives[activeUnit]);
+          controlPanel.actives[activeUnit].show();
+          updateAU();
+          break;
+        case 87: //w
+          event.preventDefault();
+          blueMovesQueue[activeUnit] = "moveUp";
+          controlPanel.actives[activeUnit].hide();
+          controlPanel.actives[activeUnit] =
+            controlPanel.icons.upArrows[activeUnit];
+          controlPanel.actives[activeUnit].show();
+          updateAU();
+          break;
+        case 68: //d
+          event.preventDefault();
+          blueMovesQueue[activeUnit] ="moveRight";
+          controlPanel.actives[activeUnit].hide();
+          controlPanel.actives[activeUnit] =
+            controlPanel.icons.rightArrows[activeUnit];
+          controlPanel.actives[activeUnit].show();
+          updateAU();
+          break;
+        case 83: //"s" key
+          event.preventDefault();
+          blueMovesQueue[activeUnit] = "moveDown" ;
+          controlPanel.actives[activeUnit].hide();
+          controlPanel.actives[activeUnit] =
+            controlPanel.icons.downArrows[activeUnit];
+          controlPanel.actives[activeUnit].show();
+          updateAU();
+          break;
+        case 88: //"x" key
+          blueMovesQueue[activeUnit] = "stay";
+          controlPanel.actives[activeUnit].hide();
+          controlPanel.actives[activeUnit] =
+            controlPanel.icons.circles[activeUnit];
+          controlPanel.actives[activeUnit].show();
+          updateAU();
+          break;
+        default: //anything else
+          ;
+      }
       break;
-    case 37: //LEFT ARROW
-      event.preventDefault();
-      blueMovesQueue[activeUnit]="moveLeft";
-      controlPanel.actives[activeUnit].hide();
-      controlPanel.actives[activeUnit] =
-        controlPanel.icons.leftArrows[activeUnit];
-      gui.push(controlPanel.actives[activeUnit]);
-      controlPanel.actives[activeUnit].show();
-      updateAU();
+    case "tut":
+      switch(event.keyCode){
+        case 13: //enter
+          tutFuncs["enter"]();
+          break;
+        default:
+          //console.log("you pressed key " + event.keyCode);
+          break;
+      }
       break;
-    case 38: //up arrow
-      event.preventDefault();
-      blueMovesQueue[activeUnit] = "moveUp";
-      controlPanel.actives[activeUnit].hide();
-      controlPanel.actives[activeUnit] =
-        controlPanel.icons.upArrows[activeUnit];
-      controlPanel.actives[activeUnit].show();
-      updateAU();
+    case "other":
       break;
-    case 39: //right arrow
-      event.preventDefault();
-      blueMovesQueue[activeUnit] ="moveRight";
-      controlPanel.actives[activeUnit].hide();
-      controlPanel.actives[activeUnit] =
-        controlPanel.icons.rightArrows[activeUnit];
-      controlPanel.actives[activeUnit].show();
-      updateAU();
-      break;
-    case 40: //down arrow
-      event.preventDefault();
-      blueMovesQueue[activeUnit] = "moveDown" ;
-      controlPanel.actives[activeUnit].hide();
-      controlPanel.actives[activeUnit] =
-        controlPanel.icons.downArrows[activeUnit];
-      controlPanel.actives[activeUnit].show();
-      updateAU();
-      break;
-    case 83: //"s" key
-      blueMovesQueue[activeUnit] = "stay";
-      controlPanel.actives[activeUnit].hide();
-      controlPanel.actives[activeUnit] =
-        controlPanel.icons.circles[activeUnit];
-      controlPanel.actives[activeUnit].show();
-      updateAU();
-      break;
-    default: //anything else
+      default:
       ;
   }
 });
@@ -933,6 +966,7 @@ function countdownScreen(){
              2800);
   setTimeout(function(){numbers.remove()},3000);
   setTimeout(startGame,3000);
+  activeScreen="other";
 }
 function startGame(){
   /*
@@ -948,7 +982,8 @@ function startGame(){
   activeUnit = 0;
   setTimeout(function(){clockUpdater = setInterval(tick,1000*timeScale);},2000*timeScale);
   collisionDetector = setInterval(detectCollisions,17);
-  timer.animate({segment: [450, 250, 70, -90, -90]}, 3000);
+  timer.animate({segment: [450, 250, 50, -90, -90]}, 3000);
+  activeScreen = "game";
   console.log('NEW GAME');
 }
 
@@ -970,7 +1005,8 @@ function endGame(){
   menuScreen.blackness.attr({"opacity": .9 });
   var again = new button("New Round",300,160,newRound);
   var back = new button("Main Menu",300,260,goMainMenu);
-  endGameElements = c.set().push(gameOver,again.set,back.set)
+  endGameElements = c.set().push(gameOver,again.set,back.set);
+  activeScreen="menu";
 }
 function newRound(){
   endGameElements.remove();
