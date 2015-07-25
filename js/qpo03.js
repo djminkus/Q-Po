@@ -198,13 +198,11 @@ function finishUnit(unit){
   unit.bomb = function(){
     unit.status = "bomb";
     var bomb;
-    //var anim = Raphael.animation({"height":25},1000*timeScale);
     switch(unit.team){
       case "blue":
         bomb = c.rect(25 + 50*unit.x + 18,
                       143 + 50*unit.y,14,14);
         gui.push(bomb);
-        bomb.next();
         break;
       case "red":
         bomb = c.rect(25 + 50*unit.x + 18,
@@ -219,8 +217,8 @@ function finishUnit(unit){
     bomb.data("team",unit.team);
     bomb.data("timer",3);
     bomb.data("exploded",false);
-    //bomb.animate(anim);
     bombs.push(bomb);
+    */
   }
   unit.shoot = function(){
     unit.status = "shoot";
@@ -721,7 +719,7 @@ function newTurn(){
   }
 
   //animate all bombs:
-  /*
+
   for (var i = 0; i<bombs.length; i++){
     console.log("bomb "+i+"'s timer reads " + bombs[i].data("timer"));
     if (bombs[i].data("timer") == 0){
@@ -732,19 +730,19 @@ function newTurn(){
       bombs[i].data("timer", bombs[i].data("timer")-1 ) ;
       switch(bombs[i].data("team")){
         case "blue":
-          bombAnim = Raphael.animation({"y":50+bombs[i].attr('y')},3000*timeScale);
+          bombAnim = Raphael.animation({"y": bombs[i].attr('y') + 50}, 3000*timeScale);
           bombs[i].y += 50;
           bombs[i].animate(bombAnim);
           break;
         case "red":
-          bombAnim = Raphael.animation({"y":bombs[i].attr('y')-50},3000*timeScale);
+          bombAnim = Raphael.animation({"y": bombs[i].attr('y') - 50}, 3000*timeScale);
           bombs[i].y -= 50;
           bombs[i].animate(bombAnim);
           break;
       }
     }
   }
-  */
+
   controlPanel.resetIcons();
   timer.attr({segment: [450, 250, 50, -90, 269]});
   timer.animate({segment: [450, 250, 50, -90, -90]}, 3000);
