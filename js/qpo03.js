@@ -3,8 +3,13 @@ var c = new Raphael("raphContainer", 600, 600);
 
 /** Q-PO : a JS game by @akaDavidGarrett
 SHORT-TERM TODO:
-  Debug bombs
+  Destroy interval-based animations in-game (shots, bombs)
+  Implement pause function
+  Balance shot animations (red v. blue)
+
 LONG-TERM TODO:
+  See Issues/Feature Requests on Github:
+    https://github.com/djminkus/QPO/issues
   Create a tutorial
   Make menus keyboard-controlled
   Make a server
@@ -46,6 +51,12 @@ How to read this code:
     being called every three seconds.
 */
 
+qpoGame = {
+  "gui" : {},
+  "unit" : {},
+  "bomb" : {},
+};
+
 function setup(){ //set up global vars and stuff
   activeScreen = "menu"; //can be "menu", "game", "tut", or "other"
   timeScale = 1; //for debugging. Bigger means slower
@@ -54,7 +65,7 @@ function setup(){ //set up global vars and stuff
     "red": "#bb0000",
     "orange": "#ffbb66",
     "shot color": "#00bb55",
-    "bomb color": "#bb00bb"
+    "bomb color": "#bb00bb",
   };
   blueMovesQueue = [];
   redMovesQueue = [];
@@ -66,8 +77,21 @@ function setup(){ //set up global vars and stuff
   activeUnit = 0;
   newGames = 0;
   playerColor = "blue";
+  guiCoords = {
+    "gameBoard" : {
+      "squareSize" : 0,
+      "columns" : 0,
+      "rows" : 0,
+      "leftWall" : 0,
+      "rightWall" : 0,
+      "topWall" : 0,
+      "bottomWall" : 0,
+    }
+  };
+  bombSize = 100;
 }
 setup();
+
 
 //CREATE UNIT TYPE/CLASS
 function startUnit(color, gx, gy, num){
@@ -106,7 +130,9 @@ function finishUnit(unit){
   }
   unit.kill = function(){
     unit.alive = false;
-    unit.phys.hide();
+    unit.phys.stop();
+    unit.phys.animate({"opacity":0},2000,function(){unit.phys.hide()});
+    //unit.phys.hide();
     switch(unit.team){
       case "red":
         redDead++;
@@ -122,7 +148,7 @@ function finishUnit(unit){
         break;
     }
     if (redDead==3 || blueDead==3){
-      endGame();
+      setTimeout(endGame,2000);
     }
   }
   unit.moveLeft = function(){
@@ -178,6 +204,7 @@ function finishUnit(unit){
         bomb = c.rect(25 + 50*unit.x + 18,
                       143 + 50*unit.y,14,14);
         gui.push(bomb);
+        bomb.next();
         break;
       case "red":
         bomb = c.rect(25 + 50*unit.x + 18,
@@ -197,26 +224,30 @@ function finishUnit(unit){
   }
   unit.shoot = function(){
     unit.status = "shoot";
-    var shot;
-    var anim = Raphael.animation({"height":25},1000*timeScale);
+    var shot, anim;
     switch(unit.team){
       case "blue":
         shot = c.rect(25 + 50*unit.x + 22,
                       127 + 50*unit.y,6,2);
-        gui.push(shot);
+        anim = Raphael.animation({"height":25, "y": shot.attr('y') + 0}, 500*timeScale, function(){
+          console.log("executed!!!");
+          shot.animate({"y": shot.attr('y') + 125*7}, 3000*7);
+        });
         break;
       case "red":
         shot = c.rect(25 + 50*unit.x + 22,
                       72 + 50*unit.y,6,2);
-        gui.push(shot);
+        anim = Raphael.animation({"height":25, "y": shot.attr('y') - 25}, 500*timeScale, function(){
+          shot.animate({"y": shot.attr('y') - 125*7}, 3000*7);
+        });
         break;
     }
-
     shot.attr({"fill":COLOR_DICT["shot color"],
                "opacity":.5,
                "stroke":COLOR_DICT["shot color"]});
     shot.data("team",unit.team);
     shot.animate(anim);
+    gui.push(shot);
     shots.push(shot);
   }
   unit.stay = function(){
@@ -256,10 +287,10 @@ function improveBomb(bomb){
 
     var anim = Raphael.animation({
       "16.6%": {
-        "y":cy-68,
-        "x":cx-68,
-        "width":150,
-        "height":150
+        "y": cy - (bombSize/2 - 7),
+        "x": cx - (bombSize/2 - 7),
+        "width": bombSize,
+        "height": bombSize
       },
       "100%":{
         "y":cy+7,
@@ -280,24 +311,23 @@ function improveBomb(bomb){
 function finishBomb(bomb){
   bomb.next = function(){
     if (bomb.timer == 0){
-      bomb.timer = bomb.timer - 1;
       bomb.explode();
     } else if (bomb.timer > 0 ){
       var bombAnim;
-      bomb.timer = bomb.timer-1;
       switch(bomb.team){
         case "blue":
-          bombAnim = Raphael.animation({"y":50+bombs[i].attr('y')},3000*timeScale);
-          bombs[i].y += 50;
-          bombs[i].animate(bombAnim);
+          bombAnim = Raphael.animation({"y":bomb.phys.attr('y') + 50}, 3000*timeScale, function(){bomb.next()} );
+          //bombs[i].y += 50;
+          bomb.phys.animate(bombAnim);
           break;
         case "red":
-          bombAnim = Raphael.animation({"y":bombs[i].attr('y')-50},3000*timeScale);
-          bombs[i].y -= 50;
-          bombs[i].animate(bombAnim);
+          bombAnim = Raphael.animation({"y":bomb.phys.attr('y') - 50}, 3000*timeScale, function(){bomb.next()} );
+          //bombs[i].y -= 50;
+          bomb.phys.animate(bombAnim);
           break;
       }
     }
+    bomb.timer = bomb.timer - 1;
   }
 }
 
@@ -310,10 +340,10 @@ function explode(index){
 
   var anim = Raphael.animation({
     "16.6%": {
-      "y":cy-68,
-      "x":cx-68,
-      "width":150,
-      "height":150
+      "y": cy- (bombSize/2 - 7),
+      "x": cx- (bombSize/2 - 7),
+      "width": bombSize,
+      "height": bombSize
     },
     "100%":{
       "y":cy+7,
@@ -350,11 +380,13 @@ function setUpGameClock(){
     .attr({'font-size': 30});
   gui.push(gameClock);
 }
-function drawBoard(){
+function drawBoard(cols, rows){
   var outline = c.rect(25, 75, 350, 350).attr({
     "stroke-width": 3
   });
   gui.push(outline);
+  guiCoords.gameBoard.columns = cols;
+  guiCoords.gameBoard.rows = rows;
 
   c.setStart();
   var hl1 = c.path("M25,125 L375,125");
@@ -406,9 +438,30 @@ function placeUnits(){
   blueUnits[0].activate();
   controlPanel.resetIcons();
 }
+function placeUnitsTut(){
+  blueUnits = [];
+  redUnits = [];
+  blueUnits[0] = new startUnit("blue",3,1,0);
+  redUnits[0] = new startUnit("red",3,5,"");
+  improveUnit(blueUnits[0]);
+  improveUnit(redUnits[0]);
+  finishUnit(blueUnits[0]);
+  finishUnit(redUnits[0]);
+  units = []; //all Units (red and blue);
+  for (var i=0;i<blueUnits.length;i++){
+    units.push(blueUnits[i]);
+    units.push(redUnits[i]); //assumes blueUnits.length =
+                                //        redUnits.length
+  //evens are blue, odds are red, low numbers to the left
+  }
+
+  blueUnits[0].activate();
+  controlPanel.resetIcons();
+}
 gens = [85,475,20,10,40]; //centers and radius -- for controlPanel
-coords = [gens[0]+gens[2],gens[0]-gens[2], //x ends -- for controlPanel
-          gens[1]+gens[2],gens[1]-gens[2]]; //y ends --for controlPanel
+coords = [gens[0]+gens[2], gens[0]-gens[2], //x ends -- for controlPanel
+          gens[1]+gens[2], gens[1]-gens[2]]; //y ends --for controlPanel
+          //0 is left , 1 is right, 2 is up, 3 is down
 function startControlPanel(){
   this.outline = c.rect(25, 425, 350, 100).attr({
     "stroke-width": 3
@@ -424,21 +477,31 @@ function startControlPanel(){
   ).attr({"stroke":COLOR_DICT["orange"],"stroke-width":4,})
   .hide();
   this.icons = {
-    "circles" : [c.circle(gens[0],gens[1],gens[2])],
+    "circles" : [c.circle(gens[0],gens[1],gens[2]*1/2)],
     "leftArrows" : [c.path("M" + coords[0] + "," + gens[1] +
                             "L" + coords[1] + "," + gens[1] +
-                            "L" + gens[0] + "," + coords[2])],
+                            "L" + gens[0] + "," + coords[2] +
+                            "L" + coords[1] + "," + gens[1] +
+                            "L" + gens[0] + "," + coords[3])],
     "rightArrows": [c.path("M" + coords[1] + "," + gens[1] +
                             "L" + coords[0] + "," + gens[1] +
-                            "L" + gens[0] + "," + coords[3])],
+                            "L" + gens[0] + "," + coords[3] +
+                            "L" + coords[0] + "," + gens[1] +
+                            "L" + gens[0] + "," + coords[2])],
     "upArrows": [c.path("M" + gens[0] + "," + coords[2] +
                             "L" + gens[0] + "," + coords[3] +
-                            "L" + coords[1] + "," + gens[1])] ,
+                            "L" + coords[1] + "," + gens[1] +
+                            "L" + gens[0] + "," + coords[3] +
+                            "L" + coords[0] + "," + gens[1])] ,
     "downArrows": [c.path("M" + gens[0] + "," + coords[3] +
                             "L" + gens[0] + "," + coords[2] +
-                            "L" + coords[0] + "," + gens[1])] ,
-    "rects": [c.rect(gens[0]-gens[3]/2, gens[1]-gens[4]/2,
-                     gens[3],gens[4])] ,
+                            "L" + coords[0] + "," + gens[1] +
+                            "L" + gens[0] + "," + coords[2] +
+                            "L" + coords[1] + "," + gens[1])] ,
+    "rects": [c.rect(gens[0]-gens[3]/2*2/3, gens[1]-gens[4]/2*2/3,
+                     gens[3]*2/3,gens[4]*2/3).attr({"fill":COLOR_DICT["shot color"],
+                                            "stroke":COLOR_DICT["shot color"],
+                                            "opacity":.6})] ,
     "xs" : [c.path("M" + (gens[0] - 15) + "," + (gens[1] - 15) +
                     "L" + gens[0] + "," + gens[1] +
                     "L" + (gens[0] + 15) + "," + (gens[1] - 15) +
@@ -448,7 +511,9 @@ function startControlPanel(){
                     "L" + (gens[0] + 15) + "," + (gens[1] + 15))
               .attr({"stroke":"red","stroke-width":2})] ,
     "bombs": [c.rect(gens[0]-gens[3], gens[1]-gens[3],
-                     2*gens[3],2*gens[3])] ,
+                     2*gens[3],2*gens[3]).attr({"fill":COLOR_DICT["bomb color"],
+                                            "stroke":COLOR_DICT["bomb color"],
+                                            "opacity":.6})] ,
   }
   this.actives = [];
   this.all = c.set();
@@ -527,11 +592,10 @@ function turnTimer(){
 function drawGUI(){
   turnTimer();
   setUpGameClock();
-  drawBoard(); // create the board
+  drawBoard(7,7); // create the board
   controlPanel = new startControlPanel();
   finishControlPanel(controlPanel);
 }
-
 
 //INCREMENT FUNCTIONS (no new Raph elements created)
 function updateAU(){
@@ -656,23 +720,8 @@ function newTurn(){
     */
   }
 
-  //animate all shots:
-  for (var i = 0; i<shots.length; i++){
-    var shotAnim;
-    switch(shots[i].data("team")){
-      case "blue":
-        shotAnim = Raphael.animation({"y":100+shots[i].attr('y')},3000*timeScale);
-        shots[i].y += 100;
-        break;
-      case "red":
-        shotAnim = Raphael.animation({"y":shots[i].attr('y')-100},3000*timeScale);
-        shots[i].y -= 100;
-        break;
-    }
-    shots[i].animate(shotAnim);
-  }
-
   //animate all bombs:
+  /*
   for (var i = 0; i<bombs.length; i++){
     console.log("bomb "+i+"'s timer reads " + bombs[i].data("timer"));
     if (bombs[i].data("timer") == 0){
@@ -695,6 +744,7 @@ function newTurn(){
       }
     }
   }
+  */
   controlPanel.resetIcons();
   timer.attr({segment: [450, 250, 50, -90, 269]});
   timer.animate({segment: [450, 250, 50, -90, -90]}, 3000);
@@ -703,7 +753,10 @@ function newTurn(){
 function detectCollisions(){
   /* COLLISION DETECTION, a function
   to be called every 17 ms */
-  var splicers = [];
+  var splicers = []; //used for destroying references to shots once they're gone
+  //iterate over shots --> units and bombs
+  //iterate over bombs --> bombs and units
+  //Next, iterate over units --> units, and maybe shots --> shots
   for (var i=0; i<shots.length; i++) { //iterate over shots
     var sBOS = shots[i].getBBox().y2;
     var nBOS = shots[i].getBBox().y;
@@ -930,6 +983,9 @@ $(window).keydown(function(event){
           controlPanel.actives[activeUnit].show();
           updateAU();
           break;
+        case 27: //escape key
+          gui.pause();
+
         default: //anything else
           ;
       }
@@ -938,6 +994,9 @@ $(window).keydown(function(event){
       switch(event.keyCode){
         case 13: //enter
           tutFuncs["enter"]();
+          break;
+        case 69: //"e"
+          tutFuncs["ekey"]();
           break;
         default:
           //console.log("you pressed key " + event.keyCode);
@@ -986,26 +1045,109 @@ function startGame(){
   activeScreen = "game";
   console.log('NEW GAME');
 }
+function startHowTo(){
+  /*
+  turnNumber = 0;
+  redDead = 0;
+  blueDead = 0;
+  drawGUI();
+  placeUnitsTut();
+  */
+  howToPage = {};
+  howToPage.chapter = 0;
+  howToPage.keys = c.set().push(
+    c.rect(40, 40, 50, 50, 10).attr({"stroke":"white","stroke-width":2}),
+    c.rect(100, 40, 50, 50, 10).attr({"stroke":"white","stroke-width":2}),
+    c.rect(160, 40, 50, 50, 10).attr({"stroke":"white","stroke-width":2}),
+    c.rect(50, 100, 50, 50, 10).attr({"stroke":"white","stroke-width":2}),
+    c.rect(110, 100, 50, 50, 10).attr({"stroke":"white","stroke-width":2}),
+    c.rect(170, 100, 50, 50, 10).attr({"stroke":"white","stroke-width":2}),
+    c.text(65, 65, "Q").attr({"fill":"white","font-size":20,"font-family":"'Open Sans',sans-serif"}),
+    c.text(125, 65, "W").attr({"fill":"white","font-size":20,"font-family":"'Open Sans',sans-serif"}),
+    c.text(185, 65, "E").attr({"fill":"white","font-size":20,"font-family":"'Open Sans',sans-serif"}),
+    c.text(75, 125, "A").attr({"fill":"white","font-size":20,"font-family":"'Open Sans',sans-serif"}),
+    c.text(135, 125, "S").attr({"fill":"white","font-size":20,"font-family":"'Open Sans',sans-serif"}),
+    c.text(195, 125, "D").attr({"fill":"white","font-size":20,"font-family":"'Open Sans',sans-serif"})
+  );
+  /*
+  howToPage.keys.push(c.rect(40, 40, 50, 50, 10).attr({"stroke":"white","stroke-width":2}));
+  howToPage.keys.push(c.rect(100, 40, 50, 50, 10).attr({"stroke":"white","stroke-width":2}));
+  howToPage.keys.push(c.rect(160, 40, 50, 50, 10).attr({"stroke":"white","stroke-width":2}));
+  howToPage.keys.push(c.rect(50, 100, 50, 50, 10).attr({"stroke":"white","stroke-width":2}));
+  howToPage.keys.push(c.rect(110, 100, 50, 50, 10).attr({"stroke":"white","stroke-width":2}));
+  howToPage.keys.push(c.rect(170, 100, 50, 50, 10).attr({"stroke":"white","stroke-width":2}));
+  howToPage.keys.push(c.text(65, 65, "Q").attr({"fill":"white","font-size":20,"font-family":"'Open Sans',sans-serif"}));
+  howToPage.keys.push(c.text(125, 65, "W").attr({"fill":"white","font-size":20,"font-family":"'Open Sans',sans-serif"}));
+  howToPage.keys.push(c.text(185, 65, "E").attr({"fill":"white","font-size":20,"font-family":"'Open Sans',sans-serif"}));
+  howToPage.keys.push(c.text(75, 125, "A").attr({"fill":"white","font-size":20,"font-family":"'Open Sans',sans-serif"}));
+  howToPage.keys.push(c.text(135, 125, "S").attr({"fill":"white","font-size":20,"font-family":"'Open Sans',sans-serif"}));
+  howToPage.keys.push(c.text(195, 125, "D").attr({"fill":"white","font-size":20,"font-family":"'Open Sans',sans-serif"}));
+  */
+  howToPage.keys.transform("t170,170");
+
+  howToPage.next = c.set().push(
+    c.rect(530,260,50,80).attr({"fill":"black"}),
+    c.path("M550,290 L560,300 550,310")
+  ).attr({"stroke-width":2,"stroke":"white"}).click(function(e){
+    switch(howToPage.chapter){
+      case 0:
+        howToPage.title.attr({"text":"Turns"});
+        break;
+      case 1:
+        break;
+      case 2:
+        break;
+      default:
+        ;
+    }
+  });
+
+  howToPage.title = c.text(300,50,"Controls").attr({"fill":"white","font-size":40,"font-family":"'Open Sans',sans-serif"});
+  //q = bomb, e = shoot
+
+  howToPage.circles = c.set().push(
+    c.circle(285,450,5).attr({"stroke":"white","fill":COLOR_DICT["shot color"]}),
+    c.circle(300,450,5).attr({"stroke":"white"}),
+    c.circle(315,450,5).attr({"stroke":"white"})
+  );
+
+  howToPage.backToMainButton = new button("Main Menu",300,520,function(e){
+    activeScreen="menu";
+    /*howToPage.keys.hide();
+    howToPage.title.hide();
+    howToPage.circles.hide();
+    howToPage.next.hide();
+    howToPage.backToMainButton.set.hide();
+    */
+    howToPage.all.remove();
+    menuScreen.showAll();
+  });
+
+  howToPage.all=c.set().push(howToPage.circles, howToPage.title, howToPage.next,
+    howToPage.keys, howToPage.backToMainButton.set);
+}
 
 function endGame(){
   clearInterval(clockUpdater);
   clearInterval(collisionDetector);
+  gui.stop();
   gui.remove();
   shots = [];
   bombs = [];
-  var gameOver = c.text(300,70,"round over")
+  var gameOverBG = c.rect(180,40,240,60).attr({"fill":"white"});
+  var gameOverText = c.text(300,70,"round over")
     .attr({"font-size":50,"fill":"white"});
   if (blueDead == redDead) {
     gameOver.attr({"text":"tie!"})
   } else if (blueDead > redDead) {
-    gameOver.attr({"text":"You lost!", "fill":"red"})
+    gameOverText.attr({"text":"You lost.", "fill":"red"})
   } else {
-    gameOver.attr({"text":"You won!", "fill":"green"})
+    gameOverText.attr({"text":"You won!", "fill":COLOR_DICT["shot color"]})
   }
   menuScreen.blackness.attr({"opacity": .9 });
   var again = new button("New Round",300,160,newRound);
   var back = new button("Main Menu",300,260,goMainMenu);
-  endGameElements = c.set().push(gameOver,again.set,back.set);
+  endGameElements = c.set().push(gameOverText,gameOverBG,again.set,back.set);
   activeScreen="menu";
 }
 function newRound(){
@@ -1014,6 +1156,9 @@ function newRound(){
   return countdownScreen();
 }
 function goMainMenu(){
+
   endGameElements.remove();
   menuScreen.showAll();
+  activeScreen = "menu";
+  menuScreen.blackness.attr({"opacity":.9});
 }

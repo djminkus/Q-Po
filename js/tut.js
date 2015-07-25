@@ -20,6 +20,7 @@ Bombs
 drawGUI();
 activeScreen = "tut";
 var tutStatus = -1;
+var blue0, red0, turnNumber;
 
 tutObj = function(headline, body, x, y, highx, highy, highSizeModx, highSizeMody, hideHigh, prompt){
   this.pane = c.rect(x,y,250,120).attr({"fill":"black"});
@@ -46,9 +47,12 @@ var tutObjs = [
   new tutObj("Control Panel",["This is the control panel. It shows", "you your plans. Every command",
     "you give shows up here."],100,250,10,410,320,60,false,
     "Press enter to continue."),
-  new tutObj("Control Panel",["When the turn timer hits 0, your", "units follow your commands. Try",
-    'pressing your "e" key.'],100,250,10,410,320,60,false,
-    "Press e!"),
+  new tutObj("Control Panel",["When the turn timer hits 0, your", "units follow your commands. Let's",
+    'try it out.'],100,250,10,410,320,60,false,
+    "Press enter to continue."),
+  new tutObj("Moving",["", "units follow your commands. Let's",
+    'learn some commands!'],100,250,10,410,320,60,false,
+    "Press enter to continue."),
 ]
 
 for(i=1; i<tutObjs.length; i++){
@@ -73,8 +77,12 @@ tutFuncs = {
         tutObjs[1].all.show();
         tutStatus=1;
         */
-        var blue0 = startUnit("blue",1,1,0);
-        var red0 = startUnit("red",1,5,0);
+        blue0 = startUnit("blue",1,1,0);
+        improveUnit(blue0);
+        finishUnit(blue0);
+        red0 = startUnit("red",1,5,0);
+        improveUnit(red0);
+        finishUnit(red0);
         red0.rect.toBack();
         controlPanel.oranges[0].show();
         controlPanel.icons.xs[0].hide();
@@ -82,18 +90,28 @@ tutFuncs = {
         break;
       case 1: //transition from "units" to "turns"
         transition(1);
-        timer.animate({segment: [450, 250, 50, -90, -90]}, 3000);
+        var timerAnim = Raphael.animation({
+          "0%" : {segment: [450, 250, 50, -90, 269]},
+          "100%" : {segment: [450, 250, 50, -90, -90]}
+        }, 3000).repeat("Infinity");
+        timer.animate(timerAnim);
         break;
-      case 2:
+      case 2: //transition from "turns" to "control panel 1"
         transition(2);
+        timer.stop();
         timer.attr({segment: [450, 250, 50, -90, 269]});
         break;
-
+      case 3: //transition from "control panel 1" to "control panel 2"
+        transition(3);
+        break;
+      case 4: //transition from "control panel 2" to "shoot"
+        transition(4);
+        break;
       default:
         console.log("You forgot a 'break', David.");
     }
   },
-  shoot: function(){
-
+  ekey: function(){
+    //blue0.shoot();
   },
 }
