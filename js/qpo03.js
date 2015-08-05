@@ -1,5 +1,14 @@
-console.log("RESET " + Date());
-var c = new Raphael("raphContainer", 600, 600);
+console.log("RESET" + Date());
+var c = new Raphael("raphContainer", containerWidth(), 600);
+var debug;
+function containerWidth(){
+  if(debug){
+    var width = 900;
+  } else {
+    var width = 600;
+  }
+  return width;
+}
 
 /** Q-PO : a JS game by @akaDavidGarrett
 SHORT-TERM TODO:
@@ -52,7 +61,9 @@ How to read this code:
 */
 
 qpoGame = {
-  "gui" : {},
+  "gui" : {
+    "debug" : {}
+  },
   "unit" : {},
   "bomb" : {},
 };
@@ -71,12 +82,14 @@ function setup(){ //set up global vars and stuff
   redMovesQueue = [];
   shots = [];
   bombs = [];
-  bsplicers = [];
+  //bsplicers = [];
   moves = ["moveUp","moveDown","moveLeft","moveRight","shoot","bomb","stay"];
   gui = c.set();
   activeUnit = 0;
   newGames = 0;
+  gameEnding = false;
   playerColor = "blue";
+  opponentColor = "red";
   guiCoords = {
     "gameBoard" : {
       "squareSize" : 0,
@@ -86,10 +99,18 @@ function setup(){ //set up global vars and stuff
       "rightWall" : 0,
       "topWall" : 0,
       "bottomWall" : 0,
+      "width" : 600,
+      "height" : 600
+    },
+    "debug" : {
+      "width":300,
+      "height":600
     }
   };
   bombSize = 100;
+  debug = false;
 }
+
 setup();
 
 
@@ -132,23 +153,20 @@ function finishUnit(unit){
     unit.alive = false;
     unit.phys.stop();
     unit.phys.animate({"opacity":0},2000,function(){unit.phys.hide()});
-    //unit.phys.hide();
+
     switch(unit.team){
-      case "red":
-        redDead++;
+      case opponentColor:
+        opponentDead++;
         break;
-      case "blue":
-        blueDead++;
+      case playerColor:
+        playerDead++;
         var number = unit.num;
         controlPanel.actives[number].hide();
         controlPanel.actives[number] = controlPanel.icons.xs[number];
         gui.push(controlPanel.actives[number]);
         controlPanel.actives[number].show();
-        updateAU();
+        updateAU(teamSize);
         break;
-    }
-    if (redDead==3 || blueDead==3){
-      setTimeout(endGame,2000);
     }
   }
   unit.moveLeft = function(){
@@ -198,27 +216,10 @@ function finishUnit(unit){
   unit.bomb = function(){
     unit.status = "bomb";
     var bomb;
-    switch(unit.team){
-      case "blue":
-        bomb = c.rect(25 + 50*unit.x + 18,
-                      143 + 50*unit.y,14,14);
-        gui.push(bomb);
-        break;
-      case "red":
-        bomb = c.rect(25 + 50*unit.x + 18,
-                      43 + 50*unit.y,14,14);
-        gui.push(bomb);
-        break;
-    }
-
-    bomb.attr({"fill":COLOR_DICT["bomb color"],
-               "opacity":.5,
-               "stroke":COLOR_DICT["bomb color"]});
-    bomb.data("team",unit.team);
-    bomb.data("timer",3);
-    bomb.data("exploded",false);
-    bombs.push(bomb);
-    */
+    bomb = new startBomb(unit);
+    improveBomb(bomb);
+    finishBomb(bomb);
+    bomb.next();
   }
   unit.shoot = function(){
     unit.status = "shoot";
@@ -226,9 +227,8 @@ function finishUnit(unit){
     switch(unit.team){
       case "blue":
         shot = c.rect(25 + 50*unit.x + 22,
-                      127 + 50*unit.y,6,2);
+                      127 + 50*unit.y, 6,2);
         anim = Raphael.animation({"height":25, "y": shot.attr('y') + 0}, 500*timeScale, function(){
-          console.log("executed!!!");
           shot.animate({"y": shot.attr('y') + 125*7}, 3000*7);
         });
         break;
@@ -253,9 +253,20 @@ function finishUnit(unit){
   }
 }
 
+function findSlot(array){
+  var slot = 0
+  while(slot < array.length){
+    if(!array[slot]){
+      break;
+    }
+    slot += 1;
+  }
+  return slot;
+}
 
 //CREATE BOMB TYPE/CLASS -- not implemented (see "explode()")
 function startBomb(su){ //su = source unit
+
   this.team = su.team;
   this.timer = 3;
   this.exploded = false;
@@ -270,12 +281,18 @@ function startBomb(su){ //su = source unit
       break;
   }
   gui.push(this.phys);
+
+  //put this in the "bombs" array:
+  var ind = findSlot(bombs);
+  this.index = ind;
+  bombs[this.index] = this;
+
+  return this;
 }
 function improveBomb(bomb){
   bomb.phys.attr({"fill":COLOR_DICT["bomb color"],
              "opacity":.5,
              "stroke":COLOR_DICT["bomb color"]});
-  //bomb.phys.animate({})
   bomb.explode = function(){
     bomb.exploded = true;
     bomb.timer = -1;
@@ -296,14 +313,10 @@ function improveBomb(bomb){
         "width":0,
         "height":0
       }
-    },3000*timeScale);
+    }, 3000*timeScale, function(){
+      bombs[bomb.index] = false;
+    });
     bomb.phys.animate(anim);
-
-    setTimeout(function(){
-      bsplicers.push(index);
-      console.log("bomb "+index+" splicing");
-    },3000*timeScale);
-
   }
 }
 function finishBomb(bomb){
@@ -315,59 +328,16 @@ function finishBomb(bomb){
       switch(bomb.team){
         case "blue":
           bombAnim = Raphael.animation({"y":bomb.phys.attr('y') + 50}, 3000*timeScale, function(){bomb.next()} );
-          //bombs[i].y += 50;
           bomb.phys.animate(bombAnim);
           break;
         case "red":
           bombAnim = Raphael.animation({"y":bomb.phys.attr('y') - 50}, 3000*timeScale, function(){bomb.next()} );
-          //bombs[i].y -= 50;
           bomb.phys.animate(bombAnim);
           break;
       }
     }
     bomb.timer = bomb.timer - 1;
   }
-}
-
-function explode(index){
-  bombs[index].data("exploded",true);
-  bombs[index].data("timer",-1);
-  var cx = bombs[index].getBBox().x;
-  var cy = bombs[index].getBBox().y;
-  bombs[index].stop();
-
-  var anim = Raphael.animation({
-    "16.6%": {
-      "y": cy- (bombSize/2 - 7),
-      "x": cx- (bombSize/2 - 7),
-      "width": bombSize,
-      "height": bombSize
-    },
-    "100%":{
-      "y":cy+7,
-      "x":cx+7,
-      "width":0,
-      "height":0
-    }
-  },3000*timeScale);
-  bombs[index].animate(anim);
-  console.log("bomb "+index+" exploded");
-  /*
-  var anim2 = Raphael.animation({
-    "y":cy+7,
-    "x":cx+7,
-    "width":0,
-    "height":0,
-  },2000*timeScale);
-  setTimeout(function(){
-    bombs[index].animate(anim2);
-    console.log("bomb "+index+" fading");
-  },500*timeScale);
-  */
-  setTimeout(function(){
-    bsplicers.push(index);
-    console.log("bomb "+index+" splicing");
-  },3000*timeScale);
 }
 
 //GUI ELEMENTS
@@ -404,27 +374,36 @@ function drawBoard(cols, rows){
   var vertLines = c.setFinish();
   gui.push(horizLines,vertLines);
 }
-function placeUnits(){
+function placeUnits(difficulty){
   blueUnits = [];
   redUnits = [];
-  blueUnits[0] = new startUnit("blue",1,1,0);
-  blueUnits[1] = new startUnit("blue",3,1,1);
-  blueUnits[2] = new startUnit("blue",5,1,2);
-  redUnits[0] = new startUnit("red",1,5,"");
-  redUnits[1] = new startUnit("red",3,5,"");
-  redUnits[2] = new startUnit("red",5,5,"");
-  improveUnit(blueUnits[0]);
-  improveUnit(blueUnits[1]);
-  improveUnit(blueUnits[2]);
-  improveUnit(redUnits[0]);
-  improveUnit(redUnits[1]);
-  improveUnit(redUnits[2]);
-  finishUnit(blueUnits[0]);
-  finishUnit(blueUnits[1]);
-  finishUnit(blueUnits[2]);
-  finishUnit(redUnits[0]);
-  finishUnit(redUnits[1]);
-  finishUnit(redUnits[2]);
+  switch(difficulty){
+    case "hard":
+      blueUnits[2] = new startUnit("blue",5,1,2);
+      improveUnit(blueUnits[2]);
+      finishUnit(blueUnits[2]);
+      redUnits[2] = new startUnit("red",5,5,"");
+      improveUnit(redUnits[2]);
+      finishUnit(redUnits[2]);
+    case "medium":
+      blueUnits[1] = new startUnit("blue",1,1,1);
+      improveUnit(blueUnits[1]);
+      finishUnit(blueUnits[1]);
+      redUnits[1] = new startUnit("red",1,5,"");
+      improveUnit(redUnits[1]);
+      finishUnit(redUnits[1]);
+    case "beginner":
+      blueUnits[0] = new startUnit("blue",3,1,0);
+      improveUnit(blueUnits[0]);
+      finishUnit(blueUnits[0]);
+      redUnits[0] = new startUnit("red",3,5,"");
+      improveUnit(redUnits[0]);
+      finishUnit(redUnits[0]);
+      break;
+    default:
+      break;
+  }
+
   units = []; //all Units (red and blue);
   for (var i=0;i<blueUnits.length;i++){
     units.push(blueUnits[i]);
@@ -456,7 +435,7 @@ function placeUnitsTut(){
   blueUnits[0].activate();
   controlPanel.resetIcons();
 }
-gens = [85,475,20,10,40]; //centers and radius -- for controlPanel
+gens = [85+115, 475, 20, 10, 40]; //centers and radius -- for controlPanel
 coords = [gens[0]+gens[2], gens[0]-gens[2], //x ends -- for controlPanel
           gens[1]+gens[2], gens[1]-gens[2]]; //y ends --for controlPanel
           //0 is left , 1 is right, 2 is up, 3 is down
@@ -469,11 +448,10 @@ function startControlPanel(){
   this.secLine2 = c.path("M"+ 260 + ",425 L" +
                         260 +",525");
   this.oranges = c.set().push(
-    c.rect(28,428,110,94),
-    c.rect(28+114,428,116,94),
-    c.rect(28+114+120,428,110,94)
-  ).attr({"stroke":COLOR_DICT["orange"],"stroke-width":4,})
-  .hide();
+    c.rect(28+114, 428, 116, 94),
+    c.rect(28, 428, 110, 94),
+    c.rect(28+114+120, 428, 110, 94)
+  ).attr({"stroke":COLOR_DICT["orange"],"stroke-width":4,}).hide();
   this.icons = {
     "circles" : [c.circle(gens[0],gens[1],gens[2]*1/2)],
     "leftArrows" : [c.path("M" + coords[0] + "," + gens[1] +
@@ -519,22 +497,22 @@ function startControlPanel(){
 function finishControlPanel(cp){
   for ( var i=1;i<3;i++ ){
     cp.icons.circles[i] = cp.icons.circles[0].clone().attr(
-      {"transform":("t" +115*i + "," + 0)});
+      {"transform":("t" +115*Math.pow(-1,i) + "," + 0)});
     cp.icons.rightArrows[i] = cp.icons.rightArrows[0].clone().attr(
-      {"transform":("t" +115*i + "," + 0)});
+      {"transform":("t" +115*Math.pow(-1,i) + "," + 0)});
     cp.icons.leftArrows[i] = cp.icons.leftArrows[0].clone().attr(
-      {"transform":("t" +115*i + "," + 0)});
+      {"transform":("t" +115*Math.pow(-1,i) + "," + 0)});
     cp.icons.upArrows[i] = cp.icons.upArrows[0].clone().attr(
-      {"transform":("t" +115*i + "," + 0)});
+      {"transform":("t" +115*Math.pow(-1,i) + "," + 0)});
     cp.icons.downArrows[i] = cp.icons.downArrows[0].clone().attr(
-      {"transform":("t" +115*i + "," + 0)});
+      {"transform":("t" +115*Math.pow(-1,i) + "," + 0)});
     cp.icons.rects[i] = cp.icons.rects[0].clone().attr(
-      {"transform":("t" +115*i + "," + 0)});
+      {"transform":("t" +115*Math.pow(-1,i) + "," + 0)});
     cp.icons.xs[i] = cp.icons.xs[0].clone().attr(
-      {"transform":("t" +115*i + "," + 0)});
+      {"transform":("t" +115*Math.pow(-1,i) + "," + 0)});
     cp.icons.bombs[i] = cp.icons.bombs[0].clone().attr(
-      {"transform":("t" +115*i + "," + 0)});
-    }
+      {"transform":("t" +115*Math.pow(-1,i) + "," + 0)});
+  }
 
   cp.oranges[0].show();
   cp.resetIcons = function(){
@@ -587,7 +565,25 @@ function turnTimer(){
   timer = c.path().attr({segment: [450, 250, 50, -90, 269],"stroke":"none"});
   gui.push(timer);
 }
+function debugPanel(){
+  this.border = c.rect(guiCoords.gameBoard.width, 0, guiCoords.debug.width, guiCoords.debug.height)
+    .attr({"stroke-width":2,"stroke":"blue"});
+  this.title = c.text(900 - guiCoords.debug.width/2 , 30, "debug")
+    .attr({"font-family":"'Open Sans',sans-serif","font-size":30});
+  this.line1 = c.text(900 - guiCoords.debug.width/2, 70, "line1")
+    .attr({"font-family":"'Open Sans',sans-serif","font-size":15});
+  this.line2 = c.text(900 - guiCoords.debug.width/2, 100, "line2")
+    .attr({"font-family":"'Open Sans',sans-serif","font-size":15});
+  this.line3 = c.text(900 - guiCoords.debug.width/2, 130, "line3")
+    .attr({"font-family":"'Open Sans',sans-serif","font-size":15});
+  this.set = c.set().push(this.border,this.title,this.line1,this.line2,this.line3);
+  gui.push(this.set);
+  return this;
+}
 function drawGUI(){
+  if (debug){
+    qpoGame.gui.debug = new debugPanel();
+  }
   turnTimer();
   setUpGameClock();
   drawBoard(7,7); // create the board
@@ -596,50 +592,90 @@ function drawGUI(){
 }
 
 //INCREMENT FUNCTIONS (no new Raph elements created)
-function updateAU(){
+function updateAU(ts){
   /*
-  highlight the new active unit and
+  highlight the new active unit,
+  highlight the new part of the control panel,
   update the "activeUnit" var
+
+  if 1v1, just keep current unit active.
+  if 2v2, check if other unit is alive, and switch to it if so.
+  if 3v3, check if next unit it alive, and switch to it if so.
   */
-  switch(activeUnit){
-    case 0:
-      blueUnits[1].activate();
-      blueUnits[0].deactivate();
-      blueUnits[2].deactivate();
-      controlPanel.oranges[0].hide();
-      controlPanel.oranges[1].show();
-      activeUnit++;
-      if (blueUnits[1].alive){
-        break;
-      }
+  switch(ts){
     case 1:
-      blueUnits[2].activate();
-      blueUnits[0].deactivate();
-      blueUnits[1].deactivate();
-      controlPanel.oranges[1].hide();
-      controlPanel.oranges[2].show();
-      activeUnit++;
-      if (blueUnits[2].alive){
-        break;
-      }
+      break;
     case 2:
-      if (blueUnits[0].alive){
-        blueUnits[0].activate();
-        blueUnits[1].deactivate();
-        blueUnits[2].deactivate();
-        controlPanel.oranges[2].hide();
-        controlPanel.oranges[0].show();
-        activeUnit = 0;
-      } else if (blueUnits[1].alive){
-        blueUnits[1].activate();
-        blueUnits[0].deactivate();
-        blueUnits[2].deactivate();
-        controlPanel.oranges[2].hide();
-        controlPanel.oranges[1].show();
-        activeUnit = 1;
+      switch(activeUnit){
+          case 0:
+            blueUnits[1].activate();
+            blueUnits[0].deactivate();
+            controlPanel.oranges[0].hide();
+            controlPanel.oranges[1].show();
+            activeUnit++;
+            if (blueUnits[1].alive){
+              break;
+            }
+          case 1:
+            blueUnits[0].activate();
+            blueUnits[1].deactivate();
+            controlPanel.oranges[1].hide();
+            controlPanel.oranges[0].show();
+            activeUnit = 0;
+            if (blueUnits[0].alive){
+              break;
+            }
+          default:
+            "unexpected switch condition";
+            break;
+        }
+      break;
+    case 3:
+      switch(activeUnit){
+        case 0:
+          blueUnits[1].activate();
+          blueUnits[0].deactivate();
+          blueUnits[2].deactivate();
+          controlPanel.oranges[0].hide();
+          controlPanel.oranges[1].show();
+          activeUnit++;
+          if (blueUnits[1].alive){
+            break;
+          }
+        case 1:
+          if (blueUnits[2].alive){
+            blueUnits[2].activate();
+            blueUnits[1].deactivate();
+            controlPanel.oranges[1].hide();
+            controlPanel.oranges[2].show();
+            activeUnit = 0;
+          }
+          break;
+        case 2:
+          if (blueUnits[0].alive){
+            blueUnits[0].activate();
+            blueUnits[1].deactivate();
+            blueUnits[2].deactivate();
+            controlPanel.oranges[2].hide();
+            controlPanel.oranges[0].show();
+            activeUnit = 0;
+          } else if (blueUnits[1].alive){
+            blueUnits[1].activate();
+            blueUnits[0].deactivate();
+            blueUnits[2].deactivate();
+            controlPanel.oranges[2].hide();
+            controlPanel.oranges[1].show();
+            activeUnit = 1;
+          }
+          break;
       }
       break;
+    default:
+      console.log("unexpected switch condition");
+      break;
   }
+
+
 }
 function tick(){
   clock = gameClock.data("value");
@@ -651,15 +687,21 @@ function tick(){
   if (clock == 1) {
     endGame();
   }
+
+  //update debug:
+  if (debug){
+    qpoGame.gui.debug.line1.attr({"text": "bombs: " + bombs });
+  }
+
 }
-function newTurn(){
+function newTurn(ts){ //pass in teamSize
   /** NEWTURN FUNCTION
   called every time the game
   clock is divisible by 3
    */
   turnNumber++;
   //execute all moves and reset control panel:
-  for (var i=0; i<3; i++){
+  for (var i=0; i<teamSize; i++){
     //generate random moves for red
     redMovesQueue[i] = moves[Math.round(Math.random()*6)]
     //execute all moves
@@ -718,37 +760,12 @@ function newTurn(){
     */
   }
 
-  //animate all bombs:
-
-  for (var i = 0; i<bombs.length; i++){
-    console.log("bomb "+i+"'s timer reads " + bombs[i].data("timer"));
-    if (bombs[i].data("timer") == 0){
-      bombs[i].data("timer", bombs[i].data("timer")-1 ) ;
-      explode(i);
-    } else if (bombs[i].data("timer") > 0 ){
-      var bombAnim;
-      bombs[i].data("timer", bombs[i].data("timer")-1 ) ;
-      switch(bombs[i].data("team")){
-        case "blue":
-          bombAnim = Raphael.animation({"y": bombs[i].attr('y') + 50}, 3000*timeScale);
-          bombs[i].y += 50;
-          bombs[i].animate(bombAnim);
-          break;
-        case "red":
-          bombAnim = Raphael.animation({"y": bombs[i].attr('y') - 50}, 3000*timeScale);
-          bombs[i].y -= 50;
-          bombs[i].animate(bombAnim);
-          break;
-      }
-    }
-  }
-
   controlPanel.resetIcons();
   timer.attr({segment: [450, 250, 50, -90, 269]});
   timer.animate({segment: [450, 250, 50, -90, -90]}, 3000);
   blueMovesQueue = [];
 }
-function detectCollisions(){
+function detectCollisions(ts){
   /* COLLISION DETECTION, a function
   to be called every 17 ms */
   var splicers = []; //used for destroying references to shots once they're gone
@@ -793,92 +810,99 @@ function detectCollisions(){
     }//end iterating over units within shots
     if (bombs.length > 0){
       for (var j=0; j<bombs.length; j++) { //iterate over bombs within shots
-        //   When a shot hits an unexploded bomb,
-        // explode the bomb and get rid of the shot
-        var bBox = bombs[j].getBBox();
-        var nBOB = bBox.y;
-        var wBOB = bBox.x;
-        var sBOB = bBox.y + bBox.height;
-        var eBOB = bBox.x + bBox.width;
+        if(bombs[j]){
+          //   When a shot hits an unexploded bomb,
+          // explode the bomb and get rid of the shot
+          var bBox = bombs[j].phys.getBBox();
+          var nBOB = bBox.y;
+          var wBOB = bBox.x;
+          var sBOB = bBox.y + bBox.height;
+          var eBOB = bBox.x + bBox.width;
 
-        if( (( nBOB < nBOS && nBOS < sBOB ) || //vertical overlap
-              ( nBOB < sBOS && sBOS < sBOB )) &&
-              (( wBOB < wBOS && wBOS < eBOB ) || //horizontal overlap
-              ( wBOB < eBOS && eBOS < eBOB )) &&
-              !(shots[i].data("hidden")) &&
-              !(bombs[j].data("exploded"))) {
-          console.log("bomb " + j + " hit shot " +i);
-          shots[i].hide(); //make the shot disappear
-          explode(j);
-          shots[i].data("hidden",true);
-          splicers.push(i);
-        }
-      }
-    }//end iterating over bombs within shots
-  } //end iterating over shots
-
-  if (bombs.length > 0){ //iterate over bombs
-    for (var i=0; i<bombs.length; i++) {
-      var sBOB = bombs[i].getBBox().y2;
-      var nBOB = bombs[i].getBBox().y;
-      var eBOB = bombs[i].getBBox().x2;
-      var wBOB = bombs[i].getBBox().x;
-      //if an unexploded bomb hits a wall, explode it:
-      if ( !(bombs[i].data("exploded")) && (sBOB>425 || nBOB<75)){
-        explode(i);
-        console.log("bomb " + i +" hit a wall");
-      }
-      for (var j=0; j<units.length; j++) { //iterate over units within bombs
-        /*
-        When a bomb and a unit collide, kill the unit
-        and check if the bomb is exploded. If the bomb
-        is not exploded, explode it.
-        */
-
-        var nBOU = units[j].rect.getBBox().y;
-        var wBOU = units[j].rect.getBBox().x;
-        var sBOU = nBOU + 50;
-        var eBOU = wBOU + 50;
-
-        if( (( nBOU < nBOB && nBOB < sBOU ) || //vertical overlap
-            ( nBOU < sBOB && sBOB < sBOU ) ||
-            ( nBOB < nBOU && nBOU < sBOB ) || //vertical overlap
-            ( nBOB < sBOU && sBOU < sBOB )) &&
-            (( wBOU < wBOB && wBOB < eBOU ) || //horizontal overlap
-            ( wBOU < eBOB && eBOB < eBOU ) ||
-            ( wBOB < wBOU && wBOU < eBOB ) ||
-            ( wBOB < eBOU && eBOU < eBOB )) &&
-            (units[j].alive)) {
-          units[j].kill();
-          console.log("bomb " + i + " hit unit " +j);
-          if ( !(bombs[i].data("exploded"))){
-            explode(i);
+          if( (( nBOB < nBOS && nBOS < sBOB ) || //vertical overlap
+                ( nBOB < sBOS && sBOS < sBOB )) &&
+                (( wBOB < wBOS && wBOS < eBOB ) || //horizontal overlap
+                ( wBOB < eBOS && eBOS < eBOB )) &&
+                !(shots[i].data("hidden")) &&
+                !(bombs[j].exploded)) {
+            //console.log("bomb " + j + " hit shot " +i);
+            shots[i].hide(); //make the shot disappear
+            bombs[j].explode();
+            shots[i].data("hidden",true);
+            splicers.push(i);
           }
         }
-      }//end iterating over units within bombs
-      for (var j=0; j<bombs.length; j++) { //iterate over bombs within bombs
-        // When a bomb hits an unexploded bomb,
-        // explode the bomb and get rid of the shot
-        var nBOB2 = bombs[j].getBBox().y;
-        var wBOB2 = bombs[j].getBBox().x;
-        var sBOB2 = bombs[j].getBBox().y + bombs[j].getBBox().height;
-        var eBOB2 = bombs[j].getBBox().x + bombs[j].getBBox().width;
+      } //end iterating over bombs within shots
+    }
+  } //end iterating over shots
 
-        if( !(i==j) && //make sure we're really looking at 2 bombs.
-              (( nBOB2 <= nBOB && nBOB <= sBOB2 ) || //vertical overlap
-              ( nBOB2 <= sBOB && sBOB <= sBOB2 )) &&
-              (( wBOB2 <= wBOB && wBOB <= eBOB2 ) || //horizontal overlap
-              ( wBOB2 <= eBOB && eBOB <= eBOB2 )) &&
-              (!(bombs[i].data("exploded")) || // make sure at least one is not-exploded
-              !(bombs[j].data("exploded")))) {
-          //explode any un-exploded ones:
-          console.log("bomb " + i + "hit bomb " + j);
-          if (!(bombs[i].data("exploded"))) {explode(i)}
-          if (!(bombs[j].data("exploded"))) {explode(j)}
+  if (bombs.length > 0){ //iterate over bombs (after checking if "bombs" exists)
+    for (var i=0; i<bombs.length; i++) { //iterate over bombs
+      if (bombs[i]){ //check if a bomb exists at index i
+        var sBOB = bombs[i].phys.getBBox().y2;
+        var nBOB = bombs[i].phys.getBBox().y;
+        var eBOB = bombs[i].phys.getBBox().x2;
+        var wBOB = bombs[i].phys.getBBox().x;
+        //if an unexploded bomb hits a wall, explode it:
+        if ( !(bombs[i].exploded) && (sBOB>425 || nBOB<75)){
+          bombs[i].explode();
+          //console.log("bomb " + i +" hit a wall");
         }
-      }
-    }//end iterating over bombs within bombs
-  } //end iterating over bombs
+        for (var j=0; j<units.length; j++) { //iterate over units within bombs
+          /*
+          When a bomb and a unit collide, kill the unit
+          and check if the bomb is exploded. If the bomb
+          is not exploded, explode it.
+          */
+
+          var nBOU = units[j].rect.getBBox().y;
+          var wBOU = units[j].rect.getBBox().x;
+          var sBOU = nBOU + 50;
+          var eBOU = wBOU + 50;
+
+          if( (( nBOU < nBOB && nBOB < sBOU ) || //vertical overlap
+              ( nBOU < sBOB && sBOB < sBOU ) ||
+              ( nBOB < nBOU && nBOU < sBOB ) || //vertical overlap
+              ( nBOB < sBOU && sBOU < sBOB )) &&
+              (( wBOU < wBOB && wBOB < eBOU ) || //horizontal overlap
+              ( wBOU < eBOB && eBOB < eBOU ) ||
+              ( wBOB < wBOU && wBOU < eBOB ) ||
+              ( wBOB < eBOU && eBOU < eBOB )) &&
+              (units[j].alive)) {
+            units[j].kill();
+            //console.log("bomb " + i + " hit unit " +j);
+            if ( !(bombs[i].exploded)){
+              bombs[i].explode();
+            }
+          }
+        }//end iterating over units within bombs
+        for (var j=0; j<bombs.length; j++) { //iterate over bombs within bombs
+          if(bombs[j]){
+            // When a bomb hits an unexploded bomb,
+            // explode the bomb and get rid of the shot
+            var nBOB2 = bombs[j].phys.getBBox().y;
+            var wBOB2 = bombs[j].phys.getBBox().x;
+            var sBOB2 = bombs[j].phys.getBBox().y + bombs[j].phys.getBBox().height;
+            var eBOB2 = bombs[j].phys.getBBox().x + bombs[j].phys.getBBox().width;
+
+            if( !(i==j) && //make sure we're really looking at 2 bombs.
+                  (( nBOB2 <= nBOB && nBOB <= sBOB2 ) || //vertical overlap
+                  ( nBOB2 <= sBOB && sBOB <= sBOB2 )) &&
+                  (( wBOB2 <= wBOB && wBOB <= eBOB2 ) || //horizontal overlap
+                  ( wBOB2 <= eBOB && eBOB <= eBOB2 )) &&
+                  (!(bombs[i].exploded) || // make sure at least one is not-exploded
+                  !(bombs[j].exploded))) {
+              //explode any un-exploded ones:
+              //console.log("bomb " + i + "hit bomb " + j);
+              if (!(bombs[i].exploded)) {bombs[i].explode()}
+              if (!(bombs[j].exploded)) {bombs[j].explode()}
+            }
+
+          } //end chekcing if bomb at index j exists
+        } //end iterating over bombs within bombs
+      } //end checking of bomb at index i exists
+    }//end iterating over bombs
+  } //end iterating over bombs after checking if bombs exists
 
   // Splice shots out of the shots array, one by one.
   while (splicers.length > 0) {
@@ -889,16 +913,22 @@ function detectCollisions(){
     }
   }
 
-  // Let's take care of the bombs array while we're at it.
-  while (bsplicers.length > 0) {
-    bombs.splice(bsplicers[0],1);
-    bsplicers.splice(0,1);
-    for (var i=0;i<bsplicers.length;i++){
-      bsplicers[i]-=1;
+  if ((opponentDead==ts || playerDead==ts) && gameEnding == false){
+    var gameResult;
+    if(opponentDead==playerDead){
+      gameResult = "tie";
+    } else if (opponentDead == ts) {
+      gameResult = "win";
+    } else {
+      gameResult = "lose";
     }
+    gameEnding = true;
+    mainMenu.blackness.animate({"opacity": .9},2000);
+    gui.toBack();
+    setTimeout(function(){
+      endGame(gameResult);
+    },2000);
   }
-  bsplicers = [];
-
 }
 
 //LISTEN FOR INPUT
@@ -911,7 +941,7 @@ $(window).keydown(function(event){
           //TODO: make it execute the highlighted button's onClick function
           break;
         default:
-          console.log("#EasterEgg");
+          //console.log("#EasterEgg");
       }
       break;
     case "game":
@@ -924,7 +954,7 @@ $(window).keydown(function(event){
             controlPanel.icons.bombs[activeUnit];
           gui.push(controlPanel.actives[activeUnit]);
           controlPanel.actives[activeUnit].show();
-          updateAU();
+          updateAU(teamSize);
           break;
         case 69: //e
           event.preventDefault();
@@ -934,7 +964,7 @@ $(window).keydown(function(event){
             controlPanel.icons.rects[activeUnit];
           gui.push(controlPanel.actives[activeUnit]);
           controlPanel.actives[activeUnit].show();
-          updateAU();
+          updateAU(teamSize);
           break;
         case 65: //a
           event.preventDefault();
@@ -944,7 +974,7 @@ $(window).keydown(function(event){
             controlPanel.icons.leftArrows[activeUnit];
           gui.push(controlPanel.actives[activeUnit]);
           controlPanel.actives[activeUnit].show();
-          updateAU();
+          updateAU(teamSize);
           break;
         case 87: //w
           event.preventDefault();
@@ -953,7 +983,7 @@ $(window).keydown(function(event){
           controlPanel.actives[activeUnit] =
             controlPanel.icons.upArrows[activeUnit];
           controlPanel.actives[activeUnit].show();
-          updateAU();
+          updateAU(teamSize);
           break;
         case 68: //d
           event.preventDefault();
@@ -962,7 +992,7 @@ $(window).keydown(function(event){
           controlPanel.actives[activeUnit] =
             controlPanel.icons.rightArrows[activeUnit];
           controlPanel.actives[activeUnit].show();
-          updateAU();
+          updateAU(teamSize);
           break;
         case 83: //"s" key
           event.preventDefault();
@@ -971,7 +1001,7 @@ $(window).keydown(function(event){
           controlPanel.actives[activeUnit] =
             controlPanel.icons.downArrows[activeUnit];
           controlPanel.actives[activeUnit].show();
-          updateAU();
+          updateAU(teamSize);
           break;
         case 88: //"x" key
           blueMovesQueue[activeUnit] = "stay";
@@ -979,7 +1009,7 @@ $(window).keydown(function(event){
           controlPanel.actives[activeUnit] =
             controlPanel.icons.circles[activeUnit];
           controlPanel.actives[activeUnit].show();
-          updateAU();
+          updateAU(teamSize);
           break;
         case 27: //escape key
           gui.pause();
@@ -1009,7 +1039,7 @@ $(window).keydown(function(event){
 });
 
 //"SCREEN" FUNCTIONS
-function countdownScreen(){
+function countdownScreen(difficulty){
   var numbers = c.text(c.width/2,c.height/2,"3")
     .attr({"font-size":72,"fill":"white"});
   setTimeout(
@@ -1019,40 +1049,116 @@ function countdownScreen(){
     function(){numbers.attr({"text":"1"})},
     2000);
   setTimeout(function(){
-             menuScreen.blackness.animate({"opacity":0},200,"<")},
+             mainMenu.blackness.animate({"opacity":0},200,"<")},
              2800);
   setTimeout(function(){numbers.remove()},3000);
-  setTimeout(startGame,3000);
+  setTimeout(function(){startGame(difficulty);},3000);
   activeScreen="other";
 }
-function startGame(){
+function startGame(difficulty){
   /*
   if (newGames > 0){
     moveTimer.redo();
   } */
+  teamSize = (function(diff){
+    switch(diff){
+      case "hard":
+        return 3;
+        break;
+      case "medium":
+        return 2;
+        break;
+      case "beginner":
+        return 1;
+        break;
+      default:
+        break;
+    }
+  })(difficulty);
 
   turnNumber = 0;
-  redDead = 0;
-  blueDead = 0;
+  opponentDead = 0;
+  playerDead = 0;
+
   drawGUI();
-  placeUnits(); // puts the units on the board
+  placeUnits(difficulty); // puts the units on the board
   activeUnit = 0;
   setTimeout(function(){clockUpdater = setInterval(tick,1000*timeScale);},2000*timeScale);
-  collisionDetector = setInterval(detectCollisions,17);
-  timer.animate({segment: [450, 250, 50, -90, -90]}, 3000);
+  gameEnding = false;
+  collisionDetector = setInterval(function(){detectCollisions(teamSize)},17);
+  timer.animate({segment: [450, 250, 50, -90, -90]}, 3000*timeScale);
   activeScreen = "game";
   console.log('NEW GAME');
 }
 function startHowTo(){
   /*
-  turnNumber = 0;
-  redDead = 0;
-  blueDead = 0;
+
+  opponentDead = 0;
+  playerDead = 0;
   drawGUI();
   placeUnitsTut();
   */
+  turnNumber = 0;
+
   howToPage = {};
   howToPage.chapter = 0;
+
+  //CHAPTER 0 STUFF:
+  howToPage.unit = c.rect(300, 125,
+      50,50).attr({"fill":COLOR_DICT["blue"],"opacity":.7});
+
+  var demoShot = function(){
+    howToPage.shot = c.rect(300 + 22, 125 + 50, 6, 2)
+      .attr({"fill":COLOR_DICT["shot color"], "opacity":.5,
+        "stroke":COLOR_DICT["shot color"]});
+    anim = Raphael.animation({
+      "0%" : {"height":2, "y": 175},
+      "33.3%" : {"height": 25},
+      "66.6%" : {"y": 200},
+      "100%" : {"y": 225, "height":0}
+      }, 1500*timeScale
+    ); //end anim
+    howToPage.shot.animate(anim);
+  };
+  demoShot();
+  howToPage.shooter = setInterval(demoShot, 10000); //end setInterval
+
+  var demoBomb = function(){
+    howToPage.bomb = c.rect(300 + 18, 125 + 50 + 18, 14, 14)
+      .attr({"fill":COLOR_DICT["bomb color"], "opacity":.5,
+        "stroke":COLOR_DICT["bomb color"]});
+    anim = Raphael.animation({
+      "0%" : {"y": 193},
+      "66.6%" : {"y": 210},
+      "100%" : {"y": 218, "height":0}
+      }, 1500*timeScale
+    ); //end anim
+    howToPage.bomb.animate(anim);
+  };
+  howToPage.bomberT = setTimeout(function(){
+    demoBomb();
+    howToPage.bomber = setInterval(demoBomb, 10000);
+  }, 2000);
+
+  setTimeout(function(){
+    howToPage.unit.animate({"x":250},3000);
+    howToPage.lefter = setInterval(function(){howToPage.unit.animate({"x":250},3000);},10000);
+  }, 4000);
+
+  setTimeout(function(){
+    howToPage.unit.animate({"x":300},3000);
+    howToPage.righter = setInterval(function(){howToPage.unit.animate({"x":300},3000);},10000);
+  }, 7000);
+
+  howToPage.unitText = c.set().push(
+      c.text(300,320-25,"This is a unit. Units move once per turn. ").attr({"fill":"white","font-size":20,"font-family":"'Open Sans',sans-serif"}),
+      c.text(300,350-25,"Win the round by destroying enemy units.").attr({"fill":"white","font-size":20,"font-family":"'Open Sans',sans-serif"}),
+      c.text(300,380-25,"").attr({"fill":"white","font-size":20,"font-family":"'Open Sans',sans-serif"})
+  );
+
+  howToPage.chapter0 = c.set().push( howToPage.unitText, howToPage.unit, howToPage.shot, howToPage.bomb);
+
+  //CHAPTER 1 STUFF:
   howToPage.keys = c.set().push(
     c.rect(40, 40, 50, 50, 10).attr({"stroke":"white","stroke-width":2}),
     c.rect(100, 40, 50, 50, 10).attr({"stroke":"white","stroke-width":2}),
@@ -1067,46 +1173,112 @@ function startHowTo(){
     c.text(135, 125, "S").attr({"fill":"white","font-size":20,"font-family":"'Open Sans',sans-serif"}),
     c.text(195, 125, "D").attr({"fill":"white","font-size":20,"font-family":"'Open Sans',sans-serif"})
   );
-  /*
-  howToPage.keys.push(c.rect(40, 40, 50, 50, 10).attr({"stroke":"white","stroke-width":2}));
-  howToPage.keys.push(c.rect(100, 40, 50, 50, 10).attr({"stroke":"white","stroke-width":2}));
-  howToPage.keys.push(c.rect(160, 40, 50, 50, 10).attr({"stroke":"white","stroke-width":2}));
-  howToPage.keys.push(c.rect(50, 100, 50, 50, 10).attr({"stroke":"white","stroke-width":2}));
-  howToPage.keys.push(c.rect(110, 100, 50, 50, 10).attr({"stroke":"white","stroke-width":2}));
-  howToPage.keys.push(c.rect(170, 100, 50, 50, 10).attr({"stroke":"white","stroke-width":2}));
-  howToPage.keys.push(c.text(65, 65, "Q").attr({"fill":"white","font-size":20,"font-family":"'Open Sans',sans-serif"}));
-  howToPage.keys.push(c.text(125, 65, "W").attr({"fill":"white","font-size":20,"font-family":"'Open Sans',sans-serif"}));
-  howToPage.keys.push(c.text(185, 65, "E").attr({"fill":"white","font-size":20,"font-family":"'Open Sans',sans-serif"}));
-  howToPage.keys.push(c.text(75, 125, "A").attr({"fill":"white","font-size":20,"font-family":"'Open Sans',sans-serif"}));
-  howToPage.keys.push(c.text(135, 125, "S").attr({"fill":"white","font-size":20,"font-family":"'Open Sans',sans-serif"}));
-  howToPage.keys.push(c.text(195, 125, "D").attr({"fill":"white","font-size":20,"font-family":"'Open Sans',sans-serif"}));
-  */
+  howToPage.labels = c.set().push(
+
+    c.path("M50,30 L-20,-20").attr({"stroke":"white","stroke-width":2}),
+    c.path("M125,30 L125,-10").attr({"stroke":"white","stroke-width":2}),
+    c.path("M190,30 L240,-10").attr({"stroke":"white","stroke-width":2}),
+    c.path("M40,150 L-20,200").attr({"stroke":"white","stroke-width":2}),
+    c.path("M130,160 L130,200").attr({"stroke":"white","stroke-width":2}),
+    c.path("M200,160 L240,200").attr({"stroke":"white","stroke-width":2}),
+
+    c.text(55 - 3*30, 35 - 3*30 + 20, "Bomb").attr({"fill":"white","font-size":20,"font-family":"'Open Sans',sans-serif"}),
+    c.text(125, 65 - 3*30, "Move Up").attr({"fill":"white","font-size":20,"font-family":"'Open Sans',sans-serif"}),
+    c.text(185 + 3*30, 65 - 3*30, "Shoot").attr({"fill":"white","font-size":20,"font-family":"'Open Sans',sans-serif"}),
+    c.text(65 - 3*30, 155 + 3*30 - 20, "Move Left").attr({"fill":"white","font-size":20,"font-family":"'Open Sans',sans-serif"}),
+    c.text(135, 125 + 3*30, "Move Down").attr({"fill":"white","font-size":20,"font-family":"'Open Sans',sans-serif"}),
+    c.text(195 + 3*30, 125 + 3*30, "Move Right").attr({"fill":"white","font-size":20,"font-family":"'Open Sans',sans-serif"})
+  );
+
   howToPage.keys.transform("t170,170");
+  howToPage.labels.transform("t170,170");
+
+  howToPage.chapter1 = c.set().push(howToPage.keys, howToPage.labels).hide();
+
+  //CHAPTER 2 STUFF:
+  howToPage.turnText = c.set().push(
+    c.text(300,320-25,"This is the turn timer. It counts down").attr({"fill":"white","font-size":20,"font-family":"'Open Sans',sans-serif"}),
+    c.text(300,350-25,"once every three seconds or so. Every time it").attr({"fill":"white","font-size":20,"font-family":"'Open Sans',sans-serif"}),
+    c.text(300,380-25,"reaches 0, your units execute your moves.").attr({"fill":"white","font-size":20,"font-family":"'Open Sans',sans-serif"})
+  );
+  howToPage.chapter2 = c.set().push( howToPage.turnText ).hide();
+
+  howToPage.tryText = c.set().push(
+    c.text(300,320-75,"Now it's time to play your first game.").attr({"fill":"white","font-size":20,"font-family":"'Open Sans',sans-serif"}),
+    c.text(300,350-75,"It's you against the computer.").attr({"fill":"white","font-size":20,"font-family":"'Open Sans',sans-serif"}),
+    c.text(300,380-75,"Good luck!").attr({"fill":"white","font-size":20,"font-family":"'Open Sans',sans-serif"})
+  );
+  howToPage.chapter3 = c.set().push(howToPage.tryText).hide();
 
   howToPage.next = c.set().push(
     c.rect(530,260,50,80).attr({"fill":"black"}),
     c.path("M550,290 L560,300 550,310")
   ).attr({"stroke-width":2,"stroke":"white"}).click(function(e){
+
     switch(howToPage.chapter){
       case 0:
-        howToPage.title.attr({"text":"Turns"});
+        howToPage.circles[0].attr({"stroke":"white","fill":"none"});
+        howToPage.circles[1].attr({"stroke":"white","fill":COLOR_DICT["shot color"]});
+
+        clearInterval(howToPage.shooter);
+        clearTimeout(howToPage.bomberT);
+        clearInterval(howToPage.bomber);
+        clearInterval(howToPage.lefter);
+        clearInterval(howToPage.righter);
+        howToPage.title.attr({"text":"Controls"});
+        howToPage.chapter0.hide();
+        howToPage.chapter1.show();
         break;
       case 1:
+        howToPage.circles[1].attr({"stroke":"white","fill":"none"});
+        howToPage.circles[2].attr({"stroke":"white","fill":COLOR_DICT["shot color"]});
+
+        howToPage.title.attr({"text":"Turns"});
+        howToPage.keys.hide();
+        howToPage.labels.hide();
+        turnTimer();
+        timer.attr({"transform":"t-150,-75"});
+        timer.animate({segment: [450, 250, 50, -90, -90]}, 3000);
+        timerInterval = setInterval(function(){
+          timer.attr({segment: [450, 250, 50, -90, 269]});
+          timer.animate({segment: [450, 250, 50, -90, -90]}, 3000);
+          blueMovesQueue = [];
+        },3000);
+        howToPage.chapter2.show();
+
         break;
       case 2:
+        howToPage.circles[2].attr({"stroke":"white","fill":"none"});
+        howToPage.circles[3].attr({"stroke":"white","fill":COLOR_DICT["shot color"]});
+
+        //howToPage.title.attr({"text":"Try it out"});
+        howToPage.title.hide();
+        howToPage.chapter2.hide();
+        timer.hide();
+        clearInterval(timerInterval);
+        howToPage.chapter3.show();
+
+        break;
+      case 3:
+        howToPage.all.remove();
+        diffic = "beginner";
+        countdownScreen(diffic);
         break;
       default:
         ;
     }
+    howToPage.chapter++;
+
   });
 
-  howToPage.title = c.text(300,50,"Controls").attr({"fill":"white","font-size":40,"font-family":"'Open Sans',sans-serif"});
+  howToPage.title = c.text(300,50,"Units").attr({"fill":"white","font-size":40,"font-family":"'Open Sans',sans-serif"});
   //q = bomb, e = shoot
 
   howToPage.circles = c.set().push(
     c.circle(285,450,5).attr({"stroke":"white","fill":COLOR_DICT["shot color"]}),
     c.circle(300,450,5).attr({"stroke":"white"}),
-    c.circle(315,450,5).attr({"stroke":"white"})
+    c.circle(315,450,5).attr({"stroke":"white"}),
+    c.circle(330,450,5).attr({"stroke":"white"})
   );
 
   howToPage.backToMainButton = new button("Main Menu",300,520,function(e){
@@ -1118,16 +1290,20 @@ function startHowTo(){
     howToPage.backToMainButton.set.hide();
     */
     howToPage.all.remove();
-    menuScreen.showAll();
+    mainMenu.showAll();
+    timer.remove();
+    clearInterval(timerInterval);
   });
 
   howToPage.all=c.set().push(howToPage.circles, howToPage.title, howToPage.next,
-    howToPage.keys, howToPage.backToMainButton.set);
-}
+    howToPage.keys, howToPage.labels, howToPage.backToMainButton.set,
+    howToPage.chapter0, howToPage.chapter1, howToPage.chapter2, howToPage.chapter3);
+} //end startHowTo()
 
-function endGame(){
+function endGame(result){
   clearInterval(clockUpdater);
   clearInterval(collisionDetector);
+  //console.log(gui);
   gui.stop();
   gui.remove();
   shots = [];
@@ -1135,28 +1311,34 @@ function endGame(){
   var gameOverBG = c.rect(180,40,240,60).attr({"fill":"white"});
   var gameOverText = c.text(300,70,"round over")
     .attr({"font-size":50,"fill":"white"});
-  if (blueDead == redDead) {
-    gameOver.attr({"text":"tie!"})
-  } else if (blueDead > redDead) {
-    gameOverText.attr({"text":"You lost.", "fill":"red"})
-  } else {
-    gameOverText.attr({"text":"You won!", "fill":COLOR_DICT["shot color"]})
+  switch (result){
+    case "tie":
+      gameOverText.attr({"text":"tie!"})
+      break;
+    case "lose":
+      gameOverText.attr({"text":"You lost.", "fill":"red"})
+      break;
+    case "win":
+      gameOverText.attr({"text":"You won!", "fill":COLOR_DICT["shot color"]})
+      break;
+    default:
+      break;
   }
-  menuScreen.blackness.attr({"opacity": .9 });
+  //mainMenu.blackness.attr({"opacity": .9 });
   var again = new button("New Round",300,160,newRound);
   var back = new button("Main Menu",300,260,goMainMenu);
   endGameElements = c.set().push(gameOverText,gameOverBG,again.set,back.set);
+  //console.log(endGameElements);
   activeScreen="menu";
 }
 function newRound(){
   endGameElements.remove();
   newGames++;
-  return countdownScreen();
+  return countdownScreen(diffic);
 }
 function goMainMenu(){
-
   endGameElements.remove();
-  menuScreen.showAll();
+  mainMenu.showAll();
   activeScreen = "menu";
-  menuScreen.blackness.attr({"opacity":.9});
+  mainMenu.blackness.attr({"opacity":.9});
 }
