@@ -904,6 +904,39 @@ function detectCollisions(ts){
     }//end iterating over bombs
   } //end iterating over bombs after checking if bombs exists
 
+  //ITERATE OVER UNITS HERE. We have the blueUnits and redUnits arrays as well
+  //  as the "units" array. All we want to do is check for collisions between
+  //  units of opposite colors, so we only need to iterate over one color of
+  // unit.
+  for (var i=0; i<ts; i++){ //iterate over blue team of units
+    for (var j=0; j<ts; j++) { //iterate over red team of units within units
+      //When units of opposite color collide, kill both units.
+
+      var nBOU = blueUnits[i].rect.getBBox().y;
+      var wBOU = blueUnits[i].rect.getBBox().x;
+      var sBOU = nBOU + 50;
+      var eBOU = wBOU + 50;
+
+      var nBOU2 = redUnits[j].rect.getBBox().y;
+      var wBOU2 = redUnits[j].rect.getBBox().x;
+      var sBOU2 = nBOU2 + 50;
+      var eBOU2 = wBOU2 + 50;
+
+      if( (( nBOU < nBOU2 && nBOU2 < sBOU ) || //vertical overlap
+          ( nBOU < sBOU2 && sBOU2 < sBOU ) ||
+          ( nBOU2 < nBOU && nBOU < sBOU2 ) || //vertical overlap
+          ( nBOU2 < sBOU && sBOU < sBOU2 )) &&
+          (( wBOU < wBOU2 && wBOU2 < eBOU ) || //horizontal overlap
+          ( wBOU < eBOU2 && eBOU2 < eBOU ) ||
+          ( wBOU2 < wBOU && wBOU < eBOU2 ) ||
+          ( wBOU2 < eBOU && eBOU < eBOU2 )) &&
+          (redUnits[j].alive) && (blueUnits[i].alive)) {
+        redUnits[j].kill();
+        blueUnits[i].kill();
+      }
+    }//end iterating over units within bombs
+  }
+
   // Splice shots out of the shots array, one by one.
   while (splicers.length > 0) {
     shots.splice(splicers[0],1);
@@ -913,6 +946,7 @@ function detectCollisions(ts){
     }
   }
 
+  //End the game if necessary.
   if ((opponentDead==ts || playerDead==ts) && gameEnding == false){
     var gameResult;
     if(opponentDead==playerDead){
