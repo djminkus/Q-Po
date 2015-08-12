@@ -129,6 +129,7 @@ function startUnit(color, gx, gy, num){
   this.num = num; //which unit is it?
   this.status = "stay"; //what's it doing now?
   this.alive = true;
+  this.active = false;
   return this;
 }
 function improveUnit(unit){
@@ -144,10 +145,12 @@ function finishUnit(unit){
   unit.activate = function(){
     unit.rect.attr({"stroke":COLOR_DICT["orange"],
                               "stroke-width":4});
+    unit.active = true;
   }
   unit.deactivate = function(){
     unit.rect.attr({"stroke":"black",
                      "stroke-width":1});
+    unit.active = false;
   }
   unit.kill = function(){
     unit.alive = false;
@@ -917,10 +920,24 @@ function detectCollisions(ts){
       var sBOU = nBOU + 50;
       var eBOU = wBOU + 50;
 
+      if (blueUnits[i].active) { //adjust for highlighting on active unit
+        nBOU = nBOU + 2;
+        sBOU = sBOU - 2;
+        wBOU = wBOU + 2;
+        eBOU = eBOU - 2;
+      }
+
       var nBOU2 = redUnits[j].rect.getBBox().y;
       var wBOU2 = redUnits[j].rect.getBBox().x;
       var sBOU2 = nBOU2 + 50;
       var eBOU2 = wBOU2 + 50;
+
+      if (redUnits[j].active) { //adjust for highlighting on active unit
+        nBOU = nBOU + 2;
+        sBOU = sBOU - 2;
+        wBOU = wBOU + 2;
+        eBOU = eBOU - 2;
+      }
 
       if( (( nBOU < nBOU2 && nBOU2 < sBOU ) || //vertical overlap
           ( nBOU < sBOU2 && sBOU2 < sBOU ) ||
