@@ -113,7 +113,6 @@ function setup(){ //set up global vars and stuff
 
 setup();
 
-
 //CREATE UNIT TYPE/CLASS
 function startUnit(color, gx, gy, num){
   //for now, only blue units are numbered (6-20-15)
@@ -255,6 +254,13 @@ function finishUnit(unit){
     unit.status = "stay";
   }
 }
+function makeUnit(color,gx,gy,num){
+  var unit = new startUnit(color,gx,gy,num);
+  improveUnit(unit);
+  finishUnit(unit);
+
+  return unit;
+}
 
 function findSlot(array){
   var slot = 0
@@ -382,26 +388,22 @@ function placeUnits(difficulty){
   redUnits = [];
   switch(difficulty){
     case "hard":
-      blueUnits[2] = new startUnit("blue",5,1,2);
-      improveUnit(blueUnits[2]);
-      finishUnit(blueUnits[2]);
-      redUnits[2] = new startUnit("red",5,5,"");
-      improveUnit(redUnits[2]);
-      finishUnit(redUnits[2]);
+      blueUnits[0] =  makeUnit("blue",1,1,0);
+      redUnits[0] = makeUnit("red",1,5,"");
+      blueUnits[1] = makeUnit("blue",3,1,1);
+      redUnits[1] = makeUnit("red",3,5,"");
+      blueUnits[2] = makeUnit("blue",5,1,2);
+      redUnits[2] = makeUnit("red",5,5,"");
+      break;
     case "medium":
-      blueUnits[1] = new startUnit("blue",1,1,1);
-      improveUnit(blueUnits[1]);
-      finishUnit(blueUnits[1]);
-      redUnits[1] = new startUnit("red",1,5,"");
-      improveUnit(redUnits[1]);
-      finishUnit(redUnits[1]);
+      blueUnits[0] =  makeUnit("blue",2,1,0);
+      redUnits[0] = makeUnit("red",2,5,"");
+      blueUnits[1] = makeUnit("blue",4,1,1);
+      redUnits[1] = makeUnit("red",4,5,"");
+      break;
     case "beginner":
-      blueUnits[0] = new startUnit("blue",3,1,0);
-      improveUnit(blueUnits[0]);
-      finishUnit(blueUnits[0]);
-      redUnits[0] = new startUnit("red",3,5,"");
-      improveUnit(redUnits[0]);
-      finishUnit(redUnits[0]);
+      blueUnits[0] =  makeUnit("blue",3,1,0);
+      redUnits[0] = makeUnit("red",3,5,"");
       break;
     default:
       break;
@@ -438,7 +440,7 @@ function placeUnitsTut(){
   blueUnits[0].activate();
   controlPanel.resetIcons();
 }
-gens = [85+115, 475, 20, 10, 40]; //centers and radius -- for controlPanel
+gens = [85, 475, 20, 10, 40]; //centers and radius -- for controlPanel
 coords = [gens[0]+gens[2], gens[0]-gens[2], //x ends -- for controlPanel
           gens[1]+gens[2], gens[1]-gens[2]]; //y ends --for controlPanel
           //0 is left , 1 is right, 2 is up, 3 is down
@@ -451,8 +453,8 @@ function startControlPanel(){
   this.secLine2 = c.path("M"+ 260 + ",425 L" +
                         260 +",525");
   this.oranges = c.set().push(
-    c.rect(28+114, 428, 116, 94),
     c.rect(28, 428, 110, 94),
+    c.rect(28+114, 428, 116, 94),
     c.rect(28+114+120, 428, 110, 94)
   ).attr({"stroke":COLOR_DICT["orange"],"stroke-width":4,}).hide();
   this.icons = {
@@ -500,21 +502,21 @@ function startControlPanel(){
 function finishControlPanel(cp){
   for ( var i=1;i<3;i++ ){
     cp.icons.circles[i] = cp.icons.circles[0].clone().attr(
-      {"transform":("t" +115*Math.pow(-1,i) + "," + 0)});
+      {"transform":("t" +115*i + "," + 0)});
     cp.icons.rightArrows[i] = cp.icons.rightArrows[0].clone().attr(
-      {"transform":("t" +115*Math.pow(-1,i) + "," + 0)});
+      {"transform":("t" +115*i + "," + 0)});
     cp.icons.leftArrows[i] = cp.icons.leftArrows[0].clone().attr(
-      {"transform":("t" +115*Math.pow(-1,i) + "," + 0)});
+      {"transform":("t" +115*i + "," + 0)});
     cp.icons.upArrows[i] = cp.icons.upArrows[0].clone().attr(
-      {"transform":("t" +115*Math.pow(-1,i) + "," + 0)});
+      {"transform":("t" +115*i + "," + 0)});
     cp.icons.downArrows[i] = cp.icons.downArrows[0].clone().attr(
-      {"transform":("t" +115*Math.pow(-1,i) + "," + 0)});
+      {"transform":("t" +115*i + "," + 0)});
     cp.icons.rects[i] = cp.icons.rects[0].clone().attr(
-      {"transform":("t" +115*Math.pow(-1,i) + "," + 0)});
+      {"transform":("t" +115*i + "," + 0)});
     cp.icons.xs[i] = cp.icons.xs[0].clone().attr(
-      {"transform":("t" +115*Math.pow(-1,i) + "," + 0)});
+      {"transform":("t" +115*i + "," + 0)});
     cp.icons.bombs[i] = cp.icons.bombs[0].clone().attr(
-      {"transform":("t" +115*Math.pow(-1,i) + "," + 0)});
+      {"transform":("t" +115*i + "," + 0)});
   }
 
   cp.oranges[0].show();
@@ -1359,36 +1361,15 @@ function endGame(result){
   gui.remove();
   shots = [];
   bombs = [];
-  var gameOverBG = c.rect(180,40,240,60).attr({"fill":"white"});
-  var gameOverText = c.text(300,70,"round over")
-    .attr({"font-size":50,"fill":"white"});
-  switch (result){
-    case "tie":
-      gameOverText.attr({"text":"tie!"})
-      break;
-    case "lose":
-      gameOverText.attr({"text":"You lost.", "fill":"red"})
-      break;
-    case "win":
-      gameOverText.attr({"text":"You won!", "fill":COLOR_DICT["shot color"]})
-      break;
-    default:
-      break;
-  }
-  //mainMenu.blackness.attr({"opacity": .9 });
-  var again = new button("New Round",300,160,newRound);
-  var back = new button("Main Menu",300,260,goMainMenu);
-  endGameElements = c.set().push(gameOverText,gameOverBG,again.set,back.set);
-  //console.log(endGameElements);
-  activeScreen="menu";
+  endGameMenu = makeEndGameMenu(result);
 }
 function newRound(){
-  endGameElements.remove();
+  endGameMenu.all.remove();
   newGames++;
   return countdownScreen(diffic);
 }
 function goMainMenu(){
-  endGameElements.remove();
+  endGameMenu.all.remove();
   mainMenu.showAll();
   activeScreen = "menu";
   mainMenu.blackness.attr({"opacity":.9});

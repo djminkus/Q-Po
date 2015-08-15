@@ -65,5 +65,36 @@ var selectDifficulty = function(){
     return this;
 }
 
+var makeEndGameMenu = function(result){
+  this.gameOverBG = c.rect(10,10,containerWidth()-20,130).attr({"fill":"white"});
+  this.gameOverText = c.text(300,70,"round over")
+    .attr({"font-size":50,"fill":"black"});
+  switch (result){
+    case "tie":
+      this.gameOverText.attr({"text":"tie!"});
+      break;
+    case "lose":
+      this.gameOverText.attr({"text":"Defeat."});
+      break;
+    case "win":
+      this.gameOverText.attr({"text":"Victory!"});
+      break;
+    default:
+      break;
+  }
+  //mainMenu.blackness.attr({"opacity": .9 });
+  this.again = new button("New Round",300,180,newRound);
+  this.back = new button("Main Menu",300,380,goMainMenu);
+  this.selectDiff = new button("Select Difficulty",300,280,function(e){
+    endGameMenu.all.hide();
+    difficultySelectMenu = selectDifficulty();
+  });
+
+  this.all = c.set().push(this.gameOverText,this.gameOverBG,this.again.set,this.back.set,this.selectDiff.set);
+  //console.log(endGameElements);
+  activeScreen="menu";
+  return this;
+};
+
 //difficultySelectMenu.all.push(difficultySelectMenu.blackness, difficultySelectMenu.title);
 //difficultySelectMenu.all.remove();
