@@ -18,12 +18,13 @@ var mainMenu = {
     mainMenu.all.hide();
     //mainMenu.blackness.show();
   }),
+  /*
   howToPlayButton: new button("How to Play",300,390,function(e){
     mainMenu.all.hide();
     mainMenu.blackness.show();
-
     startHowTo(); //this function is defined in "qpo03.js"
   }),
+  */
   //pressEnter : c.text(300,340,"press enter to start").attr({"font-size":15,"fill":"white"}),
 
   all : c.set(),
@@ -33,8 +34,7 @@ var mainMenu = {
   },
 };
 
-mainMenu.all.push(mainMenu.blackness, mainMenu.title, mainMenu.startGameButton.set,
-  mainMenu.howToPlayButton.set);
+mainMenu.all.push(mainMenu.blackness, mainMenu.title, mainMenu.startGameButton.set);
 
 var selectDifficulty = function(){
     this.blackness = c.rect(0,0,c.width,c.height).attr({"fill":"black","opacity":.9});
@@ -83,9 +83,9 @@ var makeEndGameMenu = function(result){
       break;
   }
   //mainMenu.blackness.attr({"opacity": .9 });
-  this.again = new button("New Round",300,180,newRound);
-  this.back = new button("Main Menu",300,380,goMainMenu);
-  this.selectDiff = new button("Select Difficulty",300,280,function(e){
+  this.again = new button("New Round",300,220,newRound);
+  this.back = new button("Main Menu",300,420,goMainMenu);
+  this.selectDiff = new button("Select Difficulty",300,320,function(e){
     endGameMenu.all.hide();
     difficultySelectMenu = selectDifficulty();
   });

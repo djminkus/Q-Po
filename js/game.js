@@ -12,20 +12,24 @@ function containerWidth(){
 
 /** Q-PO : a JS game by @akaDavidGarrett
 SHORT-TERM TODO:
-  Destroy interval-based animations in-game (shots, bombs)
-  Implement pause function
-  Balance shot animations (red v. blue)
+  [   ] Make walls stop units' motion in wall's direction
+  [ x ] Fix unit movement animations (currently depend on unit's grid position)
+  [ x ] Balance shot animations (red v. blue)
 
 LONG-TERM TODO:
   See Issues/Feature Requests on Github:
     https://github.com/djminkus/QPO/issues
-  Create a tutorial
+  [   ] adjust tutorial
   Make menus keyboard-controlled
   Make a server
   Enable PVP (Implement user login system)
   Implement Ranking System
   Implement Subscription System
   Throw $$ tourney
+  [   ] Implement pause function
+  [ x ] Create a tutorial
+
+
 Contents of this code: (updated June 2)
   VAR DECLARATIONS
 
@@ -87,18 +91,21 @@ function setup(){ //set up global vars and stuff
   gui = c.set();
   activeUnit = 0;
   newGames = 0;
+  game = {
+    "paused":false,
+  }
   gameEnding = false;
   playerColor = "blue";
   opponentColor = "red";
   guiCoords = {
     "gameBoard" : {
-      "squareSize" : 0,
-      "columns" : 0,
-      "rows" : 0,
-      "leftWall" : 0,
-      "rightWall" : 0,
-      "topWall" : 0,
-      "bottomWall" : 0,
+      "squareSize" : 50,
+      "columns" : 7,
+      "rows" : 7,
+      "leftWall" : 25,
+      "topWall" : 75
+    },
+    "gamePanel" : {
       "width" : 600,
       "height" : 600
     },
@@ -107,6 +114,10 @@ function setup(){ //set up global vars and stuff
       "height":600
     }
   };
+  guiCoords.gameBoard.width = guiCoords.gameBoard.columns * guiCoords.gameBoard.squareSize,
+  guiCoords.gameBoard.height = guiCoords.gameBoard.rows * guiCoords.gameBoard.squareSize;
+  guiCoords.gameBoard.rightWall = guiCoords.gameBoard.leftWall + guiCoords.gameBoard.width;
+  guiCoords.gameBoard.bottomWall = guiCoords.gameBoard.topWall + guiCoords.gameBoard.height;
   bombSize = 100;
   debug = false;
 }
@@ -126,21 +137,17 @@ function startUnit(color, gx, gy, num){
   this.relx = 0; //relative grid position
   this.rely = 0;
   this.num = num; //which unit is it?
-  this.status = "stay"; //what's it doing now?
   this.alive = true;
   this.active = false;
+  this.shotReady = true;
+  this.bombReady = true;
   return this;
 }
 function improveUnit(unit){
   unit.phys.push(unit.rect);
   gui.push(unit.phys);
-  unit.trans = function(){
-    return "t" + 50*unit.relx + "," +
-      50*unit.rely;
-  }
 }
 function finishUnit(unit){
-  //TODO: make the icon move with the rects
   unit.activate = function(){
     unit.rect.attr({"stroke":COLOR_DICT["orange"],
                               "stroke-width":4});
@@ -151,10 +158,14 @@ function finishUnit(unit){
                      "stroke-width":1});
     unit.active = false;
   }
+  unit.reload = function(){
+    unit.bombReady = true;
+    unit.shotReady = true;
+  }
   unit.kill = function(){
     unit.alive = false;
-    unit.phys.stop();
-    unit.phys.animate({"opacity":0},2000,function(){unit.phys.hide()});
+    unit.rect.stop();
+    unit.rect.animate({"opacity":0},2000,function(){unit.rect.hide()});
 
     switch(unit.team){
       case opponentColor:
@@ -172,71 +183,63 @@ function finishUnit(unit){
     }
   }
   unit.moveLeft = function(){
-    if (unit.x > 0) {
-      unit.status = "left";
-      unit.x = unit.x - 1;
-      unit.relx = unit.relx - 1;
-      var anim = Raphael.animation({
-        "transform":unit.trans()
-      },3000*timeScale);
-      unit.phys.animate(anim);
+    if (unit.rect.attr('x') > guiCoords.gameBoard.leftWall) {
+      unit.rect.stop();
+      var anim = Raphael.animation( {"x":unit.rect.attr('x') - guiCoords.gameBoard.columns*guiCoords.gameBoard.squareSize },
+        guiCoords.gameBoard.columns*1500*timeScale);
+      unit.rect.animate(anim);
     }
   }
   unit.moveUp = function(){
-    if (unit.y > 0) {
-      unit.status = "up";
-      unit.y = unit.y - 1;
-      unit.rely = unit.rely - 1;
-      var anim = Raphael.animation({
-        "transform":unit.trans()
-      },3000*timeScale);
-      unit.phys.animate(anim);
+    if (unit.rect.attr('y') > guiCoords.gameBoard.topWall) {
+      unit.rect.stop();
+      var anim = Raphael.animation( {"y":unit.rect.attr('y') - guiCoords.gameBoard.rows*guiCoords.gameBoard.squareSize},
+        guiCoords.gameBoard.rows*1500*timeScale);
+      unit.rect.animate(anim);
     }
   }
   unit.moveRight = function(){
-    if (unit.x < 6) {
-      unit.status = "right";
-      unit.x = unit.x + 1;
-      unit.relx = unit.relx + 1;
-      var anim = Raphael.animation({
-        "transform":unit.trans()
-      },3000*timeScale);
-      unit.phys.animate(anim);
+    if (unit.rect.attr('x') + unit.rect.attr('width') < guiCoords.gameBoard.rightWall) {
+      console.log("Move right!");
+      unit.rect.stop();
+      var anim = Raphael.animation( {"x":unit.rect.attr('x') + guiCoords.gameBoard.columns*guiCoords.gameBoard.squareSize},
+        guiCoords.gameBoard.columns*1500*timeScale);
+      unit.rect.animate(anim);
     }
+    console.log("isaidmoveright");
+    console.log(unit.rect.attr("x"));
   }
   unit.moveDown = function(){
-    if (unit.y < 6) {
-      unit.status = "down";
-      unit.y = unit.y + 1;
-      unit.rely = unit.rely + 1;
-      var anim = Raphael.animation({
-        "transform":unit.trans()
-      },3000*timeScale);
-      unit.phys.animate(anim);
+    if (unit.rect.attr('y') + unit.rect.attr('height') < guiCoords.gameBoard.bottomWall) {
+      unit.rect.stop();
+      var anim = Raphael.animation( {"y":unit.rect.attr('y') + guiCoords.gameBoard.rows*guiCoords.gameBoard.squareSize},
+        guiCoords.gameBoard.rows*1500*timeScale);
+      unit.rect.animate(anim);
     }
   }
   unit.bomb = function(){
-    unit.status = "bomb";
     var bomb;
     bomb = new startBomb(unit);
     improveBomb(bomb);
     finishBomb(bomb);
     bomb.next();
+    unit.bombReady = false;
   }
   unit.shoot = function(){
-    unit.status = "shoot";
     var shot, anim;
     switch(unit.team){
       case "blue":
-        shot = c.rect(25 + 50*unit.x + 22,
-                      127 + 50*unit.y, 6,2);
+        shot = c.rect(unit.rect.attr('x') + 22,
+                      unit.rect.attr('y') + unit.rect.attr('height') + 2,
+                      6, 2);
         anim = Raphael.animation({"height":25, "y": shot.attr('y') + 0}, 500*timeScale, function(){
           shot.animate({"y": shot.attr('y') + 125*7}, 3000*7);
         });
         break;
       case "red":
-        shot = c.rect(25 + 50*unit.x + 22,
-                      72 + 50*unit.y,6,2);
+        shot = c.rect(unit.rect.attr('x') + 22,
+                      unit.rect.attr('y') - 4,
+                      6, 2);
         anim = Raphael.animation({"height":25, "y": shot.attr('y') - 25}, 500*timeScale, function(){
           shot.animate({"y": shot.attr('y') - 125*7}, 3000*7);
         });
@@ -249,9 +252,10 @@ function finishUnit(unit){
     shot.animate(anim);
     gui.push(shot);
     shots.push(shot);
+    unit.shotReady = false;
   }
   unit.stay = function(){
-    unit.status = "stay";
+    unit.rect.stop();
   }
 }
 function makeUnit(color,gx,gy,num){
@@ -281,12 +285,12 @@ function startBomb(su){ //su = source unit
   this.exploded = false;
   switch(this.team){
     case "blue":
-      this.phys = c.rect(25 + 50*su.x + 18,
-                    143 + 50*su.y,14,14);
+      this.phys = c.rect(su.rect.attr("x") + 18,
+                    su.rect.attr("y") + guiCoords.gameBoard.squareSize + 20 , 14, 14);
       break;
     case "red":
-      this.phys = c.rect(25 + 50*su.x + 18,
-                    43 + 50*su.y,14,14);
+      this.phys = c.rect(su.rect.attr("x") + 18,
+                  su.rect.attr("y") - 20, 14, 14);
       break;
   }
   gui.push(this.phys);
@@ -358,8 +362,9 @@ function setUpGameClock(){
   gui.push(gameClock);
 }
 function drawBoard(cols, rows){
-  var outline = c.rect(25, 75, 350, 350).attr({
-    "stroke-width": 3
+  var outline = c.rect(guiCoords.gameBoard.leftWall, guiCoords.gameBoard.topWall,
+                       guiCoords.gameBoard.width, guiCoords.gameBoard.height).attr({
+                       "stroke-width": 3
   });
   gui.push(outline);
   guiCoords.gameBoard.columns = cols;
@@ -571,7 +576,7 @@ function turnTimer(){
   gui.push(timer);
 }
 function debugPanel(){
-  this.border = c.rect(guiCoords.gameBoard.width, 0, guiCoords.debug.width, guiCoords.debug.height)
+  this.border = c.rect(guiCoords.gamePanel.width, 0, guiCoords.debug.width, guiCoords.debug.height)
     .attr({"stroke-width":2,"stroke":"blue"});
   this.title = c.text(900 - guiCoords.debug.width/2 , 30, "debug")
     .attr({"font-family":"'Open Sans',sans-serif","font-size":30});
@@ -613,23 +618,23 @@ function updateAU(ts){
     case 2:
       switch(activeUnit){
           case 0:
-            blueUnits[1].activate();
-            blueUnits[0].deactivate();
-            controlPanel.oranges[0].hide();
-            controlPanel.oranges[1].show();
-            activeUnit++;
             if (blueUnits[1].alive){
-              break;
+              blueUnits[1].activate();
+              blueUnits[0].deactivate();
+              controlPanel.oranges[0].hide();
+              controlPanel.oranges[1].show();
+              activeUnit = 1;
             }
+            break;
           case 1:
-            blueUnits[0].activate();
-            blueUnits[1].deactivate();
-            controlPanel.oranges[1].hide();
-            controlPanel.oranges[0].show();
-            activeUnit = 0;
             if (blueUnits[0].alive){
-              break;
+              blueUnits[0].activate();
+              blueUnits[1].deactivate();
+              controlPanel.oranges[1].hide();
+              controlPanel.oranges[0].show();
+              activeUnit = 0;
             }
+            break;
           default:
             "unexpected switch condition";
             break;
@@ -638,39 +643,48 @@ function updateAU(ts){
     case 3:
       switch(activeUnit){
         case 0:
-          blueUnits[1].activate();
-          blueUnits[0].deactivate();
-          blueUnits[2].deactivate();
-          controlPanel.oranges[0].hide();
-          controlPanel.oranges[1].show();
-          activeUnit++;
           if (blueUnits[1].alive){
-            break;
+            blueUnits[0].deactivate();
+            blueUnits[1].activate();
+            controlPanel.oranges[0].hide();
+            controlPanel.oranges[1].show();
+            activeUnit = 1;
+          } else if (blueUnits[2].alive){
+            blueUnits[0].deactivate();
+            blueUnits[2].activate();
+            controlPanel.oranges[0].hide();
+            controlPanel.oranges[2].show();
+            activeUnit = 2 ;
           }
+          break;
         case 1:
           if (blueUnits[2].alive){
-            blueUnits[2].activate();
             blueUnits[1].deactivate();
+            blueUnits[2].activate();
             controlPanel.oranges[1].hide();
             controlPanel.oranges[2].show();
-            activeUnit = 0;
+            activeUnit = 2;
+          } else if (blueUnits[0].alive){
+            blueUnits[1].deactivate();
+            blueUnits[0].activate();
+            controlPanel.oranges[1].hide();
+            controlPanel.oranges[0].show();
+            activeUnit = 0 ;
           }
           break;
         case 2:
           if (blueUnits[0].alive){
-            blueUnits[0].activate();
-            blueUnits[1].deactivate();
             blueUnits[2].deactivate();
+            blueUnits[0].activate();
             controlPanel.oranges[2].hide();
             controlPanel.oranges[0].show();
             activeUnit = 0;
           } else if (blueUnits[1].alive){
-            blueUnits[1].activate();
-            blueUnits[0].deactivate();
             blueUnits[2].deactivate();
+            blueUnits[1].activate();
             controlPanel.oranges[2].hide();
             controlPanel.oranges[1].show();
-            activeUnit = 1;
+            activeUnit = 1 ;
           }
           break;
       }
@@ -709,32 +723,7 @@ function newTurn(ts){ //pass in teamSize
   for (var i=0; i<teamSize; i++){
     //generate random moves for red
     redMovesQueue[i] = moves[Math.round(Math.random()*6)]
-    //execute all moves
-    if (blueUnits[i].alive){
-      switch(blueMovesQueue[i]) {
-        case "moveLeft" :
-          blueUnits[i].moveLeft();
-          break;
-        case "moveUp" :
-          blueUnits[i].moveUp();
-          break;
-        case "moveRight" :
-          blueUnits[i].moveRight();
-          break;
-        case "moveDown" :
-          blueUnits[i].moveDown();
-          break;
-        case "shoot" :
-          blueUnits[i].shoot();
-          break;
-        case "bomb" :
-          blueUnits[i].bomb();
-          break;
-        case "stay" :
-          blueUnits[i].stay();
-          break;
-      }
-    }
+    //execute red's moves
     if (redUnits[i].alive){
       switch(redMovesQueue[i]) {
         case "moveLeft" :
@@ -758,25 +747,25 @@ function newTurn(ts){ //pass in teamSize
           redUnits[i].stay();
       }
     }
-    /* update control panel
-    controlPanel.actives[i].hide();
-    controlPanel.actives[i] = controlPanel.icons.circles[i];
-    controlpanel.actives[i].show();
-    */
+    //reload blue's weapons:
+    blueUnits[i].reload();
   }
 
-  controlPanel.resetIcons();
+
+  //controlPanel.resetIcons();
   timer.attr({segment: [450, 250, 50, -90, 269]});
   timer.animate({segment: [450, 250, 50, -90, -90]}, 3000);
-  blueMovesQueue = [];
 }
 function detectCollisions(ts){
   /* COLLISION DETECTION, a function
   to be called every 17 ms */
   var splicers = []; //used for destroying references to shots once they're gone
-  //iterate over shots --> units and bombs
-  //iterate over bombs --> bombs and units
-  //Next, iterate over units --> units, and maybe shots --> shots
+  /* OUTLINE
+  iterate over shots --> units and bombs
+  iterate over bombs --> bombs and units
+  iterate over units --> units
+  TODO (MAYBE): shots --> shots
+  */
   for (var i=0; i<shots.length; i++) { //iterate over shots
     var sBOS = shots[i].getBBox().y2;
     var nBOS = shots[i].getBBox().y;
@@ -914,20 +903,63 @@ function detectCollisions(ts){
   //  units of opposite colors, so we only need to iterate over one color of
   // unit.
   for (var i=0; i<ts; i++){ //iterate over blue team of units
+
+    //Get the unit's borders
+    var nBOU = blueUnits[i].rect.getBBox().y;
+    var wBOU = blueUnits[i].rect.getBBox().x;
+    var sBOU = nBOU + 50;
+    var eBOU = wBOU + 50;
+
+    if (blueUnits[i].active) { //adjust for highlighting on active unit
+      nBOU = nBOU + 2;
+      sBOU = sBOU - 2;
+      wBOU = wBOU + 2;
+      eBOU = eBOU - 2;
+    }
+
+    //if the unit has hit a wall, stop the unit and move it outside the wall.
+    if( nBOU < guiCoords.gameBoard.topWall ||
+        wBOU < guiCoords.gameBoard.leftWall ||
+        sBOU > guiCoords.gameBoard.bottomWall ||
+        eBOU > guiCoords.gameBoard.rightWall
+      ){
+      blueUnits[i].rect.stop();
+      if (nBOU < guiCoords.gameBoard.topWall){ blueUnits[i].rect.attr({"y":guiCoords.gameBoard.topWall}) }
+      if (wBOU < guiCoords.gameBoard.leftWall){ blueUnits[i].rect.attr({"x":guiCoords.gameBoard.leftWall}) }
+      if (sBOU > guiCoords.gameBoard.bottomWall){ blueUnits[i].rect.attr({"y": guiCoords.gameBoard.bottomWall-guiCoords.gameBoard.squareSize }) }
+      if (eBOU > guiCoords.gameBoard.rightWall){ blueUnits[i].rect.attr({"x": guiCoords.gameBoard.rightWall-guiCoords.gameBoard.squareSize }) }
+    }
+
+    //WALL DETECTION RED
+    //get the unit's borders:
+    var nBOUr = redUnits[i].rect.getBBox().y;
+    var wBOUr = redUnits[i].rect.getBBox().x;
+    var sBOUr = nBOUr + 50;
+    var eBOUr = wBOUr + 50;
+
+    if (redUnits[i].active) { //adjust for highlighting on active unit
+      nBOUr = nBOUr + 2;
+      sBOUr = sBOUr - 2;
+      wBOUr = wBOUr + 2;
+      eBOUr = eBOUr - 2;
+    }
+
+    //if the unit has hit a wall, stop the unit.
+    if( nBOUr < guiCoords.gameBoard.topWall ||
+        wBOUr < guiCoords.gameBoard.leftWall ||
+        sBOUr > guiCoords.gameBoard.bottomWall ||
+        eBOUr > guiCoords.gameBoard.rightWall
+      ){
+      redUnits[i].rect.stop();
+      if (nBOUr < guiCoords.gameBoard.topWall){ redUnits[i].rect.attr({"y":guiCoords.gameBoard.topWall}) }
+      if (wBOUr < guiCoords.gameBoard.leftWall){ redUnits[i].rect.attr({"x":guiCoords.gameBoard.leftWall}) }
+      if (sBOUr > guiCoords.gameBoard.bottomWall){ redUnits[i].rect.attr({"y": guiCoords.gameBoard.bottomWall-guiCoords.gameBoard.squareSize }) }
+      if (eBOUr > guiCoords.gameBoard.rightWall){ redUnits[i].rect.attr({"x": guiCoords.gameBoard.rightWall-guiCoords.gameBoard.squareSize }) }
+
+    }
+
     for (var j=0; j<ts; j++) { //iterate over red team of units within units
       //When units of opposite color collide, kill both units.
-
-      var nBOU = blueUnits[i].rect.getBBox().y;
-      var wBOU = blueUnits[i].rect.getBBox().x;
-      var sBOU = nBOU + 50;
-      var eBOU = wBOU + 50;
-
-      if (blueUnits[i].active) { //adjust for highlighting on active unit
-        nBOU = nBOU + 2;
-        sBOU = sBOU - 2;
-        wBOU = wBOU + 2;
-        eBOU = eBOU - 2;
-      }
 
       var nBOU2 = redUnits[j].rect.getBBox().y;
       var wBOU2 = redUnits[j].rect.getBBox().x;
@@ -953,8 +985,8 @@ function detectCollisions(ts){
         redUnits[j].kill();
         blueUnits[i].kill();
       }
-    }//end iterating over units within bombs
-  }
+    }//end iterating over red units
+  } //end iterating over blue units
 
   // Splice shots out of the shots array, one by one.
   while (splicers.length > 0) {
@@ -975,6 +1007,7 @@ function detectCollisions(ts){
     } else {
       gameResult = "lose";
     }
+    activeUnit = -1;
     gameEnding = true;
     mainMenu.blackness.animate({"opacity": .9},2000);
     gui.toBack();
@@ -1001,7 +1034,9 @@ $(window).keydown(function(event){
       switch (event.keyCode){
         case 81: //q
           event.preventDefault();
-          blueMovesQueue[activeUnit] = "bomb";
+          if (blueUnits[activeUnit].bombReady){
+            blueUnits[activeUnit].bomb();
+          };
           controlPanel.actives[activeUnit].hide();
           controlPanel.actives[activeUnit] =
             controlPanel.icons.bombs[activeUnit];
@@ -1011,7 +1046,9 @@ $(window).keydown(function(event){
           break;
         case 69: //e
           event.preventDefault();
-          blueMovesQueue[activeUnit] ="shoot";
+          if (blueUnits[activeUnit].shotReady){
+            blueUnits[activeUnit].shoot();
+          };
           controlPanel.actives[activeUnit].hide();
           controlPanel.actives[activeUnit] =
             controlPanel.icons.rects[activeUnit];
@@ -1019,9 +1056,9 @@ $(window).keydown(function(event){
           controlPanel.actives[activeUnit].show();
           updateAU(teamSize);
           break;
-        case 65: //a
+        case 65: //a (move left)
           event.preventDefault();
-          blueMovesQueue[activeUnit]="moveLeft";
+          blueUnits[activeUnit].moveLeft();
           controlPanel.actives[activeUnit].hide();
           controlPanel.actives[activeUnit] =
             controlPanel.icons.leftArrows[activeUnit];
@@ -1029,43 +1066,52 @@ $(window).keydown(function(event){
           controlPanel.actives[activeUnit].show();
           updateAU(teamSize);
           break;
-        case 87: //w
+        case 87: //w (move up)
           event.preventDefault();
-          blueMovesQueue[activeUnit] = "moveUp";
+          blueUnits[activeUnit].moveUp();
           controlPanel.actives[activeUnit].hide();
           controlPanel.actives[activeUnit] =
             controlPanel.icons.upArrows[activeUnit];
+          gui.push(controlPanel.actives[activeUnit]);
           controlPanel.actives[activeUnit].show();
           updateAU(teamSize);
           break;
-        case 68: //d
+        case 68: //d (move right)
           event.preventDefault();
-          blueMovesQueue[activeUnit] ="moveRight";
+          blueUnits[activeUnit].moveRight();
           controlPanel.actives[activeUnit].hide();
           controlPanel.actives[activeUnit] =
             controlPanel.icons.rightArrows[activeUnit];
+          gui.push(controlPanel.actives[activeUnit]);
           controlPanel.actives[activeUnit].show();
           updateAU(teamSize);
           break;
-        case 83: //"s" key
+        case 83: //s (move down)
           event.preventDefault();
-          blueMovesQueue[activeUnit] = "moveDown" ;
+          blueUnits[activeUnit].moveDown();
           controlPanel.actives[activeUnit].hide();
           controlPanel.actives[activeUnit] =
             controlPanel.icons.downArrows[activeUnit];
+          gui.push(controlPanel.actives[activeUnit]);
           controlPanel.actives[activeUnit].show();
           updateAU(teamSize);
           break;
         case 88: //"x" key
-          blueMovesQueue[activeUnit] = "stay";
+          blueUnits[activeUnit].stay();
           controlPanel.actives[activeUnit].hide();
           controlPanel.actives[activeUnit] =
             controlPanel.icons.circles[activeUnit];
+          gui.push(controlPanel.actives[activeUnit]);
           controlPanel.actives[activeUnit].show();
           updateAU(teamSize);
           break;
         case 27: //escape key
-          gui.pause();
+          if (game.paused){
+            gui.resume();
+          } else {
+            gui.pause();
+          }
+
 
         default: //anything else
           ;
