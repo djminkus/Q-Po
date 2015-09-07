@@ -39,7 +39,7 @@ Contents of this code: (updated June 2)
 
 
   INCREMENT FUNCTIONS
-    updateAU() -- updates which unit is highlighted with orange
+    updateBlueAU() -- updates which unit is highlighted with orange
       (keyboard presses queue moves for the Active Unit)
     tick() -- makes the seconds clock tick down
     newTurn() -- starts a new turn, called every 3 seconds
@@ -70,6 +70,7 @@ qpoGame = {
   },
   "unit" : {},
   "bomb" : {},
+  "multiplayer":false
 };
 
 function setup(){ //set up global vars and stuff
@@ -89,7 +90,8 @@ function setup(){ //set up global vars and stuff
   //bsplicers = [];
   moves = ["moveUp","moveDown","moveLeft","moveRight","shoot","bomb","stay"];
   gui = c.set();
-  activeUnit = 0;
+  blueActiveUnit = 0;
+  redActiveUnit = 0;
   newGames = 0;
   game = {
     "paused":false,
@@ -168,17 +170,17 @@ function finishUnit(unit){
     unit.rect.animate({"opacity":0},2000,function(){unit.rect.hide()});
 
     switch(unit.team){
-      case opponentColor:
-        opponentDead++;
+      case "red":
+        redDead++;
         break;
-      case playerColor:
-        playerDead++;
+      case "blue":
+        blueDead++;
         var number = unit.num;
         controlPanel.actives[number].hide();
         controlPanel.actives[number] = controlPanel.icons.xs[number];
         gui.push(controlPanel.actives[number]);
         controlPanel.actives[number].show();
-        updateAU(teamSize);
+        updateBlueAU(teamSize);
         break;
     }
   }
@@ -394,21 +396,21 @@ function placeUnits(difficulty){
   switch(difficulty){
     case "hard":
       blueUnits[0] =  makeUnit("blue",1,1,0);
-      redUnits[0] = makeUnit("red",1,5,"");
+      redUnits[0] = makeUnit("red",1,5,0);
       blueUnits[1] = makeUnit("blue",3,1,1);
-      redUnits[1] = makeUnit("red",3,5,"");
+      redUnits[1] = makeUnit("red",3,5,1);
       blueUnits[2] = makeUnit("blue",5,1,2);
-      redUnits[2] = makeUnit("red",5,5,"");
+      redUnits[2] = makeUnit("red",5,5,2);
       break;
     case "medium":
       blueUnits[0] =  makeUnit("blue",2,1,0);
-      redUnits[0] = makeUnit("red",2,5,"");
+      redUnits[0] = makeUnit("red",2,5,0);
       blueUnits[1] = makeUnit("blue",4,1,1);
-      redUnits[1] = makeUnit("red",4,5,"");
+      redUnits[1] = makeUnit("red",4,5,1);
       break;
     case "beginner":
       blueUnits[0] =  makeUnit("blue",3,1,0);
-      redUnits[0] = makeUnit("red",3,5,"");
+      redUnits[0] = makeUnit("red",3,5,0);
       break;
     default:
       break;
@@ -423,6 +425,9 @@ function placeUnits(difficulty){
   }
 
   blueUnits[0].activate();
+  if(qpoGame.multiplayer){
+    redUnits[0].activate();
+  }
   controlPanel.resetIcons();
 }
 function placeUnitsTut(){
@@ -602,11 +607,11 @@ function drawGUI(){
 }
 
 //INCREMENT FUNCTIONS (no new Raph elements created)
-function updateAU(ts){
+function updateBlueAU(ts){
   /*
   highlight the new active unit,
   highlight the new part of the control panel,
-  update the "activeUnit" var
+  update the "blueActiveUnit" var and the "red" one
 
   if 1v1, just keep current unit active.
   if 2v2, check if other unit is alive, and switch to it if so.
@@ -616,14 +621,14 @@ function updateAU(ts){
     case 1:
       break;
     case 2:
-      switch(activeUnit){
+      switch(blueActiveUnit){
           case 0:
             if (blueUnits[1].alive){
               blueUnits[1].activate();
               blueUnits[0].deactivate();
               controlPanel.oranges[0].hide();
               controlPanel.oranges[1].show();
-              activeUnit = 1;
+              blueActiveUnit = 1;
             }
             break;
           case 1:
@@ -632,7 +637,7 @@ function updateAU(ts){
               blueUnits[1].deactivate();
               controlPanel.oranges[1].hide();
               controlPanel.oranges[0].show();
-              activeUnit = 0;
+              blueActiveUnit = 0;
             }
             break;
           default:
@@ -641,20 +646,20 @@ function updateAU(ts){
         }
       break;
     case 3:
-      switch(activeUnit){
+      switch(blueActiveUnit){
         case 0:
           if (blueUnits[1].alive){
             blueUnits[0].deactivate();
             blueUnits[1].activate();
             controlPanel.oranges[0].hide();
             controlPanel.oranges[1].show();
-            activeUnit = 1;
+            blueActiveUnit = 1;
           } else if (blueUnits[2].alive){
             blueUnits[0].deactivate();
             blueUnits[2].activate();
             controlPanel.oranges[0].hide();
             controlPanel.oranges[2].show();
-            activeUnit = 2 ;
+            blueActiveUnit = 2 ;
           }
           break;
         case 1:
@@ -663,13 +668,13 @@ function updateAU(ts){
             blueUnits[2].activate();
             controlPanel.oranges[1].hide();
             controlPanel.oranges[2].show();
-            activeUnit = 2;
+            blueActiveUnit = 2;
           } else if (blueUnits[0].alive){
             blueUnits[1].deactivate();
             blueUnits[0].activate();
             controlPanel.oranges[1].hide();
             controlPanel.oranges[0].show();
-            activeUnit = 0 ;
+            blueActiveUnit = 0 ;
           }
           break;
         case 2:
@@ -678,13 +683,13 @@ function updateAU(ts){
             blueUnits[0].activate();
             controlPanel.oranges[2].hide();
             controlPanel.oranges[0].show();
-            activeUnit = 0;
+            blueActiveUnit = 0;
           } else if (blueUnits[1].alive){
             blueUnits[2].deactivate();
             blueUnits[1].activate();
             controlPanel.oranges[2].hide();
             controlPanel.oranges[1].show();
-            activeUnit = 1 ;
+            blueActiveUnit = 1 ;
           }
           break;
       }
@@ -693,9 +698,100 @@ function updateAU(ts){
       console.log("unexpected switch condition");
       break;
   }
-
-
 }
+function updateRedAU(ts){
+  /*
+  highlight the new active unit,
+  highlight the new part of the control panel,
+  update the "redActiveUnit" var
+
+  if 1v1, just keep current unit active.
+  if 2v2, check if other unit is alive, and switch to it if so.
+  if 3v3, check if next unit it alive, and switch to it if so.
+  */
+  switch(ts){
+    case 1:
+      break;
+    case 2:
+      switch(redActiveUnit){
+          case 0:
+            if (redUnits[1].alive){
+              redUnits[1].activate();
+              redUnits[0].deactivate();
+              controlPanel.oranges[0].hide();
+              controlPanel.oranges[1].show();
+              redActiveUnit = 1;
+            }
+            break;
+          case 1:
+            if (redUnits[0].alive){
+              redUnits[0].activate();
+              redUnits[1].deactivate();
+              controlPanel.oranges[1].hide();
+              controlPanel.oranges[0].show();
+              redActiveUnit = 0;
+            }
+            break;
+          default:
+            "unexpected switch condition";
+            break;
+        }
+      break;
+    case 3:
+      switch(redActiveUnit){
+        case 0:
+          if (redUnits[1].alive){
+            redUnits[0].deactivate();
+            redUnits[1].activate();
+            controlPanel.oranges[0].hide();
+            controlPanel.oranges[1].show();
+            redActiveUnit = 1;
+          } else if (redUnits[2].alive){
+            redUnits[0].deactivate();
+            redUnits[2].activate();
+            controlPanel.oranges[0].hide();
+            controlPanel.oranges[2].show();
+            redActiveUnit = 2 ;
+          }
+          break;
+        case 1:
+          if (redUnits[2].alive){
+            redUnits[1].deactivate();
+            redUnits[2].activate();
+            controlPanel.oranges[1].hide();
+            controlPanel.oranges[2].show();
+            redActiveUnit = 2;
+          } else if (redUnits[0].alive){
+            redUnits[1].deactivate();
+            redUnits[0].activate();
+            controlPanel.oranges[1].hide();
+            controlPanel.oranges[0].show();
+            redActiveUnit = 0 ;
+          }
+          break;
+        case 2:
+          if (redUnits[0].alive){
+            redUnits[2].deactivate();
+            redUnits[0].activate();
+            controlPanel.oranges[2].hide();
+            controlPanel.oranges[0].show();
+            redActiveUnit = 0;
+          } else if (redUnits[1].alive){
+            redUnits[2].deactivate();
+            redUnits[1].activate();
+            controlPanel.oranges[2].hide();
+            controlPanel.oranges[1].show();
+            redActiveUnit = 1 ;
+          }
+          break;
+      }
+      break;
+    default:
+      console.log("unexpected switch condition");
+      break;
+  }
+}
+
 function tick(){
   clock = gameClock.data("value");
   gameClock.data("value",clock-1);
@@ -719,36 +815,42 @@ function newTurn(ts){ //pass in teamSize
   clock is divisible by 3
    */
   turnNumber++;
-  //execute all moves and reset control panel:
+
+
   for (var i=0; i<teamSize; i++){
-    //generate random moves for red
-    redMovesQueue[i] = moves[Math.round(Math.random()*6)]
-    //execute red's moves
-    if (redUnits[i].alive){
-      switch(redMovesQueue[i]) {
-        case "moveLeft" :
-          redUnits[i].moveLeft();
-          break;
-        case "moveUp" :
-          redUnits[i].moveUp();
-          break;
-        case "moveRight" :
-          redUnits[i].moveRight();
-          break;
-        case "moveDown" :
-          redUnits[i].moveDown();
-          break;
-        case "shoot" :
-          redUnits[i].shoot();
-          break;
-        case "bomb" :
-          redUnits[i].bomb();
-        case "stay" :
-          redUnits[i].stay();
+    if (!qpoGame.multiplayer){
+      //in single player, generate random moves for red
+      redMovesQueue[i] = moves[Math.round(Math.random()*6)]
+      //and execute these moves
+      if (redUnits[i].alive){
+        switch(redMovesQueue[i]) {
+          case "moveLeft" :
+            redUnits[i].moveLeft();
+            break;
+          case "moveUp" :
+            redUnits[i].moveUp();
+            break;
+          case "moveRight" :
+            redUnits[i].moveRight();
+            break;
+          case "moveDown" :
+            redUnits[i].moveDown();
+            break;
+          case "shoot" :
+            redUnits[i].shoot();
+            break;
+          case "bomb" :
+            redUnits[i].bomb();
+          case "stay" :
+            redUnits[i].stay();
+        }
       }
+
     }
-    //reload blue's weapons:
+
+    //reload all weapons:
     blueUnits[i].reload();
+    redUnits[i].reload();
   }
 
 
@@ -998,16 +1100,17 @@ function detectCollisions(ts){
   }
 
   //End the game if necessary.
-  if ((opponentDead==ts || playerDead==ts) && gameEnding == false){
+  if ((redDead==ts || blueDead==ts) && gameEnding == false){
     var gameResult;
-    if(opponentDead==playerDead){
+    if(redDead==blueDead){
       gameResult = "tie";
-    } else if (opponentDead == ts) {
-      gameResult = "win";
+    } else if (redDead == ts) {
+      gameResult = "blue";
     } else {
-      gameResult = "lose";
+      gameResult = "red";
     }
-    activeUnit = -1;
+    blueActiveUnit = -1;
+    redActiveUnit = -1;
     gameEnding = true;
     mainMenu.blackness.animate({"opacity": .9},2000);
     gui.toBack();
@@ -1034,83 +1137,140 @@ $(window).keydown(function(event){
       switch (event.keyCode){
         case 81: //q
           event.preventDefault();
-          if (blueUnits[activeUnit].bombReady){
-            blueUnits[activeUnit].bomb();
+          if (blueUnits[blueActiveUnit].bombReady){
+            blueUnits[blueActiveUnit].bomb();
           };
-          controlPanel.actives[activeUnit].hide();
-          controlPanel.actives[activeUnit] =
-            controlPanel.icons.bombs[activeUnit];
-          gui.push(controlPanel.actives[activeUnit]);
-          controlPanel.actives[activeUnit].show();
-          updateAU(teamSize);
+          controlPanel.actives[blueActiveUnit].hide();
+          controlPanel.actives[blueActiveUnit] =
+            controlPanel.icons.bombs[blueActiveUnit];
+          gui.push(controlPanel.actives[blueActiveUnit]);
+          controlPanel.actives[blueActiveUnit].show();
+          updateBlueAU(teamSize);
           break;
         case 69: //e
           event.preventDefault();
-          if (blueUnits[activeUnit].shotReady){
-            blueUnits[activeUnit].shoot();
+          if (blueUnits[blueActiveUnit].shotReady){
+            blueUnits[blueActiveUnit].shoot();
           };
-          controlPanel.actives[activeUnit].hide();
-          controlPanel.actives[activeUnit] =
-            controlPanel.icons.rects[activeUnit];
-          gui.push(controlPanel.actives[activeUnit]);
-          controlPanel.actives[activeUnit].show();
-          updateAU(teamSize);
+          controlPanel.actives[blueActiveUnit].hide();
+          controlPanel.actives[blueActiveUnit] =
+            controlPanel.icons.rects[blueActiveUnit];
+          gui.push(controlPanel.actives[blueActiveUnit]);
+          controlPanel.actives[blueActiveUnit].show();
+          updateBlueAU(teamSize);
           break;
         case 65: //a (move left)
           event.preventDefault();
-          blueUnits[activeUnit].moveLeft();
-          controlPanel.actives[activeUnit].hide();
-          controlPanel.actives[activeUnit] =
-            controlPanel.icons.leftArrows[activeUnit];
-          gui.push(controlPanel.actives[activeUnit]);
-          controlPanel.actives[activeUnit].show();
-          updateAU(teamSize);
+          blueUnits[blueActiveUnit].moveLeft();
+          controlPanel.actives[blueActiveUnit].hide();
+          controlPanel.actives[blueActiveUnit] =
+            controlPanel.icons.leftArrows[blueActiveUnit];
+          gui.push(controlPanel.actives[blueActiveUnit]);
+          controlPanel.actives[blueActiveUnit].show();
+          updateBlueAU(teamSize);
           break;
         case 87: //w (move up)
           event.preventDefault();
-          blueUnits[activeUnit].moveUp();
-          controlPanel.actives[activeUnit].hide();
-          controlPanel.actives[activeUnit] =
-            controlPanel.icons.upArrows[activeUnit];
-          gui.push(controlPanel.actives[activeUnit]);
-          controlPanel.actives[activeUnit].show();
-          updateAU(teamSize);
+          blueUnits[blueActiveUnit].moveUp();
+          controlPanel.actives[blueActiveUnit].hide();
+          controlPanel.actives[blueActiveUnit] =
+            controlPanel.icons.upArrows[blueActiveUnit];
+          gui.push(controlPanel.actives[blueActiveUnit]);
+          controlPanel.actives[blueActiveUnit].show();
+          updateBlueAU(teamSize);
           break;
         case 68: //d (move right)
           event.preventDefault();
-          blueUnits[activeUnit].moveRight();
-          controlPanel.actives[activeUnit].hide();
-          controlPanel.actives[activeUnit] =
-            controlPanel.icons.rightArrows[activeUnit];
-          gui.push(controlPanel.actives[activeUnit]);
-          controlPanel.actives[activeUnit].show();
-          updateAU(teamSize);
+          blueUnits[blueActiveUnit].moveRight();
+          controlPanel.actives[blueActiveUnit].hide();
+          controlPanel.actives[blueActiveUnit] =
+            controlPanel.icons.rightArrows[blueActiveUnit];
+          gui.push(controlPanel.actives[blueActiveUnit]);
+          controlPanel.actives[blueActiveUnit].show();
+          updateBlueAU(teamSize);
           break;
         case 83: //s (move down)
           event.preventDefault();
-          blueUnits[activeUnit].moveDown();
-          controlPanel.actives[activeUnit].hide();
-          controlPanel.actives[activeUnit] =
-            controlPanel.icons.downArrows[activeUnit];
-          gui.push(controlPanel.actives[activeUnit]);
-          controlPanel.actives[activeUnit].show();
-          updateAU(teamSize);
+          blueUnits[blueActiveUnit].moveDown();
+          controlPanel.actives[blueActiveUnit].hide();
+          controlPanel.actives[blueActiveUnit] =
+            controlPanel.icons.downArrows[blueActiveUnit];
+          gui.push(controlPanel.actives[blueActiveUnit]);
+          controlPanel.actives[blueActiveUnit].show();
+          updateBlueAU(teamSize);
           break;
         case 88: //"x" key
-          blueUnits[activeUnit].stay();
-          controlPanel.actives[activeUnit].hide();
-          controlPanel.actives[activeUnit] =
-            controlPanel.icons.circles[activeUnit];
-          gui.push(controlPanel.actives[activeUnit]);
-          controlPanel.actives[activeUnit].show();
-          updateAU(teamSize);
+          blueUnits[blueActiveUnit].stay();
+          controlPanel.actives[blueActiveUnit].hide();
+          controlPanel.actives[blueActiveUnit] =
+            controlPanel.icons.circles[blueActiveUnit];
+          gui.push(controlPanel.actives[blueActiveUnit]);
+          controlPanel.actives[blueActiveUnit].show();
+          updateBlueAU(teamSize);
           break;
+
+        //PLAYER 2:
+        case 18: //right alt
+          event.preventDefault();
+          if (qpoGame.multiplayer){
+            if (redUnits[redActiveUnit].bombReady){
+              redUnits[redActiveUnit].bomb();
+            };
+            updateRedAU(teamSize);
+          }
+          break;
+        case 16: //right shift
+          event.preventDefault();
+          if (qpoGame.multiplayer){
+            if (redUnits[redActiveUnit].shotReady){
+              redUnits[redActiveUnit].shoot();
+            };
+            updateRedAU(teamSize);
+          }
+          break;
+        case 37: //left arrow (move left)
+          event.preventDefault();
+          if (qpoGame.multiplayer){
+            redUnits[redActiveUnit].moveLeft();
+            updateRedAU(teamSize);
+          }
+          break;
+        case 38: //up arrow (move up)
+          event.preventDefault();
+          if (qpoGame.multiplayer){
+            redUnits[redActiveUnit].moveUp();
+            updateRedAU(teamSize);
+          }
+          break;
+        case 39: //right arrow (move right)
+          event.preventDefault();
+          if (qpoGame.multiplayer){
+            redUnits[redActiveUnit].moveRight();
+            updateRedAU(teamSize);
+          }
+          break;
+        case 40: //down arrow (move down)
+          event.preventDefault();
+          if (qpoGame.multiplayer){
+            redUnits[redActiveUnit].moveDown();
+            updateRedAU(teamSize);
+          }
+          break;
+        case 191: // "?" key
+          event.preventDefault();
+          if (qpoGame.multiplayer){
+            redUnits[redActiveUnit].stay();
+            updateRedAU(teamSize);
+          }
+          break;
+        /*
         case 27: //escape key
           if (game.paused){
             gui.resume();
           } else {
             gui.pause();
           }
+        */
 
 
         default: //anything else
@@ -1176,12 +1336,13 @@ function startGame(difficulty){
   })(difficulty);
 
   turnNumber = 0;
-  opponentDead = 0;
-  playerDead = 0;
+  redDead = 0;
+  blueDead = 0;
 
   drawGUI();
   placeUnits(difficulty); // puts the units on the board
-  activeUnit = 0;
+  blueActiveUnit = 0;
+  redActiveUnit = 0;
   setTimeout(function(){clockUpdater = setInterval(tick,1000*timeScale);},2000*timeScale);
   gameEnding = false;
   collisionDetector = setInterval(function(){detectCollisions(teamSize)},17);
@@ -1192,8 +1353,8 @@ function startGame(difficulty){
 function startHowTo(){
   /*
 
-  opponentDead = 0;
-  playerDead = 0;
+  redDead = 0;
+  blueDead = 0;
   drawGUI();
   placeUnitsTut();
   */
