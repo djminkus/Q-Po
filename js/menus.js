@@ -14,6 +14,9 @@ button = function(text,x,y,onclick,adj){
   this.set = c.set().push(this.textEl,this.rectEl);
   this.set.click(function(){onclick()});
 }
+menuList = function(items){
+  
+}
 
 var mainMenu = {
   blackness: c.rect(0,0,c.width,c.height).attr({"fill":"black","opacity":.9}),

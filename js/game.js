@@ -143,6 +143,7 @@ function startUnit(color, gx, gy, num){
   this.active = false;
   this.shotReady = true;
   this.bombReady = true;
+  this.movingForward = false;
   return this;
 }
 function improveUnit(unit){
@@ -164,6 +165,12 @@ function finishUnit(unit){
     unit.bombReady = true;
     unit.shotReady = true;
   }
+  unit.reloadBomb = function(){
+    unit.bombReady = true;
+  }
+  unit.reloadShot = function(){
+    unit.shotReady =true;
+  }
   unit.kill = function(){
     unit.alive = false;
     unit.rect.stop();
@@ -172,6 +179,7 @@ function finishUnit(unit){
     switch(unit.team){
       case "red":
         redDead++;
+        updateRedAU(teamSize);
         break;
       case "blue":
         blueDead++;
@@ -190,6 +198,7 @@ function finishUnit(unit){
       var anim = Raphael.animation( {"x":unit.rect.attr('x') - guiCoords.gameBoard.columns*guiCoords.gameBoard.squareSize },
         guiCoords.gameBoard.columns*1500*timeScale);
       unit.rect.animate(anim);
+      unit.movingForward = false;
     }
   }
   unit.moveUp = function(){
@@ -198,6 +207,11 @@ function finishUnit(unit){
       var anim = Raphael.animation( {"y":unit.rect.attr('y') - guiCoords.gameBoard.rows*guiCoords.gameBoard.squareSize},
         guiCoords.gameBoard.rows*1500*timeScale);
       unit.rect.animate(anim);
+      if (unit.team == "red"){
+        unit.movingForward = true;
+      } else {
+        unit.movingForward = false;
+      }
     }
   }
   unit.moveRight = function(){
@@ -207,6 +221,7 @@ function finishUnit(unit){
       var anim = Raphael.animation( {"x":unit.rect.attr('x') + guiCoords.gameBoard.columns*guiCoords.gameBoard.squareSize},
         guiCoords.gameBoard.columns*1500*timeScale);
       unit.rect.animate(anim);
+      unit.movingForward = false;
     }
     console.log("isaidmoveright");
     console.log(unit.rect.attr("x"));
@@ -217,6 +232,11 @@ function finishUnit(unit){
       var anim = Raphael.animation( {"y":unit.rect.attr('y') + guiCoords.gameBoard.rows*guiCoords.gameBoard.squareSize},
         guiCoords.gameBoard.rows*1500*timeScale);
       unit.rect.animate(anim);
+      if (unit.team == "blue"){
+        unit.movingForward = true;
+      } else {
+        unit.movingForward = false;
+      }
     }
   }
   unit.bomb = function(){
@@ -226,6 +246,7 @@ function finishUnit(unit){
     finishBomb(bomb);
     bomb.next();
     unit.bombReady = false;
+    setTimeout(unit.reloadBomb,3000);
   }
   unit.shoot = function(){
     var shot, anim;
@@ -237,6 +258,11 @@ function finishUnit(unit){
         anim = Raphael.animation({"height":25, "y": shot.attr('y') + 0}, 500*timeScale, function(){
           shot.animate({"y": shot.attr('y') + 125*7}, 3000*7);
         });
+        if (unit.movingForward){
+          anim = Raphael.animation({"height":25, "y": shot.attr('y') + guiCoords.gameBoard.squareSize/6 + 10}, 500*timeScale, function(){
+            shot.animate({"y": shot.attr('y') + 125*7}, 3000*7);
+          });
+        }
         break;
       case "red":
         shot = c.rect(unit.rect.attr('x') + 22,
@@ -245,6 +271,11 @@ function finishUnit(unit){
         anim = Raphael.animation({"height":25, "y": shot.attr('y') - 25}, 500*timeScale, function(){
           shot.animate({"y": shot.attr('y') - 125*7}, 3000*7);
         });
+        if (unit.movingForward){
+          anim = Raphael.animation({"height":25, "y": shot.attr('y') - 25 - guiCoords.gameBoard.squareSize/6 - 10}, 500*timeScale, function(){
+            shot.animate({"y": shot.attr('y') - 125*7}, 3000*7);
+          });
+        }
         break;
     }
     shot.attr({"fill":COLOR_DICT["shot color"],
@@ -255,6 +286,7 @@ function finishUnit(unit){
     gui.push(shot);
     shots.push(shot);
     unit.shotReady = false;
+    setTimeout(unit.reloadShot,3000);
   }
   unit.stay = function(){
     unit.rect.stop();
@@ -815,8 +847,6 @@ function newTurn(ts){ //pass in teamSize
   clock is divisible by 3
    */
   turnNumber++;
-
-
   for (var i=0; i<teamSize; i++){
     if (!qpoGame.multiplayer){
       //in single player, generate random moves for red
@@ -825,32 +855,29 @@ function newTurn(ts){ //pass in teamSize
       if (redUnits[i].alive){
         switch(redMovesQueue[i]) {
           case "moveLeft" :
-            redUnits[i].moveLeft();
+            setTimeout(redUnits[i].moveLeft, Math.random()*3000);
             break;
           case "moveUp" :
-            redUnits[i].moveUp();
+            setTimeout(redUnits[i].moveUp, Math.random()*3000);
             break;
           case "moveRight" :
-            redUnits[i].moveRight();
+            setTimeout(redUnits[i].moveRight, Math.random()*3000);
             break;
           case "moveDown" :
-            redUnits[i].moveDown();
+            setTimeout(redUnits[i].moveDown, Math.random()*3000);
             break;
           case "shoot" :
-            redUnits[i].shoot();
+            setTimeout(redUnits[i].shoot, Math.random()*3000);
             break;
           case "bomb" :
-            redUnits[i].bomb();
+            setTimeout(redUnits[i].bomb, Math.random()*3000);
+            break;
           case "stay" :
-            redUnits[i].stay();
+            setTimeout(redUnits[i].stay, Math.random()*3000);
+            break;
         }
       }
-
     }
-
-    //reload all weapons:
-    blueUnits[i].reload();
-    redUnits[i].reload();
   }
 
 
