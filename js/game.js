@@ -1,7 +1,7 @@
 console.log("RESET" + Date());
-var c = new Raphael("raphContainer", containerWidth(), 600);
-var debug;
-function containerWidth(){
+var c = new Raphael("raphContainer", containerWidth(), 600); //create the Raphael canvas
+var debug; //debug mode on? Set to true or false in "setup()"
+function containerWidth(){ //generate width of Raphael canvas based on debug status
   if(debug){
     var width = 900;
   } else {
@@ -11,8 +11,18 @@ function containerWidth(){
 }
 
 /** Q-PO : a JS game by @akaDavidGarrett
+
+How to get familiar with the code:
+  Start with the startGame() and newTurn() functions. They will reference
+    the other functions in a logical order.
+  To understand the first thing you see when you load the page,
+    look at menus.js. When a new game is started, countdownScreen()
+    is called. This leads to startGame() being called, which leads to newTurn()
+    being called every three seconds.
+
 SHORT-TERM TODO:
-  [   ] Make walls stop units' motion in wall's direction
+  [   ] Make menus keyboard-controlled
+  [ x ] Make walls stop units' motion in wall's direction
   [ x ] Fix unit movement animations (currently depend on unit's grid position)
   [ x ] Balance shot animations (red v. blue)
 
@@ -20,7 +30,6 @@ LONG-TERM TODO:
   See Issues/Feature Requests on Github:
     https://github.com/djminkus/QPO/issues
   [   ] adjust tutorial
-  Make menus keyboard-controlled
   Make a server
   Enable PVP (Implement user login system)
   Implement Ranking System
@@ -30,7 +39,7 @@ LONG-TERM TODO:
   [ x ] Create a tutorial
 
 
-Contents of this code: (updated June 2)
+Contents of this code: (updated June 2, 2015)
   VAR DECLARATIONS
 
   UNIT CONSTRUCTORS
@@ -55,13 +64,7 @@ Contents of this code: (updated June 2)
       hides the end-of-game menu and calls countdownScreen() again
     goMainMenu() --
 
-How to read this code:
-  Start with the startGame() and newTurn() functions. They will reference
-    the other functions in a logical order.
-  To understand the first thing you see when you load the page,
-    look at qpo-menuscreen.js. When a new game is started, countdownScreen()
-    is called. This leads to startGame() being called, which leads to newTurn()
-    being called every three seconds.
+
 */
 
 qpoGame = {
@@ -74,7 +77,10 @@ qpoGame = {
 };
 
 function setup(){ //set up global vars and stuff
-  activeScreen = "menu"; //can be "menu", "game", "tut", or "other"
+  activeScreen = "menu"; //type of screen that's active -- can be "menu", "game", "tut", or "other"
+  //activeMenu = []; //a list of button objects within the current menu
+  //activeButton = 0; //index of active button within the activeMenu list
+  activeMenu = "main"; //the key within "menus" of the currently-displayed menu
   timeScale = 1; //for debugging. Bigger means slower
   COLOR_DICT = {
     "blue": "#0055bb",
@@ -126,180 +132,6 @@ function setup(){ //set up global vars and stuff
 
 setup();
 
-//CREATE UNIT TYPE/CLASS
-function startUnit(color, gx, gy, num){
-  //for now, only blue units are numbered (6-20-15)
-  this.team = color;
-  this.rect = c.rect(25+50*gx, 75+50*gy,
-      50,50).attr({"fill":COLOR_DICT[color],"opacity":.7});
-  //this.icon = c.circle(25+50*gx+25,75+50*gy+25,7);
-  this.phys = c.set();
-  this.x = gx; //absolute grid position
-  this.y = gy;
-  this.relx = 0; //relative grid position
-  this.rely = 0;
-  this.num = num; //which unit is it?
-  this.alive = true;
-  this.active = false;
-  this.shotReady = true;
-  this.bombReady = true;
-  this.movingForward = false;
-  return this;
-}
-function improveUnit(unit){
-  unit.phys.push(unit.rect);
-  gui.push(unit.phys);
-}
-function finishUnit(unit){
-  unit.activate = function(){
-    unit.rect.attr({"stroke":COLOR_DICT["orange"],
-                              "stroke-width":4});
-    unit.active = true;
-  }
-  unit.deactivate = function(){
-    unit.rect.attr({"stroke":"black",
-                     "stroke-width":1});
-    unit.active = false;
-  }
-  unit.reload = function(){
-    unit.bombReady = true;
-    unit.shotReady = true;
-  }
-  unit.reloadBomb = function(){
-    unit.bombReady = true;
-  }
-  unit.reloadShot = function(){
-    unit.shotReady =true;
-  }
-  unit.kill = function(){
-    unit.alive = false;
-    unit.rect.stop();
-    unit.rect.animate({"opacity":0},2000,function(){unit.rect.hide()});
-
-    switch(unit.team){
-      case "red":
-        redDead++;
-        updateRedAU(teamSize);
-        break;
-      case "blue":
-        blueDead++;
-        var number = unit.num;
-        controlPanel.actives[number].hide();
-        controlPanel.actives[number] = controlPanel.icons.xs[number];
-        gui.push(controlPanel.actives[number]);
-        controlPanel.actives[number].show();
-        updateBlueAU(teamSize);
-        break;
-    }
-  }
-  unit.moveLeft = function(){
-    if (unit.rect.attr('x') > guiCoords.gameBoard.leftWall) {
-      unit.rect.stop();
-      var anim = Raphael.animation( {"x":unit.rect.attr('x') - guiCoords.gameBoard.columns*guiCoords.gameBoard.squareSize },
-        guiCoords.gameBoard.columns*1500*timeScale);
-      unit.rect.animate(anim);
-      unit.movingForward = false;
-    }
-  }
-  unit.moveUp = function(){
-    if (unit.rect.attr('y') > guiCoords.gameBoard.topWall) {
-      unit.rect.stop();
-      var anim = Raphael.animation( {"y":unit.rect.attr('y') - guiCoords.gameBoard.rows*guiCoords.gameBoard.squareSize},
-        guiCoords.gameBoard.rows*1500*timeScale);
-      unit.rect.animate(anim);
-      if (unit.team == "red"){
-        unit.movingForward = true;
-      } else {
-        unit.movingForward = false;
-      }
-    }
-  }
-  unit.moveRight = function(){
-    if (unit.rect.attr('x') + unit.rect.attr('width') < guiCoords.gameBoard.rightWall) {
-      console.log("Move right!");
-      unit.rect.stop();
-      var anim = Raphael.animation( {"x":unit.rect.attr('x') + guiCoords.gameBoard.columns*guiCoords.gameBoard.squareSize},
-        guiCoords.gameBoard.columns*1500*timeScale);
-      unit.rect.animate(anim);
-      unit.movingForward = false;
-    }
-    console.log("isaidmoveright");
-    console.log(unit.rect.attr("x"));
-  }
-  unit.moveDown = function(){
-    if (unit.rect.attr('y') + unit.rect.attr('height') < guiCoords.gameBoard.bottomWall) {
-      unit.rect.stop();
-      var anim = Raphael.animation( {"y":unit.rect.attr('y') + guiCoords.gameBoard.rows*guiCoords.gameBoard.squareSize},
-        guiCoords.gameBoard.rows*1500*timeScale);
-      unit.rect.animate(anim);
-      if (unit.team == "blue"){
-        unit.movingForward = true;
-      } else {
-        unit.movingForward = false;
-      }
-    }
-  }
-  unit.bomb = function(){
-    var bomb;
-    bomb = new startBomb(unit);
-    improveBomb(bomb);
-    finishBomb(bomb);
-    bomb.next();
-    unit.bombReady = false;
-    setTimeout(unit.reloadBomb,3000);
-  }
-  unit.shoot = function(){
-    var shot, anim;
-    switch(unit.team){
-      case "blue":
-        shot = c.rect(unit.rect.attr('x') + 22,
-                      unit.rect.attr('y') + unit.rect.attr('height') + 2,
-                      6, 2);
-        anim = Raphael.animation({"height":25, "y": shot.attr('y') + 0}, 500*timeScale, function(){
-          shot.animate({"y": shot.attr('y') + 125*7}, 3000*7);
-        });
-        if (unit.movingForward){
-          anim = Raphael.animation({"height":25, "y": shot.attr('y') + guiCoords.gameBoard.squareSize/6 + 10}, 500*timeScale, function(){
-            shot.animate({"y": shot.attr('y') + 125*7}, 3000*7);
-          });
-        }
-        break;
-      case "red":
-        shot = c.rect(unit.rect.attr('x') + 22,
-                      unit.rect.attr('y') - 4,
-                      6, 2);
-        anim = Raphael.animation({"height":25, "y": shot.attr('y') - 25}, 500*timeScale, function(){
-          shot.animate({"y": shot.attr('y') - 125*7}, 3000*7);
-        });
-        if (unit.movingForward){
-          anim = Raphael.animation({"height":25, "y": shot.attr('y') - 25 - guiCoords.gameBoard.squareSize/6 - 10}, 500*timeScale, function(){
-            shot.animate({"y": shot.attr('y') - 125*7}, 3000*7);
-          });
-        }
-        break;
-    }
-    shot.attr({"fill":COLOR_DICT["shot color"],
-               "opacity":.5,
-               "stroke":COLOR_DICT["shot color"]});
-    shot.data("team",unit.team);
-    shot.animate(anim);
-    gui.push(shot);
-    shots.push(shot);
-    unit.shotReady = false;
-    setTimeout(unit.reloadShot,3000);
-  }
-  unit.stay = function(){
-    unit.rect.stop();
-  }
-}
-function makeUnit(color,gx,gy,num){
-  var unit = new startUnit(color,gx,gy,num);
-  improveUnit(unit);
-  finishUnit(unit);
-
-  return unit;
-}
-
 function findSlot(array){
   var slot = 0
   while(slot < array.length){
@@ -309,82 +141,6 @@ function findSlot(array){
     slot += 1;
   }
   return slot;
-}
-
-//CREATE BOMB TYPE/CLASS -- not implemented (see "explode()")
-function startBomb(su){ //su = source unit
-
-  this.team = su.team;
-  this.timer = 3;
-  this.exploded = false;
-  switch(this.team){
-    case "blue":
-      this.phys = c.rect(su.rect.attr("x") + 18,
-                    su.rect.attr("y") + guiCoords.gameBoard.squareSize + 20 , 14, 14);
-      break;
-    case "red":
-      this.phys = c.rect(su.rect.attr("x") + 18,
-                  su.rect.attr("y") - 20, 14, 14);
-      break;
-  }
-  gui.push(this.phys);
-
-  //put this in the "bombs" array:
-  var ind = findSlot(bombs);
-  this.index = ind;
-  bombs[this.index] = this;
-
-  return this;
-}
-function improveBomb(bomb){
-  bomb.phys.attr({"fill":COLOR_DICT["bomb color"],
-             "opacity":.5,
-             "stroke":COLOR_DICT["bomb color"]});
-  bomb.explode = function(){
-    bomb.exploded = true;
-    bomb.timer = -1;
-    var cx = bomb.phys.getBBox().x;
-    var cy = bomb.phys.getBBox().y;
-    bomb.phys.stop();
-
-    var anim = Raphael.animation({
-      "16.6%": {
-        "y": cy - (bombSize/2 - 7),
-        "x": cx - (bombSize/2 - 7),
-        "width": bombSize,
-        "height": bombSize
-      },
-      "100%":{
-        "y":cy+7,
-        "x":cx+7,
-        "width":0,
-        "height":0
-      }
-    }, 3000*timeScale, function(){
-      bombs[bomb.index] = false;
-    });
-    bomb.phys.animate(anim);
-  }
-}
-function finishBomb(bomb){
-  bomb.next = function(){
-    if (bomb.timer == 0){
-      bomb.explode();
-    } else if (bomb.timer > 0 ){
-      var bombAnim;
-      switch(bomb.team){
-        case "blue":
-          bombAnim = Raphael.animation({"y":bomb.phys.attr('y') + 50}, 3000*timeScale, function(){bomb.next()} );
-          bomb.phys.animate(bombAnim);
-          break;
-        case "red":
-          bombAnim = Raphael.animation({"y":bomb.phys.attr('y') - 50}, 3000*timeScale, function(){bomb.next()} );
-          bomb.phys.animate(bombAnim);
-          break;
-      }
-    }
-    bomb.timer = bomb.timer - 1;
-  }
 }
 
 //GUI ELEMENTS
@@ -482,6 +238,7 @@ function placeUnitsTut(){
   blueUnits[0].activate();
   controlPanel.resetIcons();
 }
+//generators :
 gens = [85, 475, 20, 10, 40]; //centers and radius -- for controlPanel
 coords = [gens[0]+gens[2], gens[0]-gens[2], //x ends -- for controlPanel
           gens[1]+gens[2], gens[1]-gens[2]]; //y ends --for controlPanel
@@ -1154,9 +911,30 @@ $(window).keydown(function(event){
       switch(event.keyCode){
         case 13: //enter
           event.preventDefault();
+          activeButton.onclick();
           //TODO: make it execute the highlighted button's onClick function
           break;
+        case 87: //w
+          event.preventDefault();
+          menus[activeMenu].previous();
+          break;
+        case 83: //s
+          event.preventDefault();
+          menus[activeMenu].next();
+          break;
+        case 38: //up arrow
+          event.preventDefault();
+          //console.log(activeMenu);
+          //console.log(menus);
+          //console.log(menus[activeMenu]);
+          menus[activeMenu].previous();
+          break;
+        case 40: //down arrow
+          event.preventDefault();
+          menus[activeMenu].next();
+          break;
         default:
+          break;
           //console.log("#EasterEgg");
       }
       break;
@@ -1606,5 +1384,6 @@ function goMainMenu(){
   endGameMenu.all.remove();
   mainMenu.showAll();
   activeScreen = "menu";
+  activeMenu = "main";
   mainMenu.blackness.attr({"opacity":.9});
 }
