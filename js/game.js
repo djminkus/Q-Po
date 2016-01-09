@@ -1,4 +1,4 @@
-console.log("RESET" + Date());
+console.log("RESET " + Date());
 var c = new Raphael("raphContainer", containerWidth(), 600); //create the Raphael canvas
 var debug; //debug mode on? Set to true or false in "setup()"
 function containerWidth(){ //generate width of Raphael canvas based on debug status
@@ -21,7 +21,18 @@ How to get familiar with the code:
     being called every three seconds.
 
 SHORT-TERM TODO:
-  [   ] Make menus keyboard-controlled
+  [ x ] Make game keep track of win/loss ratio in each session
+  [   ] Create smarter AI
+  [   ] In single-player sessions, give player a rating based on
+          record at various levels vs. computer.
+  [   ] Fix glitch where blue loses if both teams' last units die simultaneously
+  [   ] Enable "go back" in menus via backspace (keycode 8)
+  [ x ] Fix glitch where when you return to the main screen,
+      enter doesn't work until up/down are pressed
+  [   ] Make units stop in place after each turn. (or don't bother until you decide:
+          is it a good idea to allow units one "motion" and one "attack/technique" each turn?)
+  [ x ] make turn length tweakable (DONE -- via timeScale [in "setup()"])
+  [ x ] Make menus keyboard-controlled
   [ x ] Make walls stop units' motion in wall's direction
   [ x ] Fix unit movement animations (currently depend on unit's grid position)
   [ x ] Balance shot animations (red v. blue)
@@ -77,17 +88,15 @@ qpoGame = {
 };
 
 function setup(){ //set up global vars and stuff
-  activeScreen = "menu"; //type of screen that's active -- can be "menu", "game", "tut", or "other"
-  //activeMenu = []; //a list of button objects within the current menu
-  //activeButton = 0; //index of active button within the activeMenu list
-  activeMenu = "main"; //the key within "menus" of the currently-displayed menu
-  timeScale = 1; //for debugging. Bigger means slower
+  timeScale = .5; //Bigger means slower
   COLOR_DICT = {
     "blue": "#0055bb",
     "red": "#bb0000",
     "orange": "#ffbb66",
     "shot color": "#00bb55",
     "bomb color": "#bb00bb",
+    "grey": "#bbbbbb",
+    "purple":"#cc66ff"
   };
   blueMovesQueue = [];
   redMovesQueue = [];
@@ -182,7 +191,7 @@ function placeUnits(difficulty){
   blueUnits = [];
   redUnits = [];
   switch(difficulty){
-    case "hard":
+    case "3":
       blueUnits[0] =  makeUnit("blue",1,1,0);
       redUnits[0] = makeUnit("red",1,5,0);
       blueUnits[1] = makeUnit("blue",3,1,1);
@@ -190,13 +199,13 @@ function placeUnits(difficulty){
       blueUnits[2] = makeUnit("blue",5,1,2);
       redUnits[2] = makeUnit("red",5,5,2);
       break;
-    case "medium":
+    case "2":
       blueUnits[0] =  makeUnit("blue",2,1,0);
       redUnits[0] = makeUnit("red",2,5,0);
       blueUnits[1] = makeUnit("blue",4,1,1);
       redUnits[1] = makeUnit("red",4,5,1);
       break;
-    case "beginner":
+    case "1":
       blueUnits[0] =  makeUnit("blue",3,1,0);
       redUnits[0] = makeUnit("red",3,5,0);
       break;
@@ -372,7 +381,7 @@ function turnTimer(){
 function debugPanel(){
   this.border = c.rect(guiCoords.gamePanel.width, 0, guiCoords.debug.width, guiCoords.debug.height)
     .attr({"stroke-width":2,"stroke":"blue"});
-  this.title = c.text(900 - guiCoords.debug.width/2 , 30, "debug")
+  this.title = c.text(900 - guiCoords.debug.width/2, 30, "debug")
     .attr({"font-family":"'Open Sans',sans-serif","font-size":30});
   this.line1 = c.text(900 - guiCoords.debug.width/2, 70, "line1")
     .attr({"font-family":"'Open Sans',sans-serif","font-size":15});
@@ -581,7 +590,7 @@ function updateRedAU(ts){
   }
 }
 
-function tick(){
+function tick(){ //update game clock. Called once per second.
   clock = gameClock.data("value");
   gameClock.data("value",clock-1);
   gameClock.attr({"text":clock-1});
@@ -608,40 +617,66 @@ function newTurn(ts){ //pass in teamSize
     if (!qpoGame.multiplayer){
       //in single player, generate random moves for red
       redMovesQueue[i] = moves[Math.round(Math.random()*6)]
-      //and execute these moves
-      if (redUnits[i].alive){
-        switch(redMovesQueue[i]) {
-          case "moveLeft" :
-            setTimeout(redUnits[i].moveLeft, Math.random()*3000);
-            break;
-          case "moveUp" :
-            setTimeout(redUnits[i].moveUp, Math.random()*3000);
-            break;
-          case "moveRight" :
-            setTimeout(redUnits[i].moveRight, Math.random()*3000);
-            break;
-          case "moveDown" :
-            setTimeout(redUnits[i].moveDown, Math.random()*3000);
-            break;
-          case "shoot" :
-            setTimeout(redUnits[i].shoot, Math.random()*3000);
-            break;
-          case "bomb" :
-            setTimeout(redUnits[i].bomb, Math.random()*3000);
-            break;
-          case "stay" :
-            setTimeout(redUnits[i].stay, Math.random()*3000);
-            break;
-        }
+    }
+    // execute red's moves:
+    if (redUnits[i].alive){
+      switch(redMovesQueue[i]) {
+        case "moveLeft" :
+          redUnits[i].moveLeft();
+          break;
+        case "moveUp" :
+          redUnits[i].moveUp();
+          break;
+        case "moveRight" :
+          redUnits[i].moveRight();
+          break;
+        case "moveDown" :
+          redUnits[i].moveDown();
+          break;
+        case "shoot" :
+          redUnits[i].shoot();
+          break;
+        case "bomb" :
+          redUnits[i].bomb();
+          break;
+        case "stay" :
+          redUnits[i].stay();
+          break;
+      }
+    }
+    //execute blue's moves:
+    if (blueUnits[i].alive){
+      switch(blueMovesQueue[i]) {
+        case "moveLeft" :
+          blueUnits[i].moveLeft();
+          break;
+        case "moveUp" :
+          blueUnits[i].moveUp();
+          break;
+        case "moveRight" :
+          blueUnits[i].moveRight();
+          break;
+        case "moveDown" :
+          blueUnits[i].moveDown();
+          break;
+        case "shoot" :
+          blueUnits[i].shoot();
+          break;
+        case "bomb" :
+          blueUnits[i].bomb();
+          break;
+        case "stay" :
+          blueUnits[i].stay();
+          break;
       }
     }
   }
 
-
   //controlPanel.resetIcons();
   timer.attr({segment: [450, 250, 50, -90, 269]});
-  timer.animate({segment: [450, 250, 50, -90, -90]}, 3000);
+  timer.animate({segment: [450, 250, 50, -90, -90]}, 3000*timeScale);
 }
+
 function detectCollisions(ts){
   /* COLLISION DETECTION, a function
   to be called every 17 ms */
@@ -896,11 +931,24 @@ function detectCollisions(ts){
     blueActiveUnit = -1;
     redActiveUnit = -1;
     gameEnding = true;
-    mainMenu.blackness.animate({"opacity": .9},2000);
+    mainMenu.blackness.animate({"opacity": .9},2000*timeScale);
     gui.toBack();
     setTimeout(function(){
       endGame(gameResult);
-    },2000);
+    },2000*timeScale);
+  }
+}
+
+function updateCP(team){
+  switch (team){
+    case "blue":
+      controlPanel.actives[blueActiveUnit].hide();
+
+      break;
+    case "red":
+      break;
+    default:
+      console.log("this was unexpected");
   }
 }
 
@@ -924,9 +972,6 @@ $(window).keydown(function(event){
           break;
         case 38: //up arrow
           event.preventDefault();
-          //console.log(activeMenu);
-          //console.log(menus);
-          //console.log(menus[activeMenu]);
           menus[activeMenu].previous();
           break;
         case 40: //down arrow
@@ -935,16 +980,13 @@ $(window).keydown(function(event){
           break;
         default:
           break;
-          //console.log("#EasterEgg");
       }
       break;
     case "game":
       switch (event.keyCode){
-        case 81: //q
+        case 81: //q -- blue pressed bomb
           event.preventDefault();
-          if (blueUnits[blueActiveUnit].bombReady){
-            blueUnits[blueActiveUnit].bomb();
-          };
+          blueMovesQueue[blueActiveUnit] = "bomb";
           controlPanel.actives[blueActiveUnit].hide();
           controlPanel.actives[blueActiveUnit] =
             controlPanel.icons.bombs[blueActiveUnit];
@@ -952,11 +994,9 @@ $(window).keydown(function(event){
           controlPanel.actives[blueActiveUnit].show();
           updateBlueAU(teamSize);
           break;
-        case 69: //e
+        case 69: //e -- blue pressed shoot
           event.preventDefault();
-          if (blueUnits[blueActiveUnit].shotReady){
-            blueUnits[blueActiveUnit].shoot();
-          };
+          blueMovesQueue[blueActiveUnit] = "shoot";
           controlPanel.actives[blueActiveUnit].hide();
           controlPanel.actives[blueActiveUnit] =
             controlPanel.icons.rects[blueActiveUnit];
@@ -966,7 +1006,7 @@ $(window).keydown(function(event){
           break;
         case 65: //a (move left)
           event.preventDefault();
-          blueUnits[blueActiveUnit].moveLeft();
+          blueMovesQueue[blueActiveUnit] = "moveLeft";
           controlPanel.actives[blueActiveUnit].hide();
           controlPanel.actives[blueActiveUnit] =
             controlPanel.icons.leftArrows[blueActiveUnit];
@@ -976,7 +1016,7 @@ $(window).keydown(function(event){
           break;
         case 87: //w (move up)
           event.preventDefault();
-          blueUnits[blueActiveUnit].moveUp();
+          blueMovesQueue[blueActiveUnit] = "moveUp";
           controlPanel.actives[blueActiveUnit].hide();
           controlPanel.actives[blueActiveUnit] =
             controlPanel.icons.upArrows[blueActiveUnit];
@@ -986,7 +1026,7 @@ $(window).keydown(function(event){
           break;
         case 68: //d (move right)
           event.preventDefault();
-          blueUnits[blueActiveUnit].moveRight();
+          blueMovesQueue[blueActiveUnit] = "moveRight";
           controlPanel.actives[blueActiveUnit].hide();
           controlPanel.actives[blueActiveUnit] =
             controlPanel.icons.rightArrows[blueActiveUnit];
@@ -996,7 +1036,7 @@ $(window).keydown(function(event){
           break;
         case 83: //s (move down)
           event.preventDefault();
-          blueUnits[blueActiveUnit].moveDown();
+          blueMovesQueue[blueActiveUnit] = "moveDown";
           controlPanel.actives[blueActiveUnit].hide();
           controlPanel.actives[blueActiveUnit] =
             controlPanel.icons.downArrows[blueActiveUnit];
@@ -1005,7 +1045,7 @@ $(window).keydown(function(event){
           updateBlueAU(teamSize);
           break;
         case 88: //"x" key
-          blueUnits[blueActiveUnit].stay();
+          blueMovesQueue[blueActiveUnit] = "stay";
           controlPanel.actives[blueActiveUnit].hide();
           controlPanel.actives[blueActiveUnit] =
             controlPanel.icons.circles[blueActiveUnit];
@@ -1018,53 +1058,49 @@ $(window).keydown(function(event){
         case 18: //right alt
           event.preventDefault();
           if (qpoGame.multiplayer){
-            if (redUnits[redActiveUnit].bombReady){
-              redUnits[redActiveUnit].bomb();
-            };
+            redMovesQueue[redActiveUnit] = "bomb";
             updateRedAU(teamSize);
           }
           break;
         case 16: //right shift
           event.preventDefault();
           if (qpoGame.multiplayer){
-            if (redUnits[redActiveUnit].shotReady){
-              redUnits[redActiveUnit].shoot();
-            };
+            redMovesQueue[redActiveUnit] = "shoot";
             updateRedAU(teamSize);
           }
           break;
         case 37: //left arrow (move left)
           event.preventDefault();
           if (qpoGame.multiplayer){
-            redUnits[redActiveUnit].moveLeft();
+            redMovesQueue[redActiveUnit] = "moveLeft";
             updateRedAU(teamSize);
           }
           break;
         case 38: //up arrow (move up)
           event.preventDefault();
           if (qpoGame.multiplayer){
-            redUnits[redActiveUnit].moveUp();
+            redMovesQueue[redActiveUnit] = "moveUp";
             updateRedAU(teamSize);
           }
           break;
         case 39: //right arrow (move right)
           event.preventDefault();
           if (qpoGame.multiplayer){
-            redUnits[redActiveUnit].moveRight();
+            redMovesQueue[redActiveUnit] = "moveRight";
             updateRedAU(teamSize);
           }
           break;
         case 40: //down arrow (move down)
           event.preventDefault();
           if (qpoGame.multiplayer){
-            redUnits[redActiveUnit].moveDown();
+            redMovesQueue[redActiveUnit] = "moveDown";
             updateRedAU(teamSize);
           }
           break;
         case 191: // "?" key
           event.preventDefault();
           if (qpoGame.multiplayer){
-            redUnits[redActiveUnit].stay();
+            redMovesQueue[redActiveUnit] = "stay";
             updateRedAU(teamSize);
           }
           break;
@@ -1108,15 +1144,15 @@ function countdownScreen(difficulty){
     .attr({"font-size":72,"fill":"white"});
   setTimeout(
     function(){numbers.attr({"text":"2"})},
-    1000);
+    1000*timeScale);
   setTimeout(
     function(){numbers.attr({"text":"1"})},
-    2000);
+    2000*timeScale);
   setTimeout(function(){
              mainMenu.blackness.animate({"opacity":0},200,"<")},
-             2800);
-  setTimeout(function(){numbers.remove()},3000);
-  setTimeout(function(){startGame(difficulty);},3000);
+             2800*timeScale);
+  setTimeout(function(){numbers.remove()},3000*timeScale);
+  setTimeout(function(){startGame(difficulty);},3000*timeScale);
   activeScreen="other";
 }
 function startGame(difficulty){
@@ -1124,21 +1160,24 @@ function startGame(difficulty){
   if (newGames > 0){
     moveTimer.redo();
   } */
-  teamSize = (function(diff){
+  teamSize = parseInt(difficulty, 10);
+  console.log("ts is " + teamSize);
+  /*
+  (function(diff){
     switch(diff){
-      case "hard":
+      case "3":
         return 3;
         break;
-      case "medium":
+      case "2":
         return 2;
         break;
-      case "beginner":
+      case "1":
         return 1;
         break;
       default:
         break;
     }
-  })(difficulty);
+  })(difficulty); */
 
   turnNumber = 0;
   redDead = 0;
@@ -1373,7 +1412,8 @@ function endGame(result){
   gui.remove();
   shots = [];
   bombs = [];
-  endGameMenu = makeEndGameMenu(result);
+  activeSession.update(result); //add to the proper tally
+  endGameMenu = makeEndGameMenu(result); //generate the endGameMenu GUI
 }
 function newRound(){
   endGameMenu.all.remove();

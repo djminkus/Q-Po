@@ -1,10 +1,14 @@
 var yes = $("#yes");
-//var activeMenu = mainMenu;
+var activeScreen = "menu"; //type of screen that's active -- can be "menu", "game", "tut", or "other"
+//activeMenu = []; //a list of button objects within the current menu
+//activeButton = 0; //index of active button within the activeMenu list
+var activeMenu = "main"; //the key within "menus" of the currently-displayed menu
 var menus = {
   "main" : null,
   "selectD" : null,
   "endG" : null
 }
+var activeSession = null;
 
 button = function(text,x,y,onclick,adj,active){
   /*
@@ -44,12 +48,14 @@ var mainMenu = {
     difficultySelectMenu = selectDifficulty();
     mainMenu.all.hide();
     qpoGame.multiplayer = false;
+    activeSession = new session("singlePlayer");
     //mainMenu.blackness.show();
   }, 30, true),
   multiplayerButton : new button("Multiplayer",300,360,function(e){
     difficultySelectMenu = selectDifficulty();
     mainMenu.all.hide();
     qpoGame.multiplayer = true;
+    activeSession = new session("multiplayer");
     //mainMenu.blackness.show();
   }, 10, false),
 
@@ -97,8 +103,8 @@ menus.main = mainMenu;
 mainMenu.all.push(mainMenu.blackness, mainMenu.title,
   mainMenu.singlePlayerButton.set, mainMenu.multiplayerButton.set);
 //activeMenu = [mainMenu.singlePlayerButton, mainMenu.multiplayerButton];
-console.log(activeMenu[activeButton]);
-console.log(activeButton);
+//console.log(activeMenu[activeButton]);
+//console.log(activeButton);
 
 var selectDifficulty = function(){
     activeMenu = "selectD";
@@ -108,23 +114,23 @@ var selectDifficulty = function(){
     this.blackness = c.rect(0,0,c.width,c.height).attr({"fill":"black","opacity":.9});
     this.title = c.text(300,60,"Select Difficulty").attr({"font-size":40,"fill":"white","font-family":"'Open Sans',sans-serif"});
 
-    this.beginner = new button("Beginner",300,200-40,function(e){
+    this.beginner = new button("Beginner",300,230-40,function(e){
       this.all.hide();
-      diffic = "beginner";
+      diffic = "1";
       countdownScreen(diffic);
       mainMenu.blackness.show();
     },0,true);
 
     this.medium = new button("Medium",300,320-40,function(e){
       this.all.hide();
-      diffic = "medium";
+      diffic = "2";
       countdownScreen(diffic);
       mainMenu.blackness.show();
     }, -15);
 
-    this.hard = new button("Hard",300,440-40,function(e){
+    this.hard = new button("Hard",300,410-40,function(e){
       this.all.hide();
-      diffic = "hard";
+      diffic = "3";
       countdownScreen(diffic);
       mainMenu.blackness.show();
     }, -15);
@@ -136,32 +142,25 @@ var selectDifficulty = function(){
       if (this.beginner.active == true){
         this.beginner.deactivate();
         this.medium.activate();
-        console.log("beg button was active, now med button is");
       } else if (this.medium.active == true){
         this.medium.deactivate();
         this.hard.activate();
-        console.log("med button was active, now hard button is");
       } else if (this.hard.active == true){
         this.hard.deactivate();
         this.beginner.activate();
       }
-      console.log("next!");
     }
     this.previous = function(){
       if (this.beginner.active == true){
         this.beginner.deactivate();
         this.hard.activate();
-        console.log("beg button was active, now hard button is");
       } else if (this.medium.active == true){
         this.medium.deactivate();
         this.beginner.activate();
-        console.log("med button was active, now beg button is");
       } else if (this.hard.active == true){
         this.hard.deactivate();
         this.medium.activate();
-        console.log("hard button was active, now med button is");
       }
-      console.log("previous!");
     }
 
     return this;
@@ -170,12 +169,14 @@ var selectDifficulty = function(){
 var makeEndGameMenu = function(result){
   menus["endG"] = this;
   activeMenu = "endG";
-  //this.gameOverBG = c.rect(10,10,containerWidth()-20,130).attr({"fill":"white"});
+
+  // create teh big text:
   this.gameOverText = c.text(300,70,"round over")
     .attr({"font-size":50,"fill":"black"});
+  // set teh big text to "Victory"/"Tie"/etc:
   switch (result){
     case "tie":
-      this.gameOverText.attr({"text":"tie!"});
+      this.gameOverText.attr({"text":"tie!","fill":COLOR_DICT["grey"]});
       break;
     case "red":
       if (!qpoGame.multiplayer){
@@ -186,7 +187,7 @@ var makeEndGameMenu = function(result){
       break;
     case "blue":
       if (!qpoGame.multiplayer){
-        this.gameOverText.attr({"text":"Victory!","fill":COLOR_DICT["shot color"]});
+        this.gameOverText.attr({"text":"Victory!","fill":COLOR_DICT["blue"]});
       } else {
         this.gameOverText.attr({"text":"Blue wins!","fill":COLOR_DICT["blue"]});
       }
@@ -194,15 +195,19 @@ var makeEndGameMenu = function(result){
     default:
       break;
   }
-  //mainMenu.blackness.attr({"opacity": .9 });
-  this.again = new button("New Round",300,220,newRound,0,true);
-  this.back = new button("Main Menu",300,420,goMainMenu);
-  this.selectDiff = new button("Select Difficulty",300,320,function(e){
+
+  // create teh bar graph:
+  this.barGraph = activeSession.displayResults();
+
+  // create teh buttons
+  this.again = new button("New Round",300,250,newRound,0,true);         //make the New Round button
+  this.back = new button("Main Menu",300,450,goMainMenu);               // make the Main Menu button
+  this.selectDiff = new button("Select Difficulty",300,350,function(e){ //make the Select Diffuculty button
     endGameMenu.all.hide();
     difficultySelectMenu = selectDifficulty();
   }, 60);
 
-  this.all = c.set().push(this.gameOverText,this.again.set,this.back.set,this.selectDiff.set);
+  this.all = c.set().push(this.gameOverText,this.again.set,this.back.set,this.selectDiff.set,this.barGraph);
   //console.log(endGameElements);
   activeScreen="menu";
 
@@ -219,27 +224,31 @@ var makeEndGameMenu = function(result){
       this.back.deactivate();
       this.again.activate();
     }
-    console.log("next!");
   }
   this.previous = function(){
     if (this.again.active == true){
       this.again.deactivate();
       this.back.activate();
-      console.log("agin button was active, now sd button is");
     } else if (this.selectDiff.active == true){
       this.selectDiff.deactivate();
       this.again.activate();
-      console.log("sd button was active, now back button is");
     } else if (this.back.active == true){
       this.back.deactivate();
       this.selectDiff.activate();
-      console.log("back button was active, now ag button is");
     }
-    console.log("previous!");
   }
 
   return this;
 };
+
+function goMainMenu(){
+  endGameMenu.all.remove();
+  mainMenu.showAll();
+  activeScreen = "menu";
+  activeMenu = "main";
+  mainMenu.blackness.attr({"opacity":.9});
+  mainMenu.singlePlayerButton.activate();
+}
 
 //difficultySelectMenu.all.push(difficultySelectMenu.blackness, difficultySelectMenu.title);
 //difficultySelectMenu.all.remove();
