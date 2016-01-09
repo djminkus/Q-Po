@@ -116,21 +116,21 @@ var selectDifficulty = function(){
 
     this.beginner = new button("Beginner",300,230-40,function(e){
       this.all.hide();
-      diffic = "beginner";
+      diffic = "1";
       countdownScreen(diffic);
       mainMenu.blackness.show();
     },0,true);
 
     this.medium = new button("Medium",300,320-40,function(e){
       this.all.hide();
-      diffic = "medium";
+      diffic = "2";
       countdownScreen(diffic);
       mainMenu.blackness.show();
     }, -15);
 
     this.hard = new button("Hard",300,410-40,function(e){
       this.all.hide();
-      diffic = "hard";
+      diffic = "3";
       countdownScreen(diffic);
       mainMenu.blackness.show();
     }, -15);

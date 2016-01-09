@@ -1,7 +1,8 @@
 function session(sessionType){
   console.log("NEW SESSION");
   this.type = sessionType; //singlePlayer or multiplayer
-
+  this.playerRating = 1500; //start at 1500, adjust each time game ends in this.update(),
+                            //  only display after single player games
   this.games = 0; //games played
   this.blueWins = 0; //wins for blue (human player in singlePlayer mode)
   this.ties = 0;
@@ -91,9 +92,11 @@ function session(sessionType){
     switch(result){
       case "blue":
         this.blueWins += 1;
+        this.playerRating += 100 * diffic;
         break;
       case "red":
         this.redWins += 1;
+        this.playerRating -= 400 - 100 * diffic; 
         break;
       case "tie":
         this.ties += 1;
@@ -102,6 +105,7 @@ function session(sessionType){
         console.log("this was unexpected"); //debugging
         break;
     }
+    this.playerRating
     return null;
   }
   return this;

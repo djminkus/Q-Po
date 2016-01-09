@@ -21,8 +21,10 @@ How to get familiar with the code:
     being called every three seconds.
 
 SHORT-TERM TODO:
-  [   ] Make game keep track of win/loss ratio in each session
+  [ x ] Make game keep track of win/loss ratio in each session
   [   ] Create smarter AI
+  [   ] In single-player sessions, give player a rating based on
+          record at various levels vs. computer.
   [   ] Fix glitch where blue loses if both teams' last units die simultaneously
   [   ] Enable "go back" in menus via backspace (keycode 8)
   [ x ] Fix glitch where when you return to the main screen,
@@ -189,7 +191,7 @@ function placeUnits(difficulty){
   blueUnits = [];
   redUnits = [];
   switch(difficulty){
-    case "hard":
+    case "3":
       blueUnits[0] =  makeUnit("blue",1,1,0);
       redUnits[0] = makeUnit("red",1,5,0);
       blueUnits[1] = makeUnit("blue",3,1,1);
@@ -197,13 +199,13 @@ function placeUnits(difficulty){
       blueUnits[2] = makeUnit("blue",5,1,2);
       redUnits[2] = makeUnit("red",5,5,2);
       break;
-    case "medium":
+    case "2":
       blueUnits[0] =  makeUnit("blue",2,1,0);
       redUnits[0] = makeUnit("red",2,5,0);
       blueUnits[1] = makeUnit("blue",4,1,1);
       redUnits[1] = makeUnit("red",4,5,1);
       break;
-    case "beginner":
+    case "1":
       blueUnits[0] =  makeUnit("blue",3,1,0);
       redUnits[0] = makeUnit("red",3,5,0);
       break;
@@ -1158,21 +1160,24 @@ function startGame(difficulty){
   if (newGames > 0){
     moveTimer.redo();
   } */
-  teamSize = (function(diff){
+  teamSize = parseInt(difficulty, 10);
+  console.log("ts is " + teamSize);
+  /*
+  (function(diff){
     switch(diff){
-      case "hard":
+      case "3":
         return 3;
         break;
-      case "medium":
+      case "2":
         return 2;
         break;
-      case "beginner":
+      case "1":
         return 1;
         break;
       default:
         break;
     }
-  })(difficulty);
+  })(difficulty); */
 
   turnNumber = 0;
   redDead = 0;
