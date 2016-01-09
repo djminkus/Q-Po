@@ -1,4 +1,3 @@
-
 //CREATE UNIT TYPE/CLASS
 function startUnit(color, gx, gy, num){
   //for now, only blue units are numbered (6-20-15)
@@ -47,7 +46,7 @@ function finishUnit(unit){
   unit.kill = function(){
     unit.alive = false;
     unit.rect.stop();
-    unit.rect.animate({"opacity":0},2000,function(){unit.rect.hide()});
+    unit.rect.animate({"opacity":0},2000*timeScale,function(){unit.rect.hide()});
 
     switch(unit.team){
       case "red":
@@ -89,15 +88,12 @@ function finishUnit(unit){
   }
   unit.moveRight = function(){
     if (unit.rect.attr('x') + unit.rect.attr('width') < guiCoords.gameBoard.rightWall) {
-      console.log("Move right!");
       unit.rect.stop();
       var anim = Raphael.animation( {"x":unit.rect.attr('x') + guiCoords.gameBoard.columns*guiCoords.gameBoard.squareSize},
         guiCoords.gameBoard.columns*1500*timeScale);
       unit.rect.animate(anim);
       unit.movingForward = false;
     }
-    console.log("isaidmoveright");
-    console.log(unit.rect.attr("x"));
   }
   unit.moveDown = function(){
     if (unit.rect.attr('y') + unit.rect.attr('height') < guiCoords.gameBoard.bottomWall) {
@@ -119,7 +115,7 @@ function finishUnit(unit){
     finishBomb(bomb);
     bomb.next();
     unit.bombReady = false;
-    setTimeout(unit.reloadBomb,3000);
+    setTimeout(unit.reloadBomb,3000*timeScale);
   }
   unit.shoot = function(){
     var shot, anim;
@@ -129,11 +125,11 @@ function finishUnit(unit){
                       unit.rect.attr('y') + unit.rect.attr('height') + 2,
                       6, 2);
         anim = Raphael.animation({"height":25, "y": shot.attr('y') + 0}, 500*timeScale, function(){
-          shot.animate({"y": shot.attr('y') + 125*7}, 3000*7);
+          shot.animate({"y": shot.attr('y') + 125*7}, 3000*7*timeScale);
         });
         if (unit.movingForward){
           anim = Raphael.animation({"height":25, "y": shot.attr('y') + guiCoords.gameBoard.squareSize/6 + 10}, 500*timeScale, function(){
-            shot.animate({"y": shot.attr('y') + 125*7}, 3000*7);
+            shot.animate({"y": shot.attr('y') + 125*7}, 3000*7*timeScale);
           });
         }
         break;
@@ -142,11 +138,11 @@ function finishUnit(unit){
                       unit.rect.attr('y') - 4,
                       6, 2);
         anim = Raphael.animation({"height":25, "y": shot.attr('y') - 25}, 500*timeScale, function(){
-          shot.animate({"y": shot.attr('y') - 125*7}, 3000*7);
+          shot.animate({"y": shot.attr('y') - 125*7}, 3000*7*timeScale);
         });
         if (unit.movingForward){
           anim = Raphael.animation({"height":25, "y": shot.attr('y') - 25 - guiCoords.gameBoard.squareSize/6 - 10}, 500*timeScale, function(){
-            shot.animate({"y": shot.attr('y') - 125*7}, 3000*7);
+            shot.animate({"y": shot.attr('y') - 125*7}, 3000*7*timeScale);
           });
         }
         break;
@@ -159,7 +155,7 @@ function finishUnit(unit){
     gui.push(shot);
     shots.push(shot);
     unit.shotReady = false;
-    setTimeout(unit.reloadShot,3000);
+    setTimeout(unit.reloadShot,3000*timeScale);
   }
   unit.stay = function(){
     unit.rect.stop();
