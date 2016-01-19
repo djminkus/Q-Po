@@ -65,19 +65,34 @@ function finishUnit(unit){
     }
   }
   unit.moveLeft = function(){
+    unit.movingForward = false;
     if (unit.rect.attr('x') > guiCoords.gameBoard.leftWall) {
       unit.rect.stop();
+
+      /* use for slidey-style of play (units don't stop unless told to)
       var anim = Raphael.animation( {"x":unit.rect.attr('x') - guiCoords.gameBoard.columns*guiCoords.gameBoard.squareSize },
-        guiCoords.gameBoard.columns*1500*timeScale);
+        guiCoords.gameBoard.columns*1500*timeScale); //over the course of n turns, send the unit 2n squares to the left
+      */
+
+      //use for stoppy-style of play (units stop after each turn)
+      var anim = Raphael.animation( {"x":unit.rect.attr('x') - 2*guiCoords.gameBoard.squareSize },
+        3000*timeScale); //over the course of a turn, send the unit 2n squares to the left
       unit.rect.animate(anim);
       unit.movingForward = false;
     }
   }
   unit.moveUp = function(){
+    unit.movingForward = false;
     if (unit.rect.attr('y') > guiCoords.gameBoard.topWall) {
       unit.rect.stop();
+
+      /*
       var anim = Raphael.animation( {"y":unit.rect.attr('y') - guiCoords.gameBoard.rows*guiCoords.gameBoard.squareSize},
         guiCoords.gameBoard.rows*1500*timeScale);
+      */
+      var anim = Raphael.animation( {"y":unit.rect.attr('y') - 2*guiCoords.gameBoard.squareSize },
+        3000*timeScale); //over the course of a turn, send the unit 2n squares to the left
+
       unit.rect.animate(anim);
       if (unit.team == "red"){
         unit.movingForward = true;
@@ -89,17 +104,29 @@ function finishUnit(unit){
   unit.moveRight = function(){
     if (unit.rect.attr('x') + unit.rect.attr('width') < guiCoords.gameBoard.rightWall) {
       unit.rect.stop();
+      /*
       var anim = Raphael.animation( {"x":unit.rect.attr('x') + guiCoords.gameBoard.columns*guiCoords.gameBoard.squareSize},
         guiCoords.gameBoard.columns*1500*timeScale);
+      */
+      var anim = Raphael.animation( {"x":unit.rect.attr('x') + 2*guiCoords.gameBoard.squareSize },
+        3000*timeScale); //over the course of a turn, send the unit 2n squares to the left
+
       unit.rect.animate(anim);
       unit.movingForward = false;
     }
   }
   unit.moveDown = function(){
     if (unit.rect.attr('y') + unit.rect.attr('height') < guiCoords.gameBoard.bottomWall) {
+      unit.movingForward = false;
       unit.rect.stop();
+      /*
       var anim = Raphael.animation( {"y":unit.rect.attr('y') + guiCoords.gameBoard.rows*guiCoords.gameBoard.squareSize},
         guiCoords.gameBoard.rows*1500*timeScale);
+      */
+
+      var anim = Raphael.animation( {"y":unit.rect.attr('y') + 2*guiCoords.gameBoard.squareSize },
+        3000*timeScale); //over the course of a turn, send the unit 2n squares to the left
+
       unit.rect.animate(anim);
       if (unit.team == "blue"){
         unit.movingForward = true;
@@ -109,6 +136,7 @@ function finishUnit(unit){
     }
   }
   unit.bomb = function(){
+    unit.movingForward = false;
     var bomb;
     bomb = new startBomb(unit);
     improveBomb(bomb);
@@ -118,6 +146,7 @@ function finishUnit(unit){
     setTimeout(unit.reloadBomb,3000*timeScale);
   }
   unit.shoot = function(){
+    unit.movingForward = false;
     var shot, anim;
     switch(unit.team){
       case "blue":
