@@ -1,4 +1,5 @@
 console.log("RESET " + Date());
+
 var c = new Raphael("raphContainer", containerWidth(), 600); //create the Raphael canvas
 var debug; //debug mode on? Set to true or false in "setup()"
 function containerWidth(){ //generate width of Raphael canvas based on debug status
@@ -10,7 +11,21 @@ function containerWidth(){ //generate width of Raphael canvas based on debug sta
   return width;
 }
 
+c.customAttributes.segment = function (x, y, r, a1, a2) {
+  var flag = (a2 - a1) > 180,
+  color = (a2 - a1 + 120) / (360*5)  ;
+  a1 = (a1 % 360) * Math.PI / 180;
+  a2 = (a2 % 360) * Math.PI / 180;
+  return {
+    path: [["M", x, y], ["l", r * Math.cos(a1), r * Math.sin(a1)], ["A", r, r, 0, +flag, 1, x + r * Math.cos(a2), y + r * Math.sin(a2)], ["z"]],
+    fill: "hsb(" + color + ", .75, .8)"
+  };
+};
+
 /** Q-PO : a JS game by @akaDavidGarrett
+
+Q-Po is a competitive browser game that combines elements of real-time strategy games and turn-based board games,
+  resulting in fast-paced, competitive gameplay that's easy to learn but hard to master
 
 How to get familiar with the code:
   Start with the startGame() and newTurn() functions. They will reference
@@ -21,16 +36,17 @@ How to get familiar with the code:
     being called every three seconds.
 
 SHORT-TERM TODO:
-  [ x ] Make game keep track of win/loss ratio in each session
-  [   ] Create smarter AI
-  [   ] In single-player sessions, give player a rating based on
-          record at various levels vs. computer.
+  [   ] Separate server-side code and client code
+  [   ] Realign menu options (left) and game results page (show player rating)
   [   ] Fix glitch where blue loses if both teams' last units die simultaneously
-  [   ] Enable "go back" in menus via backspace (keycode 8)
+  [ x ] Enable "go back" in menus via backspace (keycode 8)
+  [ x ] Make game keep track of win/loss ratio in each session
+  [ x ] In single-player sessions, give player a rating based on
+          record at various levels vs. computer.
   [ x ] Fix glitch where when you return to the main screen,
       enter doesn't work until up/down are pressed
-  [   ] Make units stop in place after each turn. (or don't bother until you decide:
-          is it a good idea to allow units one "motion" and one "attack/technique" each turn?)
+  [ x ] Make units stop in place after each turn? (Don't bother until you decide:
+          Is it a good idea to allow units one "motion" and one "attack/technique" each turn?)
   [ x ] make turn length tweakable (DONE -- via timeScale [in "setup()"])
   [ x ] Make menus keyboard-controlled
   [ x ] Make walls stop units' motion in wall's direction
@@ -40,33 +56,32 @@ SHORT-TERM TODO:
 LONG-TERM TODO:
   See Issues/Feature Requests on Github:
     https://github.com/djminkus/QPO/issues
+  [   ] Use Neural Networks to implement good AI
+  [   ] Make a server
+  [   ] Enable PVP (Implement user login system)
+  [   ] Implement Ranking System
+  [   ] Open beta and advertise
+  [   ] Improve game based on beta feedback
+  [   ] Release 1.0
+  [   ] Throw $$ tourney
+  --- MAYBES
+  [   ] Implement Subscription System
   [   ] adjust tutorial
-  Make a server
-  Enable PVP (Implement user login system)
-  Implement Ranking System
-  Implement Subscription System
-  Throw $$ tourney
   [   ] Implement pause function
+  --- DONE
   [ x ] Create a tutorial
-
 
 Contents of this code: (updated June 2, 2015)
   VAR DECLARATIONS
-
   UNIT CONSTRUCTORS
-
   GUI ELEMENTS
-
-
   INCREMENT FUNCTIONS
     updateBlueAU() -- updates which unit is highlighted with orange
       (keyboard presses queue moves for the Active Unit)
     tick() -- makes the seconds clock tick down
     newTurn() -- starts a new turn, called every 3 seconds
     detectCollisions() -- detects collisions between game objects, called every 17 ms
-
   KEYDOWN HANDLER : detects and responds to keyboard input (arrows, spacebar, enter)
-
   SCREEN FUNCTIONS
     countdownScreen() -- Shows 3,2,1, then calls startGame()
     startGame() -- draws GUI, spawns units, and starts the game clock and collisionDetector
@@ -74,8 +89,6 @@ Contents of this code: (updated June 2, 2015)
     newRound() -- called when player presses "new round" button --
       hides the end-of-game menu and calls countdownScreen() again
     goMainMenu() --
-
-
 */
 
 qpoGame = {
@@ -365,16 +378,7 @@ function finishControlPanel(cp){
 function turnTimer(){
   //creates a global var "timer" that is a pie/clock-like thingy that
   //  will start at full every three seconds, and changes color as it shrinks
-  c.customAttributes.segment = function (x, y, r, a1, a2) {
-    var flag = (a2 - a1) > 180,
-    color = (a2 - a1 + 120) / (360*5)  ;
-    a1 = (a1 % 360) * Math.PI / 180;
-    a2 = (a2 % 360) * Math.PI / 180;
-    return {
-      path: [["M", x, y], ["l", r * Math.cos(a1), r * Math.sin(a1)], ["A", r, r, 0, +flag, 1, x + r * Math.cos(a2), y + r * Math.sin(a2)], ["z"]],
-      fill: "hsb(" + color + ", .75, .8)"
-    };
-  };
+
   timer = c.path().attr({segment: [450, 250, 50, -90, 269],"stroke":"none"});
   gui.push(timer);
 }
@@ -614,10 +618,13 @@ function newTurn(ts){ //pass in teamSize
    */
   turnNumber++;
   for (var i=0; i<teamSize; i++){
+
+    //in single player, generate red's moves automatically
     if (!qpoGame.multiplayer){
-      //in single player, generate random moves for red
-      redMovesQueue[i] = moves[Math.round(Math.random()*6)]
+      //redMovesQueue[i] = moves[Math.round(Math.random()*6)]
+      redMovesQueue[i] = findMove(redUnits[i]);
     }
+
     // execute red's moves:
     if (redUnits[i].alive){
       switch(redMovesQueue[i]) {
@@ -644,6 +651,7 @@ function newTurn(ts){ //pass in teamSize
           break;
       }
     }
+
     //execute blue's moves:
     if (blueUnits[i].alive){
       switch(blueMovesQueue[i]) {
@@ -669,10 +677,16 @@ function newTurn(ts){ //pass in teamSize
           blueUnits[i].stay();
           break;
       }
+      controlPanel.actives[i].hide()
     }
+
+    //clear the move queues:
+    redMovesQueue[i]="stay";
+    blueMovesQueue[i]="stay";
+
   }
 
-  //controlPanel.resetIcons();
+  controlPanel.resetIcons();
   timer.attr({segment: [450, 250, 50, -90, 269]});
   timer.animate({segment: [450, 250, 50, -90, -90]}, 3000*timeScale);
 }
@@ -921,13 +935,16 @@ function detectCollisions(ts){
   //End the game if necessary.
   if ((redDead==ts || blueDead==ts) && gameEnding == false){
     var gameResult;
-    if(redDead==blueDead){
-      gameResult = "tie";
-    } else if (redDead == ts) {
-      gameResult = "blue";
-    } else {
-      gameResult = "red";
-    }
+    setTimeout(function(){ //grab game result (after 20 ms to account for performance issues)
+      if(redDead==blueDead){
+        gameResult = "tie";
+      } else if (redDead == ts) {
+        gameResult = "blue";
+      } else {
+        gameResult = "red";
+      }
+    }, 20);
+
     blueActiveUnit = -1;
     redActiveUnit = -1;
     gameEnding = true;
@@ -939,6 +956,7 @@ function detectCollisions(ts){
   }
 }
 
+//NOT IMPLEMENTED
 function updateCP(team){
   switch (team){
     case "blue":
@@ -957,10 +975,14 @@ $(window).keydown(function(event){
   switch (activeScreen){
     case "menu":
       switch(event.keyCode){
+        case 8: //backspace/delete
+          event.preventDefault();
+          if ( !(activeMenu=="main") ) {menus[activeMenu].up();}
+          // console.log("backspace pressed");
+          break;
         case 13: //enter
           event.preventDefault();
           activeButton.onclick();
-          //TODO: make it execute the highlighted button's onClick function
           break;
         case 87: //w
           event.preventDefault();
@@ -1161,7 +1183,6 @@ function startGame(difficulty){
     moveTimer.redo();
   } */
   teamSize = parseInt(difficulty, 10);
-  console.log("ts is " + teamSize);
   /*
   (function(diff){
     switch(diff){
