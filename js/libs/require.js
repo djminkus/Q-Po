@@ -8,6 +8,8 @@
 /*jslint regexp: true, nomen: true, sloppy: true */
 /*global window, navigator, document, importScripts, setTimeout, opera */
 
+
+
 var requirejs, require, define;
 (function (global) {
     var req, s, head, baseElement, dataMain, src,
@@ -2127,3 +2129,15 @@ var requirejs, require, define;
     //Set up with config info.
     req(cfg);
 }(this));
+
+/*
+//shim for Raphael fix:
+requirejs.config({
+  shim: {
+        // raphael shim
+        'raphael': {
+            exports: 'Raphael'
+        }
+      }
+});
+*/

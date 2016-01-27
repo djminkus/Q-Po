@@ -1,4 +1,5 @@
 console.log("RESET " + Date());
+
 var c = new Raphael("raphContainer", containerWidth(), 600); //create the Raphael canvas
 var debug; //debug mode on? Set to true or false in "setup()"
 function containerWidth(){ //generate width of Raphael canvas based on debug status
@@ -23,6 +24,9 @@ c.customAttributes.segment = function (x, y, r, a1, a2) {
 
 /** Q-PO : a JS game by @akaDavidGarrett
 
+Q-Po is a competitive browser game that combines elements of real-time strategy games and turn-based board games,
+  resulting in fast-paced, competitive gameplay that's easy to learn but hard to master
+
 How to get familiar with the code:
   Start with the startGame() and newTurn() functions. They will reference
     the other functions in a logical order.
@@ -32,16 +36,16 @@ How to get familiar with the code:
     being called every three seconds.
 
 SHORT-TERM TODO:
+  [   ] Separate server-side code and client code
   [   ] Realign menu options (left) and game results page (show player rating)
-  [   ] Create smarter AI
   [   ] Fix glitch where blue loses if both teams' last units die simultaneously
-  [   ] Enable "go back" in menus via backspace (keycode 8)
+  [ x ] Enable "go back" in menus via backspace (keycode 8)
   [ x ] Make game keep track of win/loss ratio in each session
   [ x ] In single-player sessions, give player a rating based on
           record at various levels vs. computer.
   [ x ] Fix glitch where when you return to the main screen,
       enter doesn't work until up/down are pressed
-  [   ] Make units stop in place after each turn? (Don't bother until you decide:
+  [ x ] Make units stop in place after each turn? (Don't bother until you decide:
           Is it a good idea to allow units one "motion" and one "attack/technique" each turn?)
   [ x ] make turn length tweakable (DONE -- via timeScale [in "setup()"])
   [ x ] Make menus keyboard-controlled
@@ -52,33 +56,32 @@ SHORT-TERM TODO:
 LONG-TERM TODO:
   See Issues/Feature Requests on Github:
     https://github.com/djminkus/QPO/issues
+  [   ] Use Neural Networks to implement good AI
+  [   ] Make a server
+  [   ] Enable PVP (Implement user login system)
+  [   ] Implement Ranking System
+  [   ] Open beta and advertise
+  [   ] Improve game based on beta feedback
+  [   ] Release 1.0
+  [   ] Throw $$ tourney
+  --- MAYBES
+  [   ] Implement Subscription System
   [   ] adjust tutorial
-  Make a server
-  Enable PVP (Implement user login system)
-  Implement Ranking System
-  Implement Subscription System
-  Throw $$ tourney
   [   ] Implement pause function
+  --- DONE
   [ x ] Create a tutorial
-
 
 Contents of this code: (updated June 2, 2015)
   VAR DECLARATIONS
-
   UNIT CONSTRUCTORS
-
   GUI ELEMENTS
-
-
   INCREMENT FUNCTIONS
     updateBlueAU() -- updates which unit is highlighted with orange
       (keyboard presses queue moves for the Active Unit)
     tick() -- makes the seconds clock tick down
     newTurn() -- starts a new turn, called every 3 seconds
     detectCollisions() -- detects collisions between game objects, called every 17 ms
-
   KEYDOWN HANDLER : detects and responds to keyboard input (arrows, spacebar, enter)
-
   SCREEN FUNCTIONS
     countdownScreen() -- Shows 3,2,1, then calls startGame()
     startGame() -- draws GUI, spawns units, and starts the game clock and collisionDetector
@@ -86,8 +89,6 @@ Contents of this code: (updated June 2, 2015)
     newRound() -- called when player presses "new round" button --
       hides the end-of-game menu and calls countdownScreen() again
     goMainMenu() --
-
-
 */
 
 qpoGame = {
@@ -977,7 +978,7 @@ $(window).keydown(function(event){
         case 8: //backspace/delete
           event.preventDefault();
           if ( !(activeMenu=="main") ) {menus[activeMenu].up();}
-          console.log("backspace pressed");
+          // console.log("backspace pressed");
           break;
         case 13: //enter
           event.preventDefault();

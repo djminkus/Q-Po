@@ -12,7 +12,7 @@ c.customAttributes.ratingColor = function(rating){
 }
 
 function session(sessionType){
-  console.log("NEW SESSION");
+  console.log("NEW " + sessionType + " SESSION");
   this.type = sessionType; //singlePlayer or multiplayer
   this.playerRating = 1500; //start at 1500, adjust each time game ends in this.update(),
                             //  only display after single player games

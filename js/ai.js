@@ -29,12 +29,12 @@ function findMove(unit){
     if (bombs[i]){
       var lsb = bombs[i].phys.getBBox().x;     //x coord of left side of bomb
       var rsb = bombs[i].phys.getBBox().x2; //x coord of right side of bomb
-      console.log(lsb,rsb,lsu,rsu);
+      // console.log(lsb,rsb,lsu,rsu);
       if(lsb > rsu){            //If the bomb is to the right of the unit,
         demerits[2] += 1;       //  unit has a new reason not to move right.
-        console.log("bomb to right");
+        // console.log("bomb to right");
       } else if (rsb < lsu){     //If the bomb is to the left of the unit,
-        console.log("bomb to left");
+        // console.log("bomb to left");
         demerits[0] += 1;       //  unit has a new reason not to move left.
       } else {                  //Otherwise, the bomb is in the same column,
         demerits[1] += 1;       //  so unit has a new reason not to do anything
@@ -42,7 +42,7 @@ function findMove(unit){
         demerits[4] += 1;
         demerits[5] += 1;
         demerits[6] += 1;
-        console.log("bomb in same column");
+        // console.log("bomb in same column");
       }
     }
   }
