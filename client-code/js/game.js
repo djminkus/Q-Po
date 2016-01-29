@@ -97,11 +97,30 @@ qpoGame = {
   },
   "unit" : {},
   "bomb" : {},
-  "multiplayer":false
+  "multiplayer" :false
 };
+qpo = {
+  /* WEBSOCKET THINGS (NOT SOCKET.IO)
+  "socket" : new WebSocket('ws://echo.websocket.org'), //this url will change
+  "socketCodes" : {"bomb":0,"shoot":1,"moveLeft":2,"moveUp":3,"moveRight":4,"moveDown":5,"stay":6},
+  */
+  "socket" : io(),
+  "lastMsgTime" : new Date().getTime(),
+  "moveName" : null,
+  "timeSinceLastMsg" : null
+}
 
-function setup(){ //set up global vars and stuff
-  timeScale = .5; //Bigger means slower
+qpo.setup = function(){ //set up global vars and stuff
+  /* WEBSOCKET THINGS (NOT SOCKET.IO)
+  this.socket.onerror = function(error) {
+    console.log('WebSocket Error: ' + error);
+  };
+  this.socket.onmessage = function(event) {
+    var message = event.data;
+    // console.log("ws says:" + message);
+  };
+  */
+  timeScale = 0.5; //Bigger means slower; 1 is original 3-seconds-per-turn
   COLOR_DICT = {
     "blue": "#0055bb",
     "red": "#bb0000",
@@ -115,7 +134,6 @@ function setup(){ //set up global vars and stuff
   redMovesQueue = [];
   shots = [];
   bombs = [];
-  //bsplicers = [];
   moves = ["moveUp","moveDown","moveLeft","moveRight","shoot","bomb","stay"];
   gui = c.set();
   blueActiveUnit = 0;
@@ -152,7 +170,7 @@ function setup(){ //set up global vars and stuff
   debug = false;
 }
 
-setup();
+qpo.setup();
 
 function findSlot(array){
   var slot = 0
@@ -970,6 +988,18 @@ function updateCP(team){
   }
 }
 
+function sendMoveToServer(moveStr){
+  // console.log(eval("new Date().getTime()"));
+  qpo.timeSinceLastMsg = ( eval("new Date().getTime()") - qpo.lastMsgTime );
+  // mlog("qpo.timeSinceLastMsg");
+  if (qpo.timeSinceLastMsg > 100){ //if they've waited at least 100 ms:
+    qpo.socket.send(qpo.socketCodes[moveStr]);
+    qpo.lastMsgTime = eval("new Date().getTime()");
+  } else { //otherwise, tell them they're sending msgs too fast
+    console.log("slow your roll, Mr. Jones");
+  }
+}
+
 //LISTEN FOR INPUT
 $(window).keydown(function(event){
   switch (activeScreen){
@@ -1008,6 +1038,8 @@ $(window).keydown(function(event){
       switch (event.keyCode){
         case 81: //q -- blue pressed bomb
           event.preventDefault();
+          qpo.moveName = "bomb";
+          sendMoveToServer(qpo.moveName);
           blueMovesQueue[blueActiveUnit] = "bomb";
           controlPanel.actives[blueActiveUnit].hide();
           controlPanel.actives[blueActiveUnit] =
@@ -1018,6 +1050,8 @@ $(window).keydown(function(event){
           break;
         case 69: //e -- blue pressed shoot
           event.preventDefault();
+          qpo.moveName = "shoot";
+          sendMoveToServer(qpo.moveName);
           blueMovesQueue[blueActiveUnit] = "shoot";
           controlPanel.actives[blueActiveUnit].hide();
           controlPanel.actives[blueActiveUnit] =
@@ -1028,6 +1062,8 @@ $(window).keydown(function(event){
           break;
         case 65: //a (move left)
           event.preventDefault();
+          qpo.moveName = "moveLeft";
+          sendMoveToServer(qpo.moveName);
           blueMovesQueue[blueActiveUnit] = "moveLeft";
           controlPanel.actives[blueActiveUnit].hide();
           controlPanel.actives[blueActiveUnit] =
@@ -1038,6 +1074,8 @@ $(window).keydown(function(event){
           break;
         case 87: //w (move up)
           event.preventDefault();
+          qpo.moveName = "moveUp";
+          sendMoveToServer(qpo.moveName);
           blueMovesQueue[blueActiveUnit] = "moveUp";
           controlPanel.actives[blueActiveUnit].hide();
           controlPanel.actives[blueActiveUnit] =
@@ -1048,6 +1086,8 @@ $(window).keydown(function(event){
           break;
         case 68: //d (move right)
           event.preventDefault();
+          qpo.moveName = "moveRight";
+          sendMoveToServer(qpo.moveName);
           blueMovesQueue[blueActiveUnit] = "moveRight";
           controlPanel.actives[blueActiveUnit].hide();
           controlPanel.actives[blueActiveUnit] =
@@ -1058,6 +1098,8 @@ $(window).keydown(function(event){
           break;
         case 83: //s (move down)
           event.preventDefault();
+          qpo.moveName = "moveDown";
+          sendMoveToServer(qpo.moveName);
           blueMovesQueue[blueActiveUnit] = "moveDown";
           controlPanel.actives[blueActiveUnit].hide();
           controlPanel.actives[blueActiveUnit] =
@@ -1066,7 +1108,10 @@ $(window).keydown(function(event){
           controlPanel.actives[blueActiveUnit].show();
           updateBlueAU(teamSize);
           break;
-        case 88: //"x" key
+        case 88: //x (stay)
+          event.preventDefault();
+          qpo.moveName = "stay";
+          sendMoveToServer(qpo.moveName);
           blueMovesQueue[blueActiveUnit] = "stay";
           controlPanel.actives[blueActiveUnit].hide();
           controlPanel.actives[blueActiveUnit] =
@@ -1135,9 +1180,8 @@ $(window).keydown(function(event){
           }
         */
 
-
         default: //anything else
-          ;
+          break;
       }
       break;
     case "tut":

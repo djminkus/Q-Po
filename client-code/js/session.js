@@ -34,7 +34,7 @@ function session(sessionType){
 
   //displayResults() creates the Raphael elements that make up the bar graph,
   //  and returns the Raphael set comprised of these three elements.
-  this.displayResults = function(){
+  this.displayResults = function(result){
     /* make a horizontal bar.
        Left is blue wins, colored blue. Middle is ties, colored grey.
        Right is red wins, colored red.
@@ -93,7 +93,22 @@ function session(sessionType){
       }
       var barGraphText = c.set(this.blueText,this.greyText,this.redText).attr({"fill":"white","font-size":20});
 
-      var ratingText = c.text(300, 180+adj, "Your rating: " + this.playerRating).attr({ratingColor: this.playerRating,"font-size":30});
+      var ratingString = "Your rating: " + this.playerRating;
+      switch(result){
+        case "blue":
+          ratingString += " (+" + (100*diffic) + ")";
+          break;
+        case "red":
+          ratingString += " (+" + (400 - 100 * diffic) + ")";
+          break;
+        case "tie":
+          ratingString += " (+0)";
+          break
+        default:
+          console.log("this was unexpected"); //debugging
+          break;
+      }
+      var ratingText = c.text(300, 180+adj, ratingString).attr({ratingColor: this.playerRating,"font-size":30});
 
       var all = c.set(barGraphPrep, barGraphText, winsSoFarText, ratingText);
       return all;

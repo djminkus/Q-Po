@@ -103,7 +103,6 @@ buttonList = function(buttonsInOrder){
 
 /*
 menu = function(name,buttonArgs){
-
 };
 */
 
@@ -165,7 +164,6 @@ var mainMenu = new makeMainMenu();
 var mainMenu = {
   blackness: c.rect(0,0,c.width,c.height).attr({"fill":"black","opacity":.9}),
   title : c.text(300,100,"Q-PO").attr({"font-size":120,"fill":"white","font-family":"'Open Sans',sans-serif"}),
-
   singlePlayerButton : new button("Single-Player",300,270,function(e){
     selectDifficultyMenu = makeSelectDifficultyMenu();
     mainMenu.all.hide();
@@ -179,19 +177,16 @@ var mainMenu = {
     qpoGame.multiplayer = true;
     activeSession = new session("multiplayer");
   }, 10, false, "multiP"),
-
   // selectProfileButton : new button("Select Profile",300,450,function(e){
   //   mainMenu.selectProfileButton.deactivate();
   //   selectProfileMenu = makeSelectProfileMenu();
   //   mainMenu.all.hide();
   // }, 30, false, "selectP"),
-
   // howToPlayButton: new button("How to Play",300,390,function(e){
   //   mainMenu.all.hide();
   //   mainMenu.blackness.show();
   //   startHowTo(); //this function is defined in "qpo03.js"
   // }),
-
   buttonList : new buttonList([this.singlePlayerButton, this.multiplayerButton]),
   all : c.set(),
   showAll: function(){
@@ -207,8 +202,6 @@ var mainMenu = {
     this.buttonList.previous();
   }
 };
-
-
 menus.main = mainMenu;
 mainMenu.all.push(mainMenu.blackness, mainMenu.title,
   mainMenu.singlePlayerButton.set, mainMenu.multiplayerButton.set);
@@ -310,7 +303,7 @@ var makeEndGameMenu = function(result){
   }
 
   // create teh bar graph:
-  this.barGraph = activeSession.displayResults();
+  this.barGraph = activeSession.displayResults(result);
 
   // create teh buttons
   this.again = new button("New Round",300,260+25,newRound,0,true,"newR");         //make the New Round button
@@ -357,34 +350,6 @@ var makeEndGameMenu = function(result){
 
   return this;
 };
-
-/*
-var makeSelectProfileMenu = function(){
-
-  menus["selectProfile"] = this;
-  activeMenu = "selectProfile";
-
-  this.blackness = c.rect(0,0,c.width,c.height).attr({"fill":"black","opacity":.9});
-
-  // create teh big text:
-  this.mainText = c.text(300,50,"Select Profile")
-    .attr({"font-size":50,"fill":"white"});
-
-  // create teh buttons
-  //this.again = new button("New Round",300,250+25,newRound,0,true);         //make the New Round button
-  this.mainMenuButton = new button("Main Menu",300,450+25,goMainMenu, 0, true, "mainM");  // make the Main Menu button
-
-  this.all = c.set().push(this.mainText, this.mainMenuButton.set, this.blackness);
-  //console.log(endGameElements);
-  activeScreen="menu";
-
-  this.up = function(){
-    goMainMenu();
-  }
-
-  return this;
-}
-*/
 
 function goMainMenu(){
   switch (activeMenu){

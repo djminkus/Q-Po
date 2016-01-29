@@ -1,3 +1,7 @@
+/* WAYS TO IMPROVE AI:
+Move back instead of left/right if shot is too close to avoid
+*/
+
 function findMove(unit){
   var chosenMove = null;
   var demerits = [0,0,0,0, 0,0, 0];

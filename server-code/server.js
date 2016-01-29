@@ -2,6 +2,17 @@ var app = require('express')();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
 
+io.on('connection', function(socket){
+  socket.on('chat message', function(msg){
+    io.emit('chat message', msg);
+  });
+});
+
+http.listen(573, function(){
+  console.log('listening on *:573');
+});
+
+/* PRE-SOCKET.IO CODE
 app.get('/', function(req, res){
   //res.send('<h1>Hello world</h1>');
 });
@@ -73,3 +84,4 @@ window.onload = function() {
   };
 
 };
+*/
