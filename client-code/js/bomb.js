@@ -6,26 +6,26 @@ function startBomb(su){ //su = source unit
   switch(this.team){
     case "blue":
       this.phys = c.rect(su.rect.attr("x") + 18,
-                    su.rect.attr("y") + guiCoords.gameBoard.squareSize + 20 , 14, 14);
+                    su.rect.attr("y") + qpo.guiDimens.squareSize + 20 , 14, 14);
       break;
     case "red":
       this.phys = c.rect(su.rect.attr("x") + 18,
                   su.rect.attr("y") - 20, 14, 14);
       break;
   }
-  gui.push(this.phys);
+  qpo.gui.push(this.phys);
 
   //put this in the "bombs" array:
-  var ind = findSlot(bombs);
+  var ind = findSlot(qpo.bombs);
   this.index = ind;
-  bombs[this.index] = this;
+  qpo.bombs[this.index] = this;
 
   return this;
 }
 function improveBomb(bomb){
-  bomb.phys.attr({"fill":COLOR_DICT["bomb color"],
-             "opacity":.5,
-             "stroke":COLOR_DICT["bomb color"]});
+  bomb.phys.attr({"fill":qpo.COLOR_DICT["bomb color"],
+             "opacity":0.5,
+             "stroke":qpo.COLOR_DICT["bomb color"]});
   bomb.explode = function(){
     bomb.exploded = true;
     bomb.timer = -1;
@@ -35,10 +35,10 @@ function improveBomb(bomb){
 
     var anim = Raphael.animation({
       "16.6%": {
-        "y": cy - (bombSize/2 - 7),
-        "x": cx - (bombSize/2 - 7),
-        "width": bombSize,
-        "height": bombSize
+        "y": cy - (qpo.bombSize/2 - 7),
+        "x": cx - (qpo.bombSize/2 - 7),
+        "width": qpo.bombSize,
+        "height": qpo.bombSize
       },
       "100%":{
         "y":cy+7,
@@ -46,8 +46,8 @@ function improveBomb(bomb){
         "width":0,
         "height":0
       }
-    }, 3000*timeScale, function(){
-      bombs[bomb.index] = false;
+    }, 3000*qpo.timeScale, function(){
+      qpo.bombs[bomb.index] = false;
     });
     bomb.phys.animate(anim);
   }
@@ -60,11 +60,11 @@ function finishBomb(bomb){
       var bombAnim;
       switch(bomb.team){
         case "blue":
-          bombAnim = Raphael.animation({"y":bomb.phys.attr('y') + 50}, 3000*timeScale, function(){bomb.next()} );
+          bombAnim = Raphael.animation({"y":bomb.phys.attr('y') + 50}, 3000*qpo.timeScale, function(){bomb.next()} );
           bomb.phys.animate(bombAnim);
           break;
         case "red":
-          bombAnim = Raphael.animation({"y":bomb.phys.attr('y') - 50}, 3000*timeScale, function(){bomb.next()} );
+          bombAnim = Raphael.animation({"y":bomb.phys.attr('y') - 50}, 3000*qpo.timeScale, function(){bomb.next()} );
           bomb.phys.animate(bombAnim);
           break;
       }

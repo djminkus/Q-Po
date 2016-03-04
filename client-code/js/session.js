@@ -1,12 +1,16 @@
+//A "session" is initiated any time the user chooses "singlePlayer" or "Multiplayer" from the main menu.
+//  In each session, running totals of win/loss/ties are kept, and a player's rating starts at 1500 and is
+//  modified after each game. 
+
 var adj = 22.5 - 5; //adjustment -- controls vertical placement of bar graph
 
 c.customAttributes.ratingColor = function(rating){
   var color = (rating - 1000) / (2000);
   if(rating>3000){
-    return {fill:COLOR_DICT["shot color"]};
+    return {fill:qpo.COLOR_DICT["shot color"]};
   }
   if(rating<1000){
-    return{fill:COLOR_DICT["red"]};
+    return{fill:qpo.COLOR_DICT["red"]};
   }
   return {fill:"hsb(" + color + ", .75, .8)"};
 }
@@ -40,7 +44,7 @@ function session(sessionType){
        Right is red wins, colored red.
        Game window is 600 wide. So 300 is center.
     */
-      var winsSoFarText = c.text(300, 130+adj,"WINS").attr({"fill":COLOR_DICT[this.leader()],"font-size":50});
+      var winsSoFarText = c.text(300, 130+adj,"WINS").attr({"fill":qpo.COLOR_DICT[this.leader()],"font-size":50});
 
       var blueSize = (function(){
         //console.log(activeSession.games,activeSession.blueWins,activeSession.redWins,activeSession.ties);
@@ -71,11 +75,11 @@ function session(sessionType){
       var redLeft = 300 - (totalSize/2) + wsf + blueSize + greySize;
 
       this.bluePart = c.rect(blueLeft,107.5+adj,blueSize,45)
-                        .attr({"stroke-width":2,"stroke":COLOR_DICT["blue"],"fill":COLOR_DICT["blue"]});
+                        .attr({"stroke-width":2,"stroke":qpo.COLOR_DICT["blue"],"fill":qpo.COLOR_DICT["blue"]});
       this.greyPart = c.rect(greyLeft,107.5+adj,greySize,45)
-                        .attr({"stroke-width":2,"stroke":COLOR_DICT["grey"],"fill":COLOR_DICT["grey"]});
+                        .attr({"stroke-width":2,"stroke":qpo.COLOR_DICT["grey"],"fill":qpo.COLOR_DICT["grey"]});
       this.redPart = c.rect(redLeft,107.5+adj,redSize,45)
-                        .attr({"stroke-width":2,"stroke":COLOR_DICT["red"],"fill":COLOR_DICT["red"]});
+                        .attr({"stroke-width":2,"stroke":qpo.COLOR_DICT["red"],"fill":qpo.COLOR_DICT["red"]});
       var barGraphPrep = c.set(this.bluePart,this.greyPart,this.redPart);
 
       this.blueText = c.text(blueCenter,130+adj,this.blueWins);
@@ -99,7 +103,7 @@ function session(sessionType){
           ratingString += " (+" + (100*diffic) + ")";
           break;
         case "red":
-          ratingString += " (+" + (400 - 100 * diffic) + ")";
+          ratingString += " (-" + (400 - 100 * diffic) + ")";
           break;
         case "tie":
           ratingString += " (+0)";

@@ -1,14 +1,11 @@
-
 var yes = $("#yes");
-
-// mLog("yes");
-// mLog2('yes');
 
 var activeScreen = "menu"; //type of screen that's active -- can be "menu", "game", "tut", or "other"
 //activeMenu = []; //a list of button objects within the current menu
 var activeMenu = "main"; //the key within "menus" of the currently-displayed menu
 var menus = {
   "main" : null,
+  "multiP" : null,
   "selectD" : null,
   "endG" : null,
   "selectP" : null
@@ -45,7 +42,7 @@ button = function(text,x,y,onclick,adj,active,nameStr){
   this.set.click(function(){onclick()});
   this.active = active || false ;
   this.activate = function(){
-    this.rectEl.attr({"stroke":COLOR_DICT["orange"], "stroke-width":4});
+    this.rectEl.attr({"stroke":qpo.COLOR_DICT["orange"], "stroke-width":4});
     activeButton = this;
     this.active = true;
   }
@@ -110,21 +107,90 @@ var makeMainMenu = function(){
   activeMenu = "main";
   menus["main"] = this;
 
-  this.blackness = c.rect(0,0,c.width,c.height).attr({"fill":"black","opacity":.9});
-  this.title = c.text(300,100,"Q-PO").attr({"font-size":120,"fill":"white","font-family":"'Open Sans',sans-serif"});
+  //1st layer (background)
+  this.blackness = c.rect(0,0,c.width,c.height).attr({"fill":"black"});
 
-  this.singlePlayerButton = new button("Single-Player",300,270,function(e){
+  //2nd layer (animation)
+  this.unit = makeUnit("red",3,7.5,0);
+  this.otherUnit = makeUnit("blue",1,2,1);
+  this.animate = function(){
+    //order the layers properly:
+    mainMenu.unit.phys.toBack();
+    mainMenu.otherUnit.phys.toBack();
+    mainMenu.blackness.toBack();
+
+    //make the red unit move right and the blue unit fire a bomb every three turns, starting this turn
+    mainMenu.unit.moveRight();
+    mainMenu.otherUnit.bomb();
+    mainMenu.bombCounter = 1;
+    mainMenu.all.push(qpo.bombs[(mainMenu.bombCounter-1) % 2].phys);
+    // bombs[(mainMenu.bombCounter-1) % 2].phys.toBack();
+    mainMenu.mmrai = setInterval(
+      function(){
+        mainMenu.unit.moveRight();
+        mainMenu.otherUnit.bomb();
+        mainMenu.bombCounter++;
+        mainMenu.all.push(qpo.bombs[(mainMenu.bombCounter-1) % 2].phys);
+        // console.log("main menu right anim!");
+      },
+    9000*qpo.timeScale)//mmrai = Main Menu Rightward Animation Interval
+
+    //make the red unit move left and blue move right every 3 "turns", starting in two turns
+    mainMenu.turn2 = setTimeout(
+      function(){
+        mainMenu.mmlai = setInterval(
+          function(){
+            mainMenu.unit.moveLeft();
+            mainMenu.otherUnit.moveRight();
+            // console.log("main menu left anim!")
+          }, 9000*qpo.timeScale);
+        mainMenu.unit.moveLeft();
+        mainMenu.otherUnit.moveRight();
+      },
+    6000*qpo.timeScale);
+
+    //make the red unit shoot and the blue unit move left every 3 "turns", starting in 1 turn
+    mainMenu.turn1 = setTimeout(
+      function(){
+        mainMenu.mmsai = setInterval(function(){
+          qpo.shots[mainMenu.shotCounter-1].hide();
+          mainMenu.unit.shoot();
+          mainMenu.shotCounter++;
+          qpo.shots[mainMenu.shotCounter-1].toBack();
+          mainMenu.blackness.toBack();
+          mainMenu.otherUnit.moveLeft();
+          // console.log("main menu shoot anim!");
+        }, 9000*qpo.timeScale);
+        mainMenu.unit.shoot();
+        qpo.shots[0].toBack();
+        mainMenu.shotCounter = 1;
+        mainMenu.blackness.toBack();
+        mainMenu.otherUnit.moveLeft();
+      },
+    3000*qpo.timeScale);
+
+    // mainMenu.blackness.toBack();
+  };
+
+  //3rd layer (2nd background)
+  // this.miniblackness = c.rect(0,0,c.width-200,c.height-200).attr({"fill":"black","opacity":1}); // to leave a "window" for the anim
+
+  //4th layer (title, menu buttons)
+  this.title = c.text(300,100,"Q-PO").attr({"font-size":120,"fill":"white","font-family":"'Open Sans',sans-serif"});
+  this.singlePlayerButton = new button("Single-Player",300,250,function(e){
     selectDifficultyMenu = makeSelectDifficultyMenu();
-    mainMenu.all.hide();
+    mainMenu.hideAll();
+    // mainMenu.all.hide();
     qpoGame.multiplayer = false;
     activeSession = new session("singlePlayer");
   }, 30, true, "singleP");
-  this.multiplayerButton = new button("Multiplayer",300,360,function(e){
+  this.multiplayerButton = new button("Multiplayer",300,340,function(e){
     mainMenu.multiplayerButton.deactivate();
-    selectDifficultyMenu = makeSelectDifficultyMenu();
-    mainMenu.all.hide();
+    qpo.multiplayerMenu = makeMultiplayerMenu();
+    // selectDifficultyMenu = makeSelectDifficultyMenu();
+    // mainMenu.all.hide();
+    mainMenu.hideAll();
     qpoGame.multiplayer = true;
-    activeSession = new session("multiplayer");
   }, 10, false, "multiP"),
 
   /* selectProfileButton = new button("Select Profile",300,450,function(e){
@@ -140,25 +206,62 @@ var makeMainMenu = function(){
   }); */
 
   this.buttonList = new buttonList([this.singlePlayerButton, this.multiplayerButton]);
+
+  /*
+  this.w = c.set(
+    c.text(430,250,"w").attr({"fill":"white","font-family":"'Open Sans',sans-serif"}),
+    c.rect(420,240,20,20,5).attr({"stroke":"white"})
+  )
+  this.s = c.set(
+    c.text(430,340,"s").attr({"fill":"white","font-family":"'Open Sans',sans-serif"}),
+    c.rect(420,330,20,20,5).attr({"stroke":"white"})
+  )
+  */
+
   this.all = c.set();
-  this.all.push(this.title,this.blackness,this.singlePlayerButton.set,this.multiplayerButton.set);
+  this.all.push(this.title, this.blackness,
+    this.singlePlayerButton.set, this.multiplayerButton.set,
+    this.unit.phys, this.otherUnit.phys);
 
   this.showAll = function(){
     this.all.show();
+    this.unit = makeUnit("red",3,7.5,0);
+    this.otherUnit = makeUnit("blue",1,2,1);
+    this.animate();
     this.blackness.toBack();
   };
+  this.hideAll = function(){
+    this.all.hide();
+    clearInterval(this.mmsai);
+    clearInterval(this.mmrai);
+    clearInterval(this.mmlai);
+    clearTimeout(this.turn1,this.turn2);
+    for (var i = 0; i < qpo.shots.length; i++){
+      if (qpo.shots[i]) {qpo.shots[i].remove();}
+    }
+    for (var i = 0; i < qpo.bombs.length; i++){
+      if (qpo.bombs[i]) {qpo.bombs[i].phys.remove();}
+    }
+    this.unit.instakill();
+    this.otherUnit.instakill();
+  }
+
+  //for changing button highlight:
   this.next = function(){
     this.buttonList.next();
   };
   this.previous = function(){
     this.buttonList.previous();
   };
-  // mlog("this");
-  return this;
 
+  this.show = function(){
+    mainMenu.showAll();
+  };
+  return this;
 };
 
 var mainMenu = new makeMainMenu();
+mainMenu.animate(); //could be better designed but oh well
 
 /*
 var mainMenu = {
@@ -208,36 +311,78 @@ mainMenu.all.push(mainMenu.blackness, mainMenu.title,
 */
 // mainMenu.all.push(mainMenu.selectProfileButton.set);
 
+var makeMultiplayerMenu = function(){
+  menus["multiP"] = this;
+  activeSession = new session("multiplayer");
+  activeMenu = "multiP";
+
+  this.blackness = c.rect(0,0,c.width,c.height).attr({"fill":"black","opacity":1});
+  this.title = c.text(300,100,"coming soon!").attr({"font-size":60,"fill":"white","font-family":"'Open Sans',sans-serif"});
+
+  this.all = c.set().push(this.blackness,this.title);
+
+  this.up = function(){
+    goMainMenu();
+  }
+
+  this.close = function(){
+    // this.all.hide();
+    this.all.remove();
+  }
+
+  return this;
+}
+
 var makeSelectDifficultyMenu = function(){
     activeMenu = "selectD";
     menus["selectD"] = this;
+    // mainMenu.unit.kill();
     //activeMenu = this;
     // modes : { 0: Single-Player, 1: Multiplayer}
-    this.blackness = c.rect(0,0,c.width,c.height).attr({"fill":"black","opacity":.9});
+    this.blackness = c.rect(0,0,c.width,c.height).attr({"fill":"black","opacity":1});
     this.title = c.text(300,50,"Select Difficulty").attr({"font-size":50,"fill":"white","font-family":"'Open Sans',sans-serif"});
 
     this.beginner = new button("Beginner",300,230-40,function(e){
-      this.all.hide();
+      this.close();
+      // this.all.hide();
       diffic = "1";
       countdownScreen(diffic);
       mainMenu.blackness.show();
     },0,true, "beginner");
 
     this.medium = new button("Medium",300,320-40,function(e){
-      this.all.hide();
+      this.close();
+      // this.all.hide();
       diffic = "2";
       countdownScreen(diffic);
       mainMenu.blackness.show();
     },-15,false, "medium");
 
     this.hard = new button("Hard",300,410-40,function(e){
-      this.all.hide();
+      this.close();
+      // this.all.hide();
       diffic = "3";
       countdownScreen(diffic);
       mainMenu.blackness.show();
     }, -15,false, "hard");
 
+    this.units = [
+      makeUnit("red",2.4,1.8), makeUnit("blue",7.7,1.8),
+      makeUnit("red",2.45, 3.6), makeUnit("red",1.25, 3.6),   makeUnit("blue",7.65, 3.6), makeUnit("blue",8.85, 3.6),
+      makeUnit("red",2.9, 5.4), makeUnit("red",1.7, 5.4), makeUnit("red",0.5, 5.4),
+        makeUnit("blue",7.2, 5.4), makeUnit("blue",8.4, 5.4), makeUnit("blue",9.6, 5.4)
+    ];
+
     this.all = c.set().push(this.blackness, this.title, this.beginner.set, this.medium.set, this.hard.set);
+
+    this.close = function(){
+      // this.all.hide();
+      this.all.remove();
+      for (var i=0; i<this.units.length; i++){
+        this.units[i].kill();
+        this.units[i].phys.hide();
+      }
+    }
 
     this.next = function(){
       if (this.beginner.active == true){
@@ -282,20 +427,20 @@ var makeEndGameMenu = function(result){
   // set teh big text to "Victory"/"Tie"/etc:
   switch (result){
     case "tie":
-      this.gameOverText.attr({"text":"tie!","fill":COLOR_DICT["grey"]});
+      this.gameOverText.attr({"text":"tie!","fill":qpo.COLOR_DICT["grey"]});
       break;
     case "red":
       if (!qpoGame.multiplayer){
-        this.gameOverText.attr({"text":"Defeat.","fill":COLOR_DICT["red"]});
+        this.gameOverText.attr({"text":"Defeat.","fill":qpo.COLOR_DICT["red"]});
       } else {
-        this.gameOverText.attr({"text":"Red wins!","fill":COLOR_DICT["red"]});
+        this.gameOverText.attr({"text":"Red wins!","fill":qpo.COLOR_DICT["red"]});
       }
       break;
     case "blue":
       if (!qpoGame.multiplayer){
-        this.gameOverText.attr({"text":"Victory!","fill":COLOR_DICT["blue"]});
+        this.gameOverText.attr({"text":"Victory!","fill":qpo.COLOR_DICT["blue"]});
       } else {
-        this.gameOverText.attr({"text":"Blue wins!","fill":COLOR_DICT["blue"]});
+        this.gameOverText.attr({"text":"Blue wins!","fill":qpo.COLOR_DICT["blue"]});
       }
       break;
     default:
@@ -317,6 +462,10 @@ var makeEndGameMenu = function(result){
     this.selectDiff.set,this.barGraph,this.statusPanel);
   //console.log(endGameElements);
   activeScreen="menu";
+
+  this.close = function(){
+    this.all.remove();
+  }
 
   this.next = function(){
     if (this.again.active == true){
@@ -352,6 +501,8 @@ var makeEndGameMenu = function(result){
 };
 
 function goMainMenu(){
+  menus[activeMenu].close();
+  /*
   switch (activeMenu){
     case "selectD":
       selectDifficultyMenu.all.remove();
@@ -366,9 +517,10 @@ function goMainMenu(){
       console.log("this was unexpected");
       break;
   }
+  */
   mainMenu.showAll();
   activeScreen = "menu";
   activeMenu = "main";
-  mainMenu.blackness.attr({"opacity":.9});
+  mainMenu.blackness.attr({"opacity":1});
   mainMenu.singlePlayerButton.activate();
 }
