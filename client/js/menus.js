@@ -21,9 +21,9 @@ var buttons = {
   "mainM" : null
 }
 var buttonsKeys = ["singleP","multiP","selectP","customG","startG","newR","gameS","mainM"];
-var activeSession = null;
+qpo.activeSession = null;
 
-c.customAttributes.qpoText = function(size){
+c.customAttributes.qpoText = function(size){ //style text white with Open Sans family and "size" font-size.
   return {
     "font-size": size,
     "fill": "white",
@@ -125,7 +125,6 @@ slider = function(label, min, max, defaultt, y, spawnActive){
   return this;
 }
 
-
 //NOT IMPLEMENTED YET IN MENUS
 buttonList = function(buttonsInOrder){
   //pass in a list of the buttons in the order they appear on the list.
@@ -163,9 +162,18 @@ var makeMainMenu = function(){
 
   //1st layer (background)
   this.blackness = c.rect(0,0,c.width,c.height).attr({"fill":"black"});
+  this.letters = c.set().push(
+    c.text(500,500,"q"),
+    c.text(520,500,"w"),
+    c.text(540,500,"e"),
+    c.text(510,520,"a"),
+    c.text(530,520,"s"),
+    c.text(550,520,"d"),
+    c.text(520,540,"x")
+  ).attr({qpoText: 20});
 
   //2nd layer (animation)
-  qpo.activeGame = new qpo.Game(7,3); //to define the unit size and all
+  qpo.activeGame = new qpo.Game(7,3,false,false); //to define the unit size and all
   this.unit = makeUnit("red",3,7.5,0);
   this.otherUnit = makeUnit("blue",1,2,1);
   this.animate = function(){
@@ -233,7 +241,7 @@ var makeMainMenu = function(){
     gameSetupMenu = new makeGameSetupMenu();
     qpo.menus.main.hideAll();
     qpoGame.multiplayer = false;
-    activeSession = new session("singlePlayer");
+    qpo.activeSession = new session("singlePlayer");
   }, 30, true, "singleP");
   this.multiplayerButton = new button("Multiplayer",300,340,function(e){
     qpo.menus.main.multiplayerButton.deactivate();
@@ -256,7 +264,7 @@ var makeMainMenu = function(){
   */
 
   this.all = c.set();
-  this.all.push(this.title, this.blackness,
+  this.all.push(this.title, this.blackness, this.letters,
     this.singlePlayerButton.set, this.multiplayerButton.set,
     this.unit.phys, this.otherUnit.phys);
 
@@ -303,10 +311,22 @@ var makeMainMenu = function(){
 //CREATE MAIN MENU:
 qpo.menus.main = new makeMainMenu();
 qpo.menus.main.animate(); //could be better designed but oh well
+qpo.muteButton = c.path("M-4,-4 L4,-4 L10,-10 L10,10 L4,4 L-4,4 L-4,-4")
+  .attr({"stroke-width":2, "stroke":qpo.COLOR_DICT["green"],
+    "fill":qpo.COLOR_DICT["green"], "opacity":0.7})
+  .transform("t15,580")
+  .click(function(){
+    switch(qpo.menuSong.volume){
+      case 1: { qpo.menuSong.volume = 0.2; break;}
+      case 0.2: { qpo.menuSong.volume = 0; break; }
+      case 0: { qpo.menuSong.volume = 1; break; }
+      default: {console.log("this was unexpected"); break;}
+    }
+  });
 
 var makeMultiplayerMenu = function(){ //fill this in later
   qpo.menus["multiP"] = this;
-  activeSession = new session("multiplayer");
+  qpo.activeSession = new session("multiplayer");
   activeMenu = "multiP";
 
   this.blackness = c.rect(0,0,c.width,c.height).attr({"fill":"black","opacity":1});
@@ -465,7 +485,7 @@ var makeEndGameMenu = function(result){
   }
 
   // create teh bar graph:
-  this.barGraph = activeSession.displayResults(result);
+  this.barGraph = qpo.activeSession.displayResults(result);
 
   // create teh buttons
   this.again = new button("New Round",300,260+25,newRound,0,true,"newR");         //make the New Round button

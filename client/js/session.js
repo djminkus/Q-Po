@@ -47,19 +47,18 @@ function session(sessionType){
       var winsSoFarText = c.text(300, 130+adj,"WINS").attr({"fill":qpo.COLOR_DICT[this.leader()],"font-size":50});
 
       var blueSize = (function(){
-        //console.log(activeSession.games,activeSession.blueWins,activeSession.redWins,activeSession.ties);
-        var result = 50 * activeSession.blueWins; //unless totalGames<11:
-        if (activeSession.games > 6){result = 400 * (activeSession.blueWins/activeSession.games);}
+        var result = 50 * qpo.activeSession.blueWins; //unless totalGames<11:
+        if (qpo.activeSession.games > 6){result = 400 * (qpo.activeSession.blueWins/qpo.activeSession.games);}
         return result;
       })();
       var greySize = (function(){
-        var result = 50 * activeSession.ties; //unless totalGames<11:
-        if (activeSession.games > 6){result = 400 * (activeSession.ties/activeSession.games)}
+        var result = 50 * qpo.activeSession.ties; //unless totalGames<11:
+        if (qpo.activeSession.games > 6){result = 400 * (qpo.activeSession.ties/qpo.activeSession.games)}
         return result;
       })();
       var redSize = (function(){
-        var result = 50 * activeSession.redWins; //unless totalGames<11:
-        if (activeSession.games > 6){result = 400 * (activeSession.redWins/activeSession.games)}
+        var result = 50 * qpo.activeSession.redWins; //unless totalGames<11:
+        if (qpo.activeSession.games > 6){result = 400 * (qpo.activeSession.redWins/qpo.activeSession.games)}
         return result;
       })();
       var wsf=winsSoFarText.getBBox().width-4; //size of 'WINS' text
@@ -118,9 +117,9 @@ function session(sessionType){
       return all;
   }
 
-  //call activeSession.update(result) to add 1 to activeSession.redWins/blueWins/ties
+  //call qpo.activeSession.update(result) to add 1 to qpo.activeSession.redWins/blueWins/ties
   this.update = function(result){
-    activeSession.set = c.set(this.bluePart,this.greyPart,this.redPart);
+    qpo.activeSession.set = c.set(this.bluePart,this.greyPart,this.redPart);
     this.games += 1;
     switch(result){
       case "blue":

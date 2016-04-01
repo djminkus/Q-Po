@@ -64,7 +64,7 @@ function startHowTo(){
 
   howToPage.chapter0 = c.set().push( howToPage.unitText, howToPage.unit, howToPage.shot, howToPage.bomb);
 
-  //CHAPTER 1 STUFF:
+  //CHAPTER 1 STUFF (keyboard/qweasdx):
   howToPage.keys = c.set().push(
     c.rect(40, 40, 50, 50, 10).attr({"stroke":"white","stroke-width":2}),
     c.rect(100, 40, 50, 50, 10).attr({"stroke":"white","stroke-width":2}),
@@ -72,15 +72,17 @@ function startHowTo(){
     c.rect(50, 100, 50, 50, 10).attr({"stroke":"white","stroke-width":2}),
     c.rect(110, 100, 50, 50, 10).attr({"stroke":"white","stroke-width":2}),
     c.rect(170, 100, 50, 50, 10).attr({"stroke":"white","stroke-width":2}),
+    c.rect(80, 160, 50, 50, 10).attr({"stroke":"white","stroke-width":2}),
+
     c.text(65, 65, "Q").attr({"fill":"white","font-size":20,"font-family":"'Open Sans',sans-serif"}),
     c.text(125, 65, "W").attr({"fill":"white","font-size":20,"font-family":"'Open Sans',sans-serif"}),
     c.text(185, 65, "E").attr({"fill":"white","font-size":20,"font-family":"'Open Sans',sans-serif"}),
     c.text(75, 125, "A").attr({"fill":"white","font-size":20,"font-family":"'Open Sans',sans-serif"}),
     c.text(135, 125, "S").attr({"fill":"white","font-size":20,"font-family":"'Open Sans',sans-serif"}),
-    c.text(195, 125, "D").attr({"fill":"white","font-size":20,"font-family":"'Open Sans',sans-serif"})
+    c.text(195, 125, "D").attr({"fill":"white","font-size":20,"font-family":"'Open Sans',sans-serif"}),
+    c.text(95, 185, "X").attr({"fill":"white","font-size":20,"font-family":"'Open Sans',sans-serif"})
   );
   howToPage.labels = c.set().push(
-
     c.path("M50,30 L-20,-20").attr({"stroke":"white","stroke-width":2}),
     c.path("M125,30 L125,-10").attr({"stroke":"white","stroke-width":2}),
     c.path("M190,30 L240,-10").attr({"stroke":"white","stroke-width":2}),
@@ -101,7 +103,7 @@ function startHowTo(){
 
   howToPage.chapter1 = c.set().push(howToPage.keys, howToPage.labels).hide();
 
-  //CHAPTER 2 STUFF:
+  //CHAPTER 2 STUFF: (explanation)
   howToPage.turnText = c.set().push(
     c.text(300,320-25,"This is the turn timer. It counts down").attr({"fill":"white","font-size":20,"font-family":"'Open Sans',sans-serif"}),
     c.text(300,350-25,"once every three seconds or so. Every time it").attr({"fill":"white","font-size":20,"font-family":"'Open Sans',sans-serif"}),

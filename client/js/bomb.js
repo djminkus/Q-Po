@@ -7,7 +7,7 @@ function startBomb(su){ //su = source unit
   this.team = su.team;
   this.timer = 3;
   this.exploded = false;
-  switch(this.team){
+  switch(this.team){ //make the "this.phys" and put it in the right place
     case "blue":
       this.phys = c.rect(su.rect.attr("x") + BOMB_MARGIN_X,
                     su.rect.attr("y") + qpo.guiDimens.squareSize + BOMB_MARGIN_Y,
