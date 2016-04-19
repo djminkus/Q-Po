@@ -17,14 +17,66 @@ c.customAttributes.ratingColor = function(rating){
 
 function session(sessionType){
   console.log("NEW " + sessionType + " SESSION");
-  this.type = sessionType; //singlePlayer or multiplayer
-  this.playerRating = 1500; //start at 1500, adjust each time game ends in this.update(),
-                            //  only display after single player games
-  this.games = 0; //games played
-  this.blueWins = 0; //wins for blue (human player in singlePlayer mode)
+  this.type = sessionType;
+  switch(sessionType){ //get player types from "pvp", "pvn", "nvri", "ravra", etc
+    //team assignments: [blue]v[red]
+    case "pvp": {
+      this.bluePlayerType = "human";
+      this.redPlayerType = "human";
+      break;
+    }
+    case "pvn": {
+      this.bluePlayerType = "human";
+      this.redPlayerType = "neural";
+      break;
+    }
+    case "nvn": {
+      this.bluePlayerType = "neural";
+      this.redPlayerType = "neural";
+      break;
+    }
+    case "nvri": {
+      this.bluePlayerType = "neural";
+      this.redPlayerType = "rigid";
+      break;
+    }
+    case "nvra": {
+      this.bluePlayerType = "neural";
+      this.redPlayerType = "random";
+      break;
+    }
+    case "rivra": {
+      this.bluePlayerType = "rigid";
+      this.redPlayerType = "random";
+      break;
+    }
+    case "rivn": {
+      this.bluePlayerType = "rigid";
+      this.redPlayerType = "neural";
+      break;
+    }
+    case "ravra": {
+      this.bluePlayerType = "random";
+      this.redPlayerType = "random";
+      break;
+    }
+    case "ravn": { //THIS IS CURRENT TRAINING MODE 4-3-16
+      this.bluePlayerType = "random";
+      this.redPlayerType = "neural";
+      break;
+    }
+    default: {
+      console.log("this was unexpected");
+    }
+  }
+  //this.bluePlayerType and this.redPlayerType are now "human"/"neural"/"rigid"/"random"
+  this.blueWins = 0; // wins for blue
   this.ties = 0;
   this.redWins = 0;  // wins for red
 
+  this.playerRating = 1500; //start at 1500, adjust each time game ends in this.update(),
+                            //  only display after single player games
+  this.games = 0; //games played
   //returns "blue"/"red"/"tie" depending on blueWins,ties, and redWins
   this.leader = function(){
     if (this.blueWins > this.redWins){
@@ -37,7 +89,7 @@ function session(sessionType){
   };
 
   //displayResults() creates the Raphael elements that make up the bar graph,
-  //  and returns the Raphael set comprised of these three elements.
+  //  and returns the Raphael set comprised of these elements.
   this.displayResults = function(result){
     /* make a horizontal bar.
        Left is blue wins, colored blue. Middle is ties, colored grey.
@@ -117,8 +169,7 @@ function session(sessionType){
       return all;
   }
 
-  //call qpo.activeSession.update(result) to add 1 to qpo.activeSession.redWins/blueWins/ties
-  this.update = function(result){
+  this.update = function(result){ // Add 1 to one of the running totals.
     qpo.activeSession.set = c.set(this.bluePart,this.greyPart,this.redPart);
     this.games += 1;
     switch(result){
@@ -137,7 +188,6 @@ function session(sessionType){
         console.log("this was unexpected"); //debugging
         break;
     }
-    //this.playerRating
     return null;
   }
 

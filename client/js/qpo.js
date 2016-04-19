@@ -138,23 +138,23 @@ qpo = {
 qpo.menuMusic = function(){
   if (!(qpo.menuSong)){ //load song if it hasn't been loaded yet
     qpo.menuSong = new Audio(songURL);
-    // console.log("initial menu song load")
   }
   if (qpo.activeGame){ //stop game song and reset it
     qpo.activeGame.song.pause();
     qpo.activeGame.song.currentTime=0;
   }
   qpo.menuSong.currentTime = 0;
-  // qpo.menuSong.play();
-  // console.log("playing menu song.");
-  qpo.menuSongInterval = setInterval(function(){ // loop the menuSong every 1 minute and 48 seconds
-    qpo.menuSong.currentTime = 0;
-    // qpo.menuSong.play();
-    // console.log("playing menu song again.");
-  },113000);
+  qpo.menuSong.play();
+  if (qpo.playMusic) { // loop the menuSong every 1 minute and 48 seconds
+    qpo.menuSongInterval = setInterval(function(){
+      qpo.menuSong.currentTime = 0;
+      qpo.menuSong.play();
+      // console.log("playing menu song again.");
+    },113000);
+  }
 }
 
-qpo.setup = function(){ //set up global vars and stuff
+qpo.setup = function(){ // set up global vars and stuff
   // SOCKET STUFF:
   // this.socket.onerror = function(error) {
   //    console.log('WebSocket Error: ' + error);
@@ -164,20 +164,24 @@ qpo.setup = function(){ //set up global vars and stuff
   //   // console.log("ws says:" + message);
   // };
 
-  //MISCELLANEOUS STUFF:
-  qpo.timeScale = 0.5; //Bigger means slower; 1 is original 3-seconds-per-turn
+  // MISCELLANEOUS STUFF:
+  qpo.timeScale = 0.5; // Bigger means slower; 1 is original 3-seconds-per-turn
+  qpo.aiTypes = ["neural","rigid","random"];
 
-  //NEURAL STUFF:
-  qpo.trainingMode = true;
-  (qpo.trainingMode) ? (qpo.timeScale=0.1) : (qpo.timeScale=0.5) ;
+  // NEURAL STUFF:
+  qpo.trainingMode = false;
+  (qpo.trainingMode) ? (qpo.timeScale=0.05) : (qpo.timeScale=0.5) ;
   qpo.trainingCounter = 0;
-  qpo.gamesToTrain = 29;
-  qpo.trainingBatches = 2;
-  qpo.retrain = function(){
+  qpo.batchCounter = 0;
+  qpo.gamesToTrain = 30; // games per batch
+  qpo.batchesToTrain = 3; // batches to train
+  qpo.trainingData = new Array(); // store sessions (win/loss data)
+  qpo.retrain = function(){ // get ready to train another batch.
     qpo.trainingCounter = 0;
     qpo.trainingMode = true;
   }
-  qpo.aiType = "neural";
+  qpo.aiType = qpo.aiTypes[0]; // controls source of red's moves in singlePlayer
+  qpo.trainerOpponent = qpo.aiTypes[2]; // controls source of blue's moves in training mode
 
   debug = false;
 
@@ -196,11 +200,11 @@ qpo.setup = function(){ //set up global vars and stuff
   qpo.shots = [];
   qpo.bombs = [];
   qpo.moves = ["moveUp","moveDown","moveLeft","moveRight","shoot","bomb","stay"];
-  qpo.gui = c.set(); //Should contain only elements relevant to the current screen.
+  qpo.gui = c.set(); // Should contain only elements relevant to the current screen.
   qpo.blueActiveUnit = 0;
   qpo.redActiveUnit = 0;
   gameEnding = false;
-  playerColor = "blue"; //for now
+  playerColor = "blue"; // for now
   opponentColor = "red";
 
   //SET UP DIMENSIONS AND COORDINATES:
@@ -239,7 +243,7 @@ qpo.setup = function(){ //set up global vars and stuff
   qpo.difficPairings = [4, 6, 8, 10, 13, 16, 20]; //array index is po-1. Value at index is recommended q for said po.
 
   //MAKE MUSIC
-  // qpo.menuMusic();
+  qpo.playMusic = false;
   (qpo.trainingMode) ? (console.log("training mode!")) : (qpo.menuMusic()) ;
 
   qpo.add = function(a,b){
@@ -248,25 +252,7 @@ qpo.setup = function(){ //set up global vars and stuff
 }
 qpo.setup();
 
-
-/*
-qpo.menuMusic = function(){
-  if (!(qpo.menuSong)){ //load song if it hasn't been loaded yet
-    qpo.menuSong = new Audio(songURL);
-  }
-  if (qpo.activeGame.song){ //stop game song and reset it
-    qpo.activeGame.song.pause();
-    qpo.activeGame.song.currentTime=0;
-  }
-  // qpo.menuSong.play();
-  qpo.menuSongInterval = setInterval(function(){
-    qpo.menuSong.currentTime = 0;
-    qpo.menuSong.play();
-  },113000); // play the menuSong every 1 minute and 47 seconds
-}
-*/
-
-function findSlot(array){
+function findSlot(array){ //find the first empty slot in an array
   var slot = 0;
   while(slot < array.length){
     if(!array[slot]){
@@ -606,7 +592,7 @@ function tick(){ //update game clock. Called once per second.
       newTurn();
   }
   if (clock == 1) { //Declare a winner and end the game.
-    if (gameEnding == false){
+    if (gameEnding == false){ //find the winner and store to gameResult
       var gameResult;
       if(qpo.redDead==qpo.blueDead){
         gameResult = "tie";
@@ -619,7 +605,6 @@ function tick(){ //update game clock. Called once per second.
     qpo.blueActiveUnit = -1;
     qpo.redActiveUnit = -1;
     gameEnding = true;
-    qpo.menus["main"].blackness.animate({"opacity": 0.9},2000*qpo.timeScale);
     qpo.gui.toBack();
     setTimeout(function(){
       endGame(gameResult);
@@ -652,11 +637,11 @@ function newTurn(){ // called every time game clock is divisible by 3
   qpo.activeGame.state = qpo.activeGame.getState();
   var input = qpo.convertStateToInputs(qpo.activeGame.state);
 
-
+  qpo.snap(); //snap units into their correct positions prior to executing new moves
   var po = qpo.activeGame.po;
   for (var i=0; i<po; i++){ //Generate AI moves & execute all moves
     if (!qpoGame.multiplayer){ // In single player, generate red's moves automatically:
-      switch(qpo.aiType){ //queue a move from random, rigid, or neural AI
+      switch(qpo.aiType){ // Generate a move from random, rigid, or neural AI
         case "random": {
           qpo.redMovesQueue[i] = qpo.moves[Math.round(Math.random()*6)];
           break;
@@ -669,13 +654,37 @@ function newTurn(){ // called every time game clock is divisible by 3
           input[217] = i-0.5-(po/2); //generate a zero-mean input representing chosen unit
           var action = qpo.ali.nn.forward(input); // Have the AI net generate a move
           qpo.redMovesQueue[i] = qpo.actions[action]; //get the proper string
+          break;
+        }
+        default: {
+          console.log("this was unexpected");
+          break;
         }
       }
-      if(qpo.trainingMode){
-        //qpo.blueMovesQueue[i] = findMove(blueUnits[i]); //rigid AI playing blue
-        qpo.blueMovesQueue[i] = qpo.moves[Math.round(Math.random()*6)]; //random moves playing blue
+      if(qpo.trainingMode){ // In training mode, generate blue's moves, too.
+        switch(qpo.trainerOpponent){
+          case "random": {
+            qpo.blueMovesQueue[i] = qpo.moves[Math.round(Math.random()*6)];
+            break;
+          }
+          case "rigid": {
+            qpo.blueMovesQueue[i] = findMove(blueUnits[i]);
+            break;
+          }
+          case "neural": {
+            input[217] = i-0.5-(po/2); //generate a zero-mean input representing chosen unit
+            var action = qpo.ali.nn.forward(input); // Have the AI net generate a move
+            qpo.blueMovesQueue[i] = qpo.actions[action]; //get the proper string
+            break;
+          }
+          default: {
+            console.log("this was unexpected");
+            break;
+          }
+        }
       }
     }
+
     // execute red's moves:
     if (redUnits[i].alive){
       switch(qpo.redMovesQueue[i]) {
@@ -702,6 +711,9 @@ function newTurn(){ // called every time game clock is divisible by 3
           break;
       }
     }
+
+    // !!! This scripting is unfair to blue -- red's moves get executed first.
+    // Probably becomes more of a problem at high po, esp. in trainingMode.
 
     //execute blue's moves:
     if (blueUnits[i].alive){
@@ -738,8 +750,10 @@ function newTurn(){ // called every time game clock is divisible by 3
   }
 
   controlPanel.resetIcons();
-  timer.attr({segment: [450, 250, 50, -90, 269]});
-  timer.animate({segment: [450, 250, 50, -90, -90]}, 3000*qpo.timeScale);
+  if (!qpo.trainingMode){ //animate the pie, but not in training mode
+    timer.attr({segment: [450, 250, 50, -90, 269]});
+    timer.animate({segment: [450, 250, 50, -90, -90]}, 3000*qpo.timeScale);
+  }
 }
 
 //IFFY TO IMPLEMENT DUE TO USAGE OF LOGIC SPECIFIC TO
@@ -1234,7 +1248,8 @@ $(window).keydown(function(event){
 });
 
 //"SCREEN" FUNCTIONS
-function startGame(settings){ //settings are [q,po](?)
+function startGame(settings){ //called when countdown reaches 0
+  //settings are [q,po]
   //GET RID OF MENU MUSIC
   // qpo.menuSong.pause();
   // qpo.menuSong.currentTime = 0 ;
@@ -1247,17 +1262,42 @@ function startGame(settings){ //settings are [q,po](?)
   qpo.shots=[];
   qpo.bombs=[];
 
+  try{qpo.menus["main"].blackness.hide();}
+  catch(e){ console.log("no blackness to hide"); }
+
   drawGUI(qpo.activeGame.q,qpo.activeGame.po);
   placeUnits(settings[0]); // puts the units on the board
   qpo.blueActiveUnit = 0;
   qpo.redActiveUnit = 0;
-  setTimeout(function(){clockUpdater = setInterval(tick,1000*qpo.timeScale);},2000*qpo.timeScale);
+  setTimeout(function(){clockUpdater = setInterval(tick,1000*qpo.timeScale);}, 2000*qpo.timeScale);
+  // setTimeout(function(){qpo.snapper = setInterval(qpo.snap,3000*qpo.timeScale);}, 1980*qpo.timeScale);
   gameEnding = false;
-  collisionDetector = setInterval(function(){detectCollisions(qpo.activeGame.po)},17);
+  collisionDetector = setInterval(function(){detectCollisions(qpo.activeGame.po)},10);
   timer.animate({segment: [450, 250, 50, -90, -90]}, 3000*qpo.timeScale);
   qpo.mode = "game";
   console.log('NEW GAME');
 }
+qpo.snap = function(){ //correct unit positions just before the start of each turn
+  // for each unit, check its grid position, stop the unit's animation,
+  //   and put it in its proper place.
+  var po = qpo.activeGame.po;
+  var raphX;
+  var raphY;
+  for (var i = 0; i<po; i++){
+    //Raphael x coord = leftWall + (qpoGridCoordX * qpoSquareSize)
+    //Raphael y coord = topWall + (qpoGridCoordY * qpoSquareSize)
+    if(blueUnits[i].alive){
+      raphX = qpo.guiCoords.gameBoard.leftWall + (qpo.guiDimens.squareSize*blueUnits[i].x);
+      raphY = qpo.guiCoords.gameBoard.topWall + (qpo.guiDimens.squareSize*blueUnits[i].y);
+      blueUnits[i].phys.attr({"x":raphX, "y":raphY});
+    }
+    if(redUnits[i].alive){
+      raphX = qpo.guiCoords.gameBoard.leftWall + (qpo.guiDimens.squareSize*redUnits[i].x);
+      raphY = qpo.guiCoords.gameBoard.topWall + (qpo.guiDimens.squareSize*redUnits[i].y);
+      redUnits[i].phys.attr({"x":raphX, "y":raphY});
+    }
+  }
+};
 function countdownScreen(settings){ //settings are [q,po] (?)
   var numbers = c.text(c.width/2,c.height/2,"3")
     .attr({"font-size":72,"fill":"white"});
@@ -1280,12 +1320,13 @@ function countdownScreen(settings){ //settings are [q,po] (?)
 }
 
 function endGame(result){
-
   clearInterval(clockUpdater);
   clearInterval(collisionDetector);
+  // clearInterval(qpo.snapper);
 
   qpo.gui.stop();
   qpo.gui.remove();
+  qpo.menus["main"].blackness.animate({"opacity": 0.9},2000*qpo.timeScale);
   qpo.shots = [];
   qpo.bombs = [];
   units = [];
@@ -1293,14 +1334,27 @@ function endGame(result){
   (result == "tie") ? (qpo.ali.nn.backward(1)) : (qpo.ali.nn.backward(0)); //reward it a little for tying
   qpo.activeSession.update(result); //add to the proper tally
 
-  if(qpo.trainingMode){ //add to counter. Internally: stop and display results if counter is satisfied, otherwise start game
+  if(qpo.trainingMode){ //Stop and display results if counter is satisfied. Otherwise, start game.
     qpo.trainingCounter++;
-    if (qpo.trainingCounter > qpo.gamesToTrain){
-      qpo.trainingMode = false;
-      qpo.menus["endG"] = new makeEndGameMenu(result); //generate the menus["endG"] GUI
+    if (qpo.trainingCounter >= qpo.gamesToTrain){ // If game counter satisfied, check batch
+      qpo.batchCounter++;
+      // var newBatch = new qpo.Batch(qpo.activeSession);
+      // qpo.trainingData.push(newBatch);
+      qpo.trainingData.push(new qpo.Batch(qpo.activeSession));
+      console.log("we got here...");
+      if (qpo.batchCounter >= qpo.batchesToTrain){ // If batch counter satisfied, exit trainingMode
+        qpo.trainingMode = false;
+        qpo.menus["endG"] = new makeEndGameMenu(result); //generate the menus["endG"] GUI
+        for (var i=0; i<qpo.batchesToTrain; i++){ // log each batch's data to console
+          console.log(qpo.trainingData[i]);
+        }
+      }
+      else { // If batch counter not exceeded, train another batch
+        qpo.retrain();
+      }
     }
-    else {
-        startGame([8,4]);
+    else { // If game counter not exceeded, train another game
+      startGame([8,4]);
     }
   }
   else { // If we never were in training mode, display results
@@ -1315,11 +1369,4 @@ function endGame(result){
 function newRound(){
   qpo.menus["endG"].all.remove();
   return countdownScreen(qpo.currentSettings);
-}
-function goMainMenu(){
-  qpo.menus["endG"].all.remove();
-  qpo.menus["main"].showAll();
-  qpo.mode = "menu";
-  activeMenu = "main";
-  qpo.menus["main"].blackness.attr({"opacity":0.9});
 }

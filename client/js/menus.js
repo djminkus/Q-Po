@@ -125,7 +125,7 @@ slider = function(label, min, max, defaultt, y, spawnActive){
   return this;
 }
 
-//NOT IMPLEMENTED YET IN MENUS
+//ONLY IMPLEMENTED IN MAINMENU (NOT IN OTHER MENUS)
 buttonList = function(buttonsInOrder){
   //pass in a list of the buttons in the order they appear on the list.
   this.activeIndex = 0;
@@ -134,7 +134,8 @@ buttonList = function(buttonsInOrder){
     this.buttons[this.activeIndex].deactivate();
     if (this.activeIndex == this.buttons.length - 1){ //if last button is highlighted, return to first button:
       this.activeIndex = 0;
-    } else { //otherwise, increment this.activeIndex by 1:
+    }
+    else { //otherwise, increment this.activeIndex by 1:
       this.activeIndex += 1;
     }
     this.buttons[this.activeIndex].activate();
@@ -150,15 +151,31 @@ buttonList = function(buttonsInOrder){
   }
 }
 
-/*
-menu = function(name,buttonArgs){
+Menu = function(name, buttonArgs){
+  qpo.menus[name] = this;
+  this.buttonList = new buttonList(buttonArgs);
+  this.next = function(){ //select next item in this menu
+
+  };
+  this.previous = function(){ //select previous item in this menu
+
+  };
+  this.up = function(){ // return to previous screen/menu
+
+  };
+  this.close = function(){ // remove this menu's Raphael elements & deactivate it
+
+  };
 };
-*/
 
 var makeMainMenu = function(){
   activeMenu = "main";
   qpo.menus["main"] = this;
   //console.log(this);
+
+  this.open = function(){
+
+  }
 
   //1st layer (background)
   this.blackness = c.rect(0,0,c.width,c.height).attr({"fill":"black"});
@@ -241,13 +258,36 @@ var makeMainMenu = function(){
     gameSetupMenu = new makeGameSetupMenu();
     qpo.menus.main.hideAll();
     qpoGame.multiplayer = false;
-    qpo.activeSession = new session("singlePlayer");
+    if(qpo.trainingMode){ // If training, do "new session('ravn'/'rivn'/'nvn')"
+      switch(qpo.trainerOpponent){
+        case "random": {
+          qpo.activeSession = new session("ravn"); //neural versus random session
+          break;
+        }
+        case "neural": {
+          qpo.activeSession = new session("nvn"); //neural versus neural session
+          break;
+        }
+        case "rigid": {
+          qpo.activeSession = new session("rivn"); //neural versus rigid session
+          break;
+        }
+        default: {
+          console.log("OOPS. WAT");
+          break;
+        }
+      }
+    }
+    else{
+      qpo.activeSession = new session("pvn"); //human versus neural session
+    }
   }, 30, true, "singleP");
   this.multiplayerButton = new button("Multiplayer",300,340,function(e){
     qpo.menus.main.multiplayerButton.deactivate();
     qpo.multiplayerMenu = new makeMultiplayerMenu();
     qpo.menus.main.hideAll();
     qpoGame.multiplayer = true;
+    qpo.activeSession = new session('pvp');
   }, 10, false, "multiP");
 
   this.buttonList = new buttonList([this.singlePlayerButton, this.multiplayerButton]);
@@ -294,6 +334,10 @@ var makeMainMenu = function(){
     this.otherUnit.instakill();
   }
 
+  this.close = function(){
+    this.all.remove();
+  };
+
   //for changing button highlight:
   this.next = function(){
     this.buttonList.next();
@@ -301,7 +345,6 @@ var makeMainMenu = function(){
   this.previous = function(){
     this.buttonList.previous();
   };
-
   this.show = function(){
     qpo.menus.main.showAll();
   };
@@ -456,6 +499,9 @@ var makeEndGameMenu = function(result){
   qpo.menus["endG"] = this;
   activeMenu = "endG";
 
+  this.blackness = c.rect(0,0, qpo.guiCoords.gamePanel.width, qpo.guiCoords.gamePanel.height)
+    .attr({"fill":"black","opacity":0.9});
+
   this.statusPanel = c.rect(0,0,600,100).attr({"fill":"#111111"});
 
   // create teh big text:
@@ -496,8 +542,7 @@ var makeEndGameMenu = function(result){
   }, 60,false,"gameS");
 
   this.all = c.set().push(this.gameOverText,this.again.set,this.back.set,
-    this.selectDiff.set,this.barGraph,this.statusPanel);
-  //console.log(endGameElements);
+    this.selectDiff.set,this.barGraph,this.statusPanel, this.blackness);
   qpo.mode="menu";
 
   this.close = function(){
@@ -544,4 +589,4 @@ function goMainMenu(){
   activeMenu = "main";
   qpo.menus.main.blackness.attr({"opacity":1});
   qpo.menus.main.singlePlayerButton.activate();
-}
+};

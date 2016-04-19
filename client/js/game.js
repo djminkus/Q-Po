@@ -1,5 +1,5 @@
 // var song = new Audio("./music/qpo.mp3")            //  neil's first iteration
-var song = new Audio("./music/gameMode.mp3")        //uncomment for gameMode (second version)
+// var song = new Audio("./music/gameMode.mp3")        //uncomment for gameMode (second version)
 // var song = new Audio("./music/underwaterStars.mp3")  //uncomment for underwaterStars
 
 qpo.Game = function(q, po, multi, playMusic){ //"Game" class. Instantiated every time a new round is called.
@@ -30,7 +30,7 @@ qpo.Game = function(q, po, multi, playMusic){ //"Game" class. Instantiated every
     for (var i=0; i<po; i++){
       // 16 qpo-grid coords of units (4 per po--red/blue x/y):
       if(blueUnits[i].alive){ //0-7: blue x,y
-        arr[2*i] = blueUnits[i].x;
+        arr[2*i] = blueUnits[i].x; //values from 0 to (q-1)
         arr[2*i + 1] = blueUnits[i].y; //principle: keep coords of same obj together
       }
       else { // -1 if dead
@@ -109,7 +109,7 @@ qpo.Game = function(q, po, multi, playMusic){ //"Game" class. Instantiated every
     //MAKE MUSIC:
     // qpo.menuSong.pause();
     // qpo.menuSong.currentTime = 0;
-    this.song = song;
+    // this.song = song;
     // this.song.play();
     // console.log("playing game music...");
   }

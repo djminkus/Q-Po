@@ -93,7 +93,7 @@ function finishUnit(unit){
       var anim = Raphael.animation( {"x":unit.rect.attr('x') - qpo.guiDimens.columns*qpo.guiDimens.squareSize },
         qpo.guiDimens.columns*1500*qpo.timeScale); //over the course of n turns, send the unit 2n squares to the left
       */
-
+      
       //use for stop-style of play (units stop after each turn)
       var anim = Raphael.animation( {"x":unit.rect.attr('x') - 2*qpo.guiDimens.squareSize },
         3000*qpo.timeScale); //over the course of a turn, send the unit 2n squares to the left

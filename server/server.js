@@ -3,7 +3,7 @@ var http = require('http').createServer(app);
 var io = require('socket.io')(http); //IO is the server
 
 app.get('/', function(req, res){
-  //res.send('<h1>Hello world</h1>');
+  res.send('<p>Hello world</p>');
 });
 
 io.on('connection', function(socket){
