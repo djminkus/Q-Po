@@ -1,17 +1,5 @@
 console.log("RESET " + Date());
-
-//Here you you cannot start foo any more
-
-var c = new Raphael("raphContainer", containerWidth(), 600); //create the Raphael canvas
-var debug; //debug mode on? Set to true or false in "setup()"
-function containerWidth(){ //generate width of Raphael canvas based on debug status
-  if(debug){
-    var width = 900;
-  } else {
-    var width = 600;
-  }
-  return width;
-}
+var c = new Raphael("raphContainer", 600, 600); //create the Raphael canvas
 
 // CHOOSE A SONG:
 var songURL = "./music/qpo.mp3"          //  neil's first iteration
@@ -183,8 +171,6 @@ qpo.setup = function(){ // set up global vars and stuff
   qpo.aiType = qpo.aiTypes[0]; // controls source of red's moves in singlePlayer
   qpo.trainerOpponent = qpo.aiTypes[2]; // controls source of blue's moves in training mode
 
-  debug = false;
-
   qpo.COLOR_DICT = {
     "blue": "#0055bb",
     "red": "#bb0000",
@@ -219,17 +205,11 @@ qpo.setup = function(){ // set up global vars and stuff
     "gamePanel" : {
       "width" : 600,
       "height" : 600
-    },
-    "debug" : {
-      "width":300,
-      "height":600
     }
   };
   qpo.guiDimens = { //width of panels, square size, #columns, #rows
     "gpWidth" : 600, //game panel width
     "gpHeight" : 600, //game panel height
-    "dpWidth" : 300, //debug panel width
-    "dpHeight" : 600, //debug panel height
     "squareSize" : 50,
     "columns" : 7,
     "rows" : 7
@@ -266,11 +246,14 @@ function findSlot(array){ //find the first empty slot in an array
 //GUI ELEMENTS
 function setUpGameClock(){
   var initialSeconds = 180;
-  gameClock = c.text(450, 345, "" + initialSeconds)
+  qpo.gameClock = c.text(450, 345, "" + initialSeconds)
     .data("value",180)
     .attr({'font-size': 30});
-  qpo.gui.push(gameClock);
+  qpo.gui.push(qpo.gameClock);
 }
+qpo.makeScoreboard = function(){
+
+};
 function drawBoard(cols, rows){
   qpo.guiDimens.columns = cols;
   qpo.guiDimens.rows = rows;
@@ -524,29 +507,14 @@ function turnTimer(){
   timer = c.path().attr({segment: [450, 250, 50, -90, 269],"stroke":"none"});
   qpo.gui.push(timer);
 }
-function debugPanel(){
-  this.border = c.rect(qpo.guiCoords.gamePanel.width, 0, qpo.guiCoords.debug.width, qpo.guiCoords.debug.height)
-    .attr({"stroke-width":2,"stroke":"blue"});
-  this.title = c.text(900 - qpo.guiCoords.debug.width/2, 30, "debug")
-    .attr({"font-family":"'Open Sans',sans-serif","font-size":30});
-  this.line1 = c.text(900 - qpo.guiCoords.debug.width/2, 70, "line1")
-    .attr({"font-family":"'Open Sans',sans-serif","font-size":15});
-  this.line2 = c.text(900 - qpo.guiCoords.debug.width/2, 100, "line2")
-    .attr({"font-family":"'Open Sans',sans-serif","font-size":15});
-  this.line3 = c.text(900 - qpo.guiCoords.debug.width/2, 130, "line3")
-    .attr({"font-family":"'Open Sans',sans-serif","font-size":15});
-  this.set = c.set().push(this.border,this.title,this.line1,this.line2,this.line3);
-  qpo.gui.push(this.set);
-  return this;
-}
 
-function drawGUI(q,po){ //create the debug panel, turn timer, game clock, board, and control panel.
-  if (debug) {qpoGame.gui.debug = new debugPanel();}
+function drawGUI(q,po){ //create the turn timer, game clock, board, and control panel.
   turnTimer();
   setUpGameClock();
   drawBoard(q, q); // create the board
   controlPanel = new startControlPanel(po);
   finishControlPanel(controlPanel);
+  qpo.makeScoreboard();
 }
 
 //INCREMENT FUNCTIONS (no new Raph elements created)
@@ -585,9 +553,9 @@ function updateBlueAU(po){ //Called when a command is sent and when a unit dies.
 }
 
 function tick(){ //update game clock. Called once per second.
-  clock = gameClock.data("value");
-  gameClock.data("value",clock-1);
-  gameClock.attr({"text":clock-1});
+  clock = qpo.gameClock.data("value");
+  qpo.gameClock.data("value",clock-1);
+  qpo.gameClock.attr({"text":clock-1});
   if (clock % 3 == 0){
       newTurn();
   }
@@ -610,12 +578,6 @@ function tick(){ //update game clock. Called once per second.
       endGame(gameResult);
     },2000*qpo.timeScale);
   }
-
-  //update debug:
-  if (debug){
-    qpoGame.gui.debug.line1.attr({"text": "bombs: " + qpo.bombs });
-  }
-
 }
 function newTurn(){ // called every time game clock is divisible by 3
   turnNumber++;
@@ -713,7 +675,8 @@ function newTurn(){ // called every time game clock is divisible by 3
     }
 
     // !!! This scripting is unfair to blue -- red's moves get executed first.
-    // Probably becomes more of a problem at high po, esp. in trainingMode.
+    // But not THAT unfair -- red's moves are only as far ahead as the time
+    //  it takes to execute one move, because they are woven, red-blue-red-blue-...
 
     //execute blue's moves:
     if (blueUnits[i].alive){
@@ -746,7 +709,6 @@ function newTurn(){ // called every time game clock is divisible by 3
     //clear/reset the move queues:
     qpo.redMovesQueue[i]="stay";
     qpo.blueMovesQueue[i]="stay";
-
   }
 
   controlPanel.resetIcons();
