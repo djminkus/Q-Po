@@ -65,10 +65,12 @@ function finishUnit(unit){
       switch(unit.team){
         case "red":
           qpo.redDead++;
+          qpo.scoreBoard.addPoint("blue");
           qpo.redRewardQueue.push(1);
           break;
         case "blue":
           qpo.blueDead++;
+          qpo.scoreBoard.addPoint("red");
           var number = unit.num;
           qpo.redRewardQueue.push(-1);
           controlPanel.actives[number].hide();
@@ -79,6 +81,20 @@ function finishUnit(unit){
           break;
       }
     }
+    if(qpo.respawnEnabled){ // queue the spawn.
+      // Get current turn number, add 3 to it, and spawn the unit then:
+
+      // var thisTurn = getIt;
+      // var spawnTurn = thisTurn + 3;
+      // add spawnTurn to a queue, like maybe qpo.upcomingSpawns
+      // in NewTurn function, check for upcoming spawns, set the proper timeouts, and
+      //   remove them from upcomingSpawns once they've been queued.
+    }
+  }
+  unit.spawn = function(){ //
+
+    unit.alive = true;
+
   }
   unit.instakill = function(){ //for in-menu units
     unit.alive = false;
@@ -93,7 +109,7 @@ function finishUnit(unit){
       var anim = Raphael.animation( {"x":unit.rect.attr('x') - qpo.guiDimens.columns*qpo.guiDimens.squareSize },
         qpo.guiDimens.columns*1500*qpo.timeScale); //over the course of n turns, send the unit 2n squares to the left
       */
-      
+
       //use for stop-style of play (units stop after each turn)
       var anim = Raphael.animation( {"x":unit.rect.attr('x') - 2*qpo.guiDimens.squareSize },
         3000*qpo.timeScale); //over the course of a turn, send the unit 2n squares to the left

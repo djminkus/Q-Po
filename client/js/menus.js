@@ -23,10 +23,10 @@ var buttons = {
 var buttonsKeys = ["singleP","multiP","selectP","customG","startG","newR","gameS","mainM"];
 qpo.activeSession = null;
 
-c.customAttributes.qpoText = function(size){ //style text white with Open Sans family and "size" font-size.
+c.customAttributes.qpoText = function(size, fill){ //style text white with Open Sans family and "size" font-size.
   return {
     "font-size": size,
-    "fill": "white",
+    "fill": (fill || "white"),
     "font-family":"'Open Sans',sans-serif"
   };
 }
@@ -257,7 +257,7 @@ var makeMainMenu = function(){
   this.singlePlayerButton = new button("Single-Player",300,250,function(e){
     gameSetupMenu = new makeGameSetupMenu();
     qpo.menus.main.hideAll();
-    qpoGame.multiplayer = false;
+    qpo.multiplayer = false;
     if(qpo.trainingMode){ // If training, do "new session('ravn'/'rivn'/'nvn')"
       switch(qpo.trainerOpponent){
         case "random": {
@@ -286,7 +286,7 @@ var makeMainMenu = function(){
     qpo.menus.main.multiplayerButton.deactivate();
     qpo.multiplayerMenu = new makeMultiplayerMenu();
     qpo.menus.main.hideAll();
-    qpoGame.multiplayer = true;
+    qpo.multiplayer = true;
     qpo.activeSession = new session('pvp');
   }, 10, false, "multiP");
 
@@ -513,14 +513,14 @@ var makeEndGameMenu = function(result){
       this.gameOverText.attr({"text":"tie!","fill":qpo.COLOR_DICT["grey"]});
       break;
     case "red":
-      if (!qpoGame.multiplayer){
+      if (!qpo.multiplayer){
         this.gameOverText.attr({"text":"Defeat.","fill":qpo.COLOR_DICT["red"]});
       } else {
         this.gameOverText.attr({"text":"Red wins!","fill":qpo.COLOR_DICT["red"]});
       }
       break;
     case "blue":
-      if (!qpoGame.multiplayer){
+      if (!qpo.multiplayer){
         this.gameOverText.attr({"text":"Victory!","fill":qpo.COLOR_DICT["blue"]});
       } else {
         this.gameOverText.attr({"text":"Blue wins!","fill":qpo.COLOR_DICT["blue"]});

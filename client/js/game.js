@@ -4,8 +4,12 @@
 
 qpo.Game = function(q, po, multi, playMusic){ //"Game" class. Instantiated every time a new round is called.
   this.po = po; //# of units per team. Min 1, max 7.
+  qpo.timeScale = (po/4) ; //adjust timeScale. Bigger means slower; 1 is 3 s/turn; 0.5 is 1.5 s/turn.
+
   this.q = (q || qpo.difficPairings[po-1]); //size of board. (q x q)
   this.multiplayer = multi; //false for single player (local vs. AI) mode
+  this.turnNumber = 0;
+  this.isEnding = false;
 
   qpo.guiDimens.squareSize = 350/this.q;   //aim to keep width of board at 7*50 (350). So, qpo.guiDimens.squareSize = 350/q.
   qpo.bombSize = 2 * qpo.guiDimens.squareSize;
@@ -13,7 +17,7 @@ qpo.Game = function(q, po, multi, playMusic){ //"Game" class. Instantiated every
 
   this.gui = c.set();
 
-  this.record = {
+  this.record = { //All data needed to recreate this game. (not complete)
     "q": q,
     "po" : po,
     "unitSpawns": (new Array()), //initial spawns of units
@@ -98,7 +102,7 @@ qpo.Game = function(q, po, multi, playMusic){ //"Game" class. Instantiated every
   // Acquire initial state, but not if we're in menu:
   if(qpo.mode == "game"){this.state = this.getState();}
 
-  if(playMusic == true){
+  if(playMusic == true){ // stop menu song and play game song. (not used)
     try { //remove old song
       qpo.activeGame.song.remove();
     }
