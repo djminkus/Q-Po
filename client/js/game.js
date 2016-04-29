@@ -10,6 +10,7 @@ qpo.Game = function(q, po, multi, playMusic){ //"Game" class. Instantiated every
   this.multiplayer = multi; //false for single player (local vs. AI) mode
   this.turnNumber = 0;
   this.isEnding = false;
+  this.upcomingSpawns = new Array();
 
   qpo.guiDimens.squareSize = 350/this.q;   //aim to keep width of board at 7*50 (350). So, qpo.guiDimens.squareSize = 350/q.
   qpo.bombSize = 2 * qpo.guiDimens.squareSize;

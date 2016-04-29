@@ -1,14 +1,14 @@
 //CREATE UNIT TYPE/CLASS
 function startUnit(color, gx, gy, num){
   //for now, only blue units are numbered (6-20-15)
-  this.team = color;
+  this.team = color; //"red" or "blue"
   this.rect = c.rect(qpo.guiCoords.gameBoard.leftWall + qpo.guiDimens.squareSize*gx,
     qpo.guiCoords.gameBoard.topWall+qpo.guiDimens.squareSize*gy,
     qpo.guiDimens.squareSize,qpo.guiDimens.squareSize).attr({"fill":qpo.COLOR_DICT[color],"opacity":0.7});
   this.phys = c.set();
-  this.x = gx; //absolute grid position
-  this.y = gy;
-  this.num = num; //which unit is it?
+  this.x = gx; //absolute grid position. (column, 0 to q-1)
+  this.y = gy; //absolute grid position (row, 0 to q-1)
+  this.num = num; //which unit is it? (# on team)
   this.alive = true;
   this.active = false;
   this.shotReady = true;
@@ -60,8 +60,11 @@ function finishUnit(unit){
   unit.kill = function(){
     unit.alive = false;
     unit.rect.stop();
-    unit.rect.animate({"opacity":0},2000*qpo.timeScale,function(){unit.rect.hide()});
-    if(qpo.mode == "game"){ //update game GUI
+    unit.rect.animate({"opacity":0},2000*qpo.timeScale,function(){
+      unit.rect.hide();
+      unit.rect.attr({"opacity":0.7});
+    });
+    if(qpo.mode == "game"){ // update scoreboard and prep to reward AI
       switch(unit.team){
         case "red":
           qpo.redDead++;
@@ -82,20 +85,29 @@ function finishUnit(unit){
       }
     }
     if(qpo.respawnEnabled){ // queue the spawn.
-      // Get current turn number, add 3 to it, and spawn the unit then:
-
-      // var thisTurn = getIt;
-      // var spawnTurn = thisTurn + 3;
-      // add spawnTurn to a queue, like maybe qpo.upcomingSpawns
+      // Get current turn number, add 5 to it, and spawn the unit then:
+      var thisTurn = qpo.activeGame.turnNumber;
+      var spawnTurn = thisTurn + 5;
+      qpo.activeGame.upcomingSpawns.push([spawnTurn,unit.num,unit.team]);
+        //add the spawn to the queue. Queue is checked from NewTurn function.
       // in NewTurn function, check for upcoming spawns, set the proper timeouts, and
       //   remove them from upcomingSpawns once they've been queued.
     }
   }
-  unit.spawn = function(){ //
-
+  unit.spawn = function(){ //call this at the moment you want a new unit to spawn
+    var spawnLoc = qpo.findSpawn(unit.team); //get the [row, column] for the spawn (loc is location)
+    //put the unit at its spawn, show the unit, and set its "alive" property to "true":
+    var spawnSpot = [
+      qpo.guiCoords.gameBoard.leftWall + qpo.guiDimens.squareSize*spawnLoc[1],
+      qpo.guiCoords.gameBoard.topWall + qpo.guiDimens.squareSize*spawnLoc[0]
+    ] //raph x,y coords of spawn
+    unit.rect.attr({'x': spawnSpot[0], 'y': spawnSpot[1]}); //put the Raph element where it goes
+    unit.x = spawnLoc[1]; //update the grid positions
+    unit.y = spawnLoc[0]; //update the grid positions
+    unit.rect.show();
     unit.alive = true;
-
-  }
+    (unit.team == "red") ? (qpo.redDead -= 1) : (qpo.blueDead -= 1);
+  };
   unit.instakill = function(){ //for in-menu units
     unit.alive = false;
     unit.rect.remove();
