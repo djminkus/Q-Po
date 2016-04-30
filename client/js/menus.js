@@ -190,7 +190,7 @@ var makeMainMenu = function(){
   ).attr({qpoText: 20});
 
   //2nd layer (animation)
-  qpo.activeGame = new qpo.Game(7,3,false,false); //to define the unit size and all
+  qpo.activeGame = new qpo.Game(7,3,false,false,true); //to define the unit size and all
   this.unit = makeUnit("red",3,7.5,0);
   this.otherUnit = makeUnit("blue",1,2,1);
   this.animate = function(){
@@ -400,8 +400,8 @@ var makeGameSetupMenu = function(){
 
     this.quickPlay = new button("Quick-Play",qpo.guiDimens.gpWidth/2,190, (function(e){
       this.close();
-      settings = [8,4]; //q,po
-      countdownScreen(settings);
+      settings = [8,4,false,true,true]; //q,po,multi,music,respawn
+      qpo.countdownScreen(settings);
       qpo.menus.main.blackness.show();
     }).bind(this), 0, true, "quickP")
 
@@ -456,8 +456,8 @@ var makeCustomGameMenu = function(){
     this.startGame = new button("Start Game", qpo.guiDimens.gpWidth/2, 360, (function(e){
       //this.activate();
       this.close();
-      var settings = [this.qSlider.value,this.poSlider.value]; //[q,po]
-      countdownScreen(settings);
+      var settings = [this.qSlider.value,this.poSlider.value,false,true,true]; //[q,po,multi,music,respawn]
+      qpo.countdownScreen(settings);
       qpo.menus.main.blackness.show();
     }).bind(this), 0, false, "startG");
 

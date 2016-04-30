@@ -147,7 +147,6 @@ qpo.setup = function(){ // set up global vars and stuff
   // MISCELLANEOUS STUFF:
   qpo.timeScale = 0.5; // Bigger means slower; 1 is original 3-seconds-per-turn
   qpo.aiTypes = ["neural","rigid","random"];
-  qpo.respawnEnabled = true;
 
   // NEURAL STUFF:
   qpo.trainingMode = false;
@@ -250,7 +249,8 @@ qpo.findSpawn = function(color){
     for (var i=0; i<Math.floor(q/2); i++){
       demerits[0][i+Math.floor(q/2)]++;
     }
-  } else { //block blue side
+  }
+  else { //block blue side
     for (var i=0; i<Math.floor(q/2); i++){
       demerits[0][i]++;
     }
@@ -258,7 +258,7 @@ qpo.findSpawn = function(color){
   //TODO: APPLY BOOSTS : friendly side, friendly proximity
 
   //TODO: SELECT row and column based on demerits. (base this on rigid ai.)
-  console.log("demerits: " + demerits);
+  // console.log("demerits: " + demerits);
   // console.log("demerits[0]: " + demerits[0]);
 
   var fewestDemerits = [100,100]; //a comparer
@@ -291,11 +291,11 @@ qpo.findSpawn = function(color){
   var chosenRow = indices[0][Math.floor(Math.random()*indices[0].length)];
   var chosenColumn = indices[1][Math.floor(Math.random()*indices[1].length)];
 
-  console.log("indices[0]: " + indices[0]);
-  console.log("indices[1]: " + indices[1]);
+  // console.log("indices[0]: " + indices[0]);
+  // console.log("indices[1]: " + indices[1]);
 
   foundSpawn = [chosenRow,chosenColumn];
-  console.log(foundSpawn);
+  // console.log(foundSpawn);
 
   return foundSpawn;
 }
@@ -1061,28 +1061,6 @@ function detectCollisions(ts){
       splicers[i] -= 1;
     }
   }
-
-  //End the game if necessary. Make sure only to end the game once.
-  if ((qpo.redDead==ts || qpo.blueDead==ts) && qpo.activeGame.isEnding == false){
-    var gameResult;
-    setTimeout(function(){ //set gameResult to "tie","blue",or "red" (after 20 ms to account for performance issues)
-      if(qpo.redDead==qpo.blueDead){
-        gameResult = "tie";
-      } else if (qpo.redDead == ts) {
-        gameResult = "blue";
-      } else {
-        gameResult = "red";
-      }
-    }, 2000*qpo.timeScale);
-    qpo.blueActiveUnit = -1;
-    qpo.redActiveUnit = -1;
-    qpo.activeGame.isEnding = true;
-    qpo.menus["main"].blackness.animate({"opacity": 0.9},2000*qpo.timeScale);
-    qpo.gui.toBack();
-    setTimeout(function(){
-      endGame(gameResult);
-    },2000*qpo.timeScale);
-  }
 }
 
 function updateCPIcon(team, move){
@@ -1295,13 +1273,13 @@ $(window).keydown(function(event){
 
 //"SCREEN" FUNCTIONS
 function startGame(settings){ //called when countdown reaches 0
-  //settings are [q,po]
+  //settings are [q,po,multi,music,respawn]
   //GET RID OF MENU MUSIC
   // qpo.menuSong.pause();
   // qpo.menuSong.currentTime = 0 ;
   // clearInterval(qpo.menuSongInterval);
 
-  qpo.activeGame = new qpo.Game(settings[0], settings[1], false, true); //10 for base-10
+  qpo.activeGame = new qpo.Game(settings[0], settings[1], false, true, true); //10 for base-10
   qpo.redDead = 0;
   qpo.blueDead = 0;
   qpo.shots=[];
@@ -1344,7 +1322,7 @@ qpo.snap = function(){ //correct unit positions just before the start of each tu
   }
 };
 
-function countdownScreen(settings){ //settings are [q,po] (?)
+qpo.countdownScreen = function(settings){ //settings are [q,po,multi,music,music]
   var numbers = c.text(c.width/2,c.height/2,"3")
     .attr({"font-size":72,"fill":"white"});
   setTimeout( //2
@@ -1412,5 +1390,5 @@ function endGame(result){
 function newRound(){
   qpo.menus["main"].blackness.attr({"opacity":1}).show();
   qpo.menus["endG"].all.remove();
-  return countdownScreen(qpo.currentSettings);
+  return qpo.countdownScreen(qpo.currentSettings);
 }

@@ -2,19 +2,29 @@
 // var song = new Audio("./music/gameMode.mp3")        //uncomment for gameMode (second version)
 // var song = new Audio("./music/underwaterStars.mp3")  //uncomment for underwaterStars
 
-qpo.Game = function(q, po, multi, playMusic){ //"Game" class. Instantiated every time a new round is called.
+qpo.Game = function(q, po, multi, playMusic, respawn){ //"Game" class. Instantiated every time a new round is called.
   this.po = po; //# of units per team. Min 1, max 7.
   qpo.timeScale = (po/4) ; //adjust timeScale. Bigger means slower; 1 is 3 s/turn; 0.5 is 1.5 s/turn.
+    // [.25,.5, .75, 1, 1.25, etc.]
 
   this.q = (q || qpo.difficPairings[po-1]); //size of board. (q x q)
   this.multiplayer = multi; //false for single player (local vs. AI) mode
   this.turnNumber = 0;
   this.isEnding = false;
   this.upcomingSpawns = new Array();
+  var exponent = 0.8;
+  var factor = 12;
+  var correction = 2;
+  var thinger = function(e,f,c,also){return Math.floor(Math.pow(also,e) * f - c)}
+  this.scoreToWin = thinger(exponent,factor,correction,po);
+  for(var i=1; i<=8; i++){ console.log(thinger(exponent,factor,correction,i)); }
+  this.respawnEnabled = respawn;
+
+  if (respawn == false){this.scoreToWin = this.po;}
 
   qpo.guiDimens.squareSize = 350/this.q;   //aim to keep width of board at 7*50 (350). So, qpo.guiDimens.squareSize = 350/q.
   qpo.bombSize = 2 * qpo.guiDimens.squareSize;
-  qpo.currentSettings = [q,po];
+  qpo.currentSettings = [q,po,multi,playMusic,respawn];
 
   this.gui = c.set();
 
@@ -109,6 +119,9 @@ qpo.Game = function(q, po, multi, playMusic){ //"Game" class. Instantiated every
     }
     catch(err) { //or don't, if it doesn't exist
       ;
+    }
+    this.end = function(){
+
     }
 
     //MAKE MUSIC:

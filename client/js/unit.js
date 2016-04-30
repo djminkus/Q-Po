@@ -83,15 +83,37 @@ function finishUnit(unit){
           updateBlueAU(qpo.activeGame.po);
           break;
       }
+      if (qpo.scoreBoard.blueScore >= qpo.activeGame.scoreToWin  //if score limit reached, disable respawn
+        || qpo.scoreBoard.redScore >= qpo.activeGame.scoreToWin){
+        qpo.activeGame.respawnEnabled = false;
+      }
     }
-    if(qpo.respawnEnabled){ // queue the spawn.
+
+    if(qpo.activeGame.respawnEnabled) { //queue the spawn.
       // Get current turn number, add 5 to it, and spawn the unit then:
       var thisTurn = qpo.activeGame.turnNumber;
       var spawnTurn = thisTurn + 5;
       qpo.activeGame.upcomingSpawns.push([spawnTurn,unit.num,unit.team]);
         //add the spawn to the queue. Queue is checked from NewTurn function.
-      // in NewTurn function, check for upcoming spawns, set the proper timeouts, and
-      //   remove them from upcomingSpawns once they've been queued.
+    }
+    else if ( qpo.scoreBoard.redScore >= qpo.activeGame.scoreToWin // otherwise, end the game, if score limit reached.
+      || qpo.scoreBoard.blueScore >= qpo.activeGame.scoreToWin && qpo.activeGame.isEnding == false){
+      var gameResult;
+      setTimeout(function(){ //set gameResult to "tie","blue",or "red" (after 20 ms to account for performance issues)
+        if(qpo.scoreBoard.redScore==qpo.scoreBoard.blueScore){
+          gameResult = "tie";
+        } else if (qpo.scoreBoard.blueScore > qpo.scoreBoard.redScore) {
+          gameResult = "blue";
+        } else {
+          gameResult = "red";
+        }
+      }, 2000*qpo.timeScale);
+      qpo.blueActiveUnit = -1;
+      qpo.redActiveUnit = -1;
+      qpo.activeGame.isEnding = true;
+      qpo.menus["main"].blackness.animate({"opacity": 0.9},2000*qpo.timeScale);
+      qpo.gui.toBack();
+      setTimeout(function(){endGame(gameResult);}, 2000*qpo.timeScale);
     }
   }
   unit.spawn = function(){ //call this at the moment you want a new unit to spawn
