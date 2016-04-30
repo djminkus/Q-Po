@@ -784,9 +784,9 @@ function newTurn(){ // called every time game clock is divisible by 3
   if (qpo.activeGame.turnNumber == 60){
     if (qpo.activeGame.isEnding == false){ //find the winner and store to gameResult
       var gameResult;
-      if(qpo.redDead==qpo.blueDead){
+      if(qpo.scoreBoard.redScore==qpo.scoreBoard.blueScore){
         gameResult = "tie";
-      } else if (qpo.redDead > qpo.blueDead) {
+      } else if (qpo.scoreBoard.redScore > qpo.scoreBoard.blueScore) {
         gameResult = "blue";
       } else {
         gameResult = "red";

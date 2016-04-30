@@ -16,10 +16,8 @@ qpo.Game = function(q, po, multi, playMusic, respawn){ //"Game" class. Instantia
   var factor = 12;
   var correction = 2;
   var thinger = function(e,f,c,also){return Math.floor(Math.pow(also,e) * f - c)}
-  this.scoreToWin = thinger(exponent,factor,correction,po);
-  for(var i=1; i<=8; i++){ console.log(thinger(exponent,factor,correction,i)); }
+  this.scoreToWin = thinger(exponent,factor,correction,po); // 10,18,26,34,41,48,54,61
   this.respawnEnabled = respawn;
-
   if (respawn == false){this.scoreToWin = this.po;}
 
   qpo.guiDimens.squareSize = 350/this.q;   //aim to keep width of board at 7*50 (350). So, qpo.guiDimens.squareSize = 350/q.
