@@ -1,25 +1,3 @@
-console.log("RESET " + Date());
-var c = new Raphael("raphContainer", 600, 600); //create the Raphael canvas
-
-// CHOOSE A SONG:
-var songURL = "./music/qpo.mp3"          //  neil's first iteration
-// var songURL =  "./music/loadingScreen.mp3"      // neil's menu song
-// var songURL =  "./music/underwaterStars.mp3"  //uncomment for underwaterStars
-// var song = new Audio("./music/qpo.mp3")            //  neil's first iteration
-// var song = new Audio("./music/loadingScreen.mp3")        // neil's menu song
-// var song = new Audio("./music/underwaterStars.mp3")  //uncomment for underwaterStars
-
-c.customAttributes.segment = function (x, y, r, a1, a2) {
-  var flag = (a2 - a1) > 180,
-  color = (a2 - a1 + 120) / (360*5)  ;
-  a1 = (a1 % 360) * Math.PI / 180;
-  a2 = (a2 % 360) * Math.PI / 180;
-  return {
-    path: [["M", x, y], ["l", r * Math.cos(a1), r * Math.sin(a1)], ["A", r, r, 0, +flag, 1, x + r * Math.cos(a2), y + r * Math.sin(a2)], ["z"]],
-    fill: "hsb(" + color + ", .75, .8)"
-  };
-};
-
 /** Q-PO : a JS game by @akaDavidGarrett
 
 Q-Po is a competitive browser game that combines elements of real-time strategy games, top-down shooters,
@@ -103,6 +81,28 @@ Contents of this code: (updated June 2, 2015)
     goMainMenu() --
 */
 
+console.log("RESET " + Date());
+var c = new Raphael("raphContainer", 600, 600); //create the Raphael canvas
+
+// CHOOSE A SONG:
+var songURL = "./music/qpo.mp3"          //  neil's first iteration
+// var songURL =  "./music/loadingScreen.mp3"      // neil's menu song
+// var songURL =  "./music/underwaterStars.mp3"  //uncomment for underwaterStars
+// var song = new Audio("./music/qpo.mp3")            //  neil's first iteration
+// var song = new Audio("./music/loadingScreen.mp3")        // neil's menu song
+// var song = new Audio("./music/underwaterStars.mp3")  //uncomment for underwaterStars
+
+c.customAttributes.segment = function (x, y, r, a1, a2) {
+  var flag = (a2 - a1) > 180,
+  color = (a2 - a1 + 120) / (360*5)  ;
+  a1 = (a1 % 360) * Math.PI / 180;
+  a2 = (a2 % 360) * Math.PI / 180;
+  return {
+    path: [["M", x, y], ["l", r * Math.cos(a1), r * Math.sin(a1)], ["A", r, r, 0, +flag, 1, x + r * Math.cos(a2), y + r * Math.sin(a2)], ["z"]],
+    fill: "hsb(" + color + ", .75, .8)"
+  };
+};
+
 qpo = {
   /* WEBSOCKET THINGS (NOT SOCKET.IO)
   "socket" : new WebSocket('ws://echo.websocket.org'), //this url will change
@@ -181,34 +181,42 @@ qpo.setup = function(){ // set up global vars and stuff
   qpo.gui = c.set(); // Should contain only elements relevant to the current screen.
   qpo.blueActiveUnit = 0;
   qpo.redActiveUnit = 0;
+  qpo.board = {};
   playerColor = "blue"; // for now
   opponentColor = "red";
 
   //SET UP DIMENSIONS AND COORDINATES:
-  qpo.guiCoords = { // cp height, gameBoard wall locations, gamePanel vs debugPanel
-    "cp" : {
-      "height" : 100,
-    },
-    "gameBoard" : {
-      "leftWall" : 25,
-      "topWall" : 75
-    },
-    "gamePanel" : {
-      "width" : 600,
-      "height" : 600
+  (function(){
+    qpo.guiCoords = { // cp height, gameBoard wall locations, gamePanel vs debugPanel
+      "cp" : {
+        "height" : 100,
+      },
+      "gameBoard" : {
+        "leftWall" : 25,
+        "topWall" : 75
+      },
+      "gamePanel" : {
+        "width" : 600,
+        "height" : 600
+      },
+      "turnTimer" : {
+        "x" : 450,
+        "y" : 250,
+        "r" : 50
+      }
+    };
+    qpo.guiDimens = { //width of panels, square size, # columns, # rows
+      "gpWidth" : 600, //game panel width
+      "gpHeight" : 600, //game panel height
+      "squareSize" : 50,
+      "columns" : 7,
+      "rows" : 7
     }
-  };
-  qpo.guiDimens = { //width of panels, square size, #columns, #rows
-    "gpWidth" : 600, //game panel width
-    "gpHeight" : 600, //game panel height
-    "squareSize" : 50,
-    "columns" : 7,
-    "rows" : 7
-  }
-  qpo.guiCoords.gameBoard.width = qpo.guiDimens.columns * qpo.guiDimens.squareSize,
-  qpo.guiCoords.gameBoard.height = qpo.guiDimens.rows * qpo.guiDimens.squareSize;
-  qpo.guiCoords.gameBoard.rightWall = qpo.guiCoords.gameBoard.leftWall + qpo.guiCoords.gameBoard.width;
-  qpo.guiCoords.gameBoard.bottomWall = qpo.guiCoords.gameBoard.topWall + qpo.guiCoords.gameBoard.height;
+    qpo.guiCoords.gameBoard.width = qpo.guiDimens.columns * qpo.guiDimens.squareSize,
+    qpo.guiCoords.gameBoard.height = qpo.guiDimens.rows * qpo.guiDimens.squareSize;
+    qpo.guiCoords.gameBoard.rightWall = qpo.guiCoords.gameBoard.leftWall + qpo.guiCoords.gameBoard.width;
+    qpo.guiCoords.gameBoard.bottomWall = qpo.guiCoords.gameBoard.topWall + qpo.guiCoords.gameBoard.height;
+  })();
 
   qpo.bombSize = 2*qpo.guiDimens.squareSize;
   qpo.difficPairings = [4, 6, 8, 10, 13, 16, 20]; //array index is po-1. Value at index is recommended q for said po.
@@ -338,21 +346,33 @@ function drawBoard(cols, rows){ //draw the walls and grid and push to gui
   });
   qpo.gui.push(outline);
 
-  var vertLineStrings = [];
-  for (var i=1; i<cols; i++) {
-    var newString = ("M" + (qpo.guiCoords.gameBoard.leftWall + (i*qpo.guiDimens.squareSize)) + "," + qpo.guiCoords.gameBoard.topWall +
-      "L" + (qpo.guiCoords.gameBoard.leftWall + i*qpo.guiDimens.squareSize) + "," + qpo.guiCoords.gameBoard.bottomWall);
-    // console.log("drawing path " + newString);
-    // console.log((qpo.guiCoords.gameBoard.leftWall + (i*qpo.guiDimens.squareSize)));
-    // console.log(qpo.gui)
-    qpo.gui.push(c.path(newString));
+  var crossSize = 7;
+  var hcs = crossSize/2 //Half Cross Size
+
+  qpo.board.verts = c.set();
+  for (var i=1; i<cols; i++) { //create the vertical marks
+    for (var j=1; j<rows; j++){
+      var xCoord = qpo.guiCoords.gameBoard.leftWall + (i*qpo.guiDimens.squareSize);
+      var yCoord1 = qpo.guiCoords.gameBoard.topWall + (j*qpo.guiDimens.squareSize-hcs);
+      var yCoord2 = yCoord1 + crossSize;
+      var newString = ("M" + xCoord + "," + yCoord1 + "L" + xCoord + "," + yCoord2);
+      var newMark = c.path(newString);
+      qpo.board.verts.push(newMark);
+      qpo.gui.push(newMark);
+    }
   }
 
-  var horizLineStrings = [];
-  for (var i=1; i<rows; i++) { //create and add one string to the array for each horizontal line
-    var newString = ("M" + qpo.guiCoords.gameBoard.leftWall + "," + (qpo.guiCoords.gameBoard.topWall + (i*qpo.guiDimens.squareSize)) +
-      "L" + qpo.guiCoords.gameBoard.rightWall + "," + (qpo.guiCoords.gameBoard.topWall + (i*qpo.guiDimens.squareSize)));
-    qpo.gui.push(c.path(newString));
+  qpo.board.hors = c.set();
+  for (var i=1; i<rows; i++) { //create the horizontal marks
+    for (var j=1; j<cols; j++){
+      var yCoord = qpo.guiCoords.gameBoard.topWall + (i*qpo.guiDimens.squareSize);
+      var xCoord1 = qpo.guiCoords.gameBoard.leftWall + (j*qpo.guiDimens.squareSize-hcs);
+      var xCoord2 = xCoord1 + crossSize;
+      var newString = ("M" + xCoord1 + "," + yCoord + "L" + xCoord2 + "," + yCoord);
+      var newMark = c.path(newString);
+      qpo.board.verts.push(newMark);
+      qpo.gui.push(newMark);
+    }
   }
 }
 
@@ -457,7 +477,7 @@ function startControlPanel(po){
   this.orange = c.rect(leftWall+3, bottomWall+3, widthEach-6, height-6).attr(
       {"stroke":qpo.COLOR_DICT["orange"],"stroke-width":4});
   this.secLines = c.set();
-  //DRAW SECTION LINES, AND ORANGE ONES
+  //DRAW SECTION LINES, AND ORANGE BOXES
   (function(cp){
     var secLines = c.set();
     var oranges = c.set();
@@ -572,20 +592,18 @@ function finishControlPanel(cp){
   qpo.gui.push(cp.all);
 }
 
-function drawGUI(q,po){ //create the turn timer, game clock, board, and control panel.
+function drawGUI(q,po){ //create the turn timer (pie), board, and control panel.
   (function(){ //draw the turn timer (pie) and push it to the gui
-    //  the pie/clock-like thingy that will start full
-    //    every turn, and changes color as it shrinks
-    qpo.timer = c.path().attr({segment: [450, 250, 50, -90, 269],"stroke":"none"});
-    qpo.gui.push(qpo.timer);
-  })();
-  (function(){ //make the game clock (digits) and push it to the gui
-    var initialSeconds = 180;
-    qpo.gameClock = c.text(450, 345, "" + initialSeconds)
-      .data("value",180)
-      .attr({qpoText: [30, "black"]});
-    qpo.gameClock.hide();
-    qpo.gui.push(qpo.gameClock);
+    var t = qpo.guiCoords.turnTimer;
+    qpo.timer = {"value": 60};
+    qpo.timer.pie = c.path().attr({segment: [t.x, t.y, t.r, -90, 269],"stroke":"none"});
+    qpo.timer.text = c.text(t.x, t.y, 60).attr({qpoText:[30,"black"]});
+    qpo.timer.all = c.set(qpo.timer.pie,qpo.timer.text)
+    qpo.timer.update = function(){
+      qpo.timer.value--;
+      qpo.timer.text.attr({"text":qpo.timer.value});
+    }
+    qpo.gui.push(qpo.timer.all);
   })();
   drawBoard(q, q); // create the board
   controlPanel = new startControlPanel(po);
@@ -604,9 +622,7 @@ function updateBlueAU(po){ //Called when a command is sent and when a unit dies.
   var ind = qpo.blueActiveUnit + 1;
   var tries = 0;
   while (findingUnit) {
-    if (ind == po) { //no more units in array to check; start at 0
-      ind = 0;
-    }
+    if (ind == po) { ind = 0; }
     if (blueUnits[ind].alive && qpo.activeGame.isEnding == false){ //this is our new active unit. Do stuff.
       blueUnits[qpo.blueActiveUnit].deactivate();
       blueUnits[ind].activate();
@@ -616,20 +632,13 @@ function updateBlueAU(po){ //Called when a command is sent and when a unit dies.
     }
     ind++;
     tries++;
-    if (tries == po) {//only unit left
-      findingUnit = false; //don't change anything, just stop looking.
-    }
+    if (tries == po) { findingUnit = false; } // stop looking.
   }
-
-  /*
-  if 1v1, just keep current unit active.
-  if 2v2, check if other unit is alive, and switch to it if so.
-  if 3v3, check if next unit it alive, and switch to it if so.
-  */
 }
 
 function newTurn(){ // called every time game clock is divisible by 3
   qpo.activeGame.turnNumber++;
+  qpo.timer.update();
 
   //// AI SECTION
   // Record reward events that happened this turn:
@@ -778,8 +787,8 @@ function newTurn(){ // called every time game clock is divisible by 3
 
   controlPanel.resetIcons();
   if (!qpo.trainingMode){ //animate the pie, but not in training mode
-    qpo.timer.attr({segment: [450, 250, 50, -90, 269]});
-    qpo.timer.animate({segment: [450, 250, 50, -90, -90]}, 3000*qpo.timeScale);
+    qpo.timer.pie.attr({segment: [qpo.guiCoords.turnTimer.x, qpo.guiCoords.turnTimer.y, qpo.guiCoords.turnTimer.r, -90, 269]});
+    qpo.timer.pie.animate({segment: [qpo.guiCoords.turnTimer.x, qpo.guiCoords.turnTimer.y, qpo.guiCoords.turnTimer.r, -90, -90]}, 3000*qpo.timeScale);
   }
   if (qpo.activeGame.turnNumber == 60){
     if (qpo.activeGame.isEnding == false){ //find the winner and store to gameResult
@@ -787,9 +796,9 @@ function newTurn(){ // called every time game clock is divisible by 3
       if(qpo.scoreBoard.redScore==qpo.scoreBoard.blueScore){
         gameResult = "tie";
       } else if (qpo.scoreBoard.redScore > qpo.scoreBoard.blueScore) {
-        gameResult = "blue";
-      } else {
         gameResult = "red";
+      } else {
+        gameResult = "blue";
       }
     }
     qpo.blueActiveUnit = -1;
@@ -1294,7 +1303,7 @@ function startGame(settings){ //called when countdown reaches 0
   qpo.redActiveUnit = 0;
 
   qpo.turnStarter = setInterval(newTurn,3000*qpo.timeScale);
-  qpo.timer.animate({segment: [450, 250, 50, -90, -90]}, 3000*qpo.timeScale);
+  qpo.timer.pie.animate({segment: [qpo.guiCoords.turnTimer.x, qpo.guiCoords.turnTimer.y, qpo.guiCoords.turnTimer.r, -90, -90]}, 3000*qpo.timeScale);
 
   qpo.collisionDetector = setInterval(function(){detectCollisions(qpo.activeGame.po)},10);
   qpo.mode = "game";
