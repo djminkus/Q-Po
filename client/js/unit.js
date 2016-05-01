@@ -64,7 +64,7 @@ function finishUnit(unit){
       unit.rect.hide();
       unit.rect.attr({"opacity":0.7});
     });
-    if(qpo.mode == "game"){ // update scoreboard and prep to reward AI
+    if(qpo.mode == "game"){ // update scoreboard, prep to reward AI, and disable respawn if score limit reached
       switch(unit.team){
         case "red":
           qpo.redDead++;
@@ -96,7 +96,7 @@ function finishUnit(unit){
       qpo.activeGame.upcomingSpawns.push([spawnTurn,unit.num,unit.team]);
         //add the spawn to the queue. Queue is checked from NewTurn function.
     }
-    else if ( qpo.scoreBoard.redScore >= qpo.activeGame.scoreToWin // otherwise, end the game, if score limit reached.
+    else if (qpo.scoreBoard.redScore >= qpo.activeGame.scoreToWin // otherwise, end the game, if score limit reached.
       || qpo.scoreBoard.blueScore >= qpo.activeGame.scoreToWin && qpo.activeGame.isEnding == false){
       var gameResult;
       setTimeout(function(){ //set gameResult to "tie","blue",or "red" (after 20 ms to account for performance issues)

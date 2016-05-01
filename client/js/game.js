@@ -42,17 +42,17 @@ qpo.Game = function(q, po, multi, playMusic, respawn){ //"Game" class. Instantia
     //  We'll format the array properly later. Let's start with the raw values.
     for (var i=0; i<po; i++){
       // 16 qpo-grid coords of units (4 per po--red/blue x/y):
-      if(blueUnits[i].alive){ //0-7: blue x,y
-        arr[2*i] = blueUnits[i].x; //values from 0 to (q-1)
-        arr[2*i + 1] = blueUnits[i].y; //principle: keep coords of same obj together
+      if(qpo.blueUnits[i].alive){ //0-7: blue x,y
+        arr[2*i] = qpo.blueUnits[i].x; //values from 0 to (q-1)
+        arr[2*i + 1] = qpo.blueUnits[i].y; //principle: keep coords of same obj together
       }
       else { // -1 if dead
         arr[2*i] = -1;
         arr[2*i + 1] = -1;
       }
-      if(redUnits[i].alive){ //8-15: red x,y
-        arr[2*qpo.activeGame.po + 2*i] = redUnits[i].x;
-        arr[2*qpo.activeGame.po + 2*i + 1] = redUnits[i].y;
+      if(qpo.redUnits[i].alive){ //8-15: red x,y
+        arr[2*qpo.activeGame.po + 2*i] = qpo.redUnits[i].x;
+        arr[2*qpo.activeGame.po + 2*i + 1] = qpo.redUnits[i].y;
       }
       else { // -1 if dead
         arr[2*qpo.activeGame.po + 2*i] = -1;
