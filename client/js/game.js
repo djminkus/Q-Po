@@ -4,8 +4,11 @@
 
 qpo.Game = function(q, po, multi, playMusic, respawn){ //"Game" class. Instantiated every time a new round is called.
   this.po = po; //# of units per team. Min 1, max 7.
-  qpo.timeScale = (po/4) ; //adjust timeScale. Bigger means slower; 1 is 3 s/turn; 0.5 is 1.5 s/turn.
-    // [.25,.5, .75, 1, 1.25, etc.]
+  qpo.timeScale = (function(){
+    var adj = 0.25; //adjustment
+    var factor = 1/5;
+    return (adj + po*factor) ; //adjust timeScale. Bigger means slower; 1 is 3 s/turn; 0.5 is 1.5 s/turn.
+  })(); //0.45, 0.65, 0.85, 1.05, 1.25, etc
 
   this.q = (q || qpo.difficPairings[po-1]); //size of board. (q x q)
   this.multiplayer = multi; //false for single player (local vs. AI) mode

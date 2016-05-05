@@ -66,7 +66,7 @@ Contents of this code: (updated June 2, 2015)
   UNIT CONSTRUCTORS
   GUI ELEMENTS
   INCREMENT FUNCTIONS
-    updateBlueAU() -- updates which unit is highlighted with orange
+    updateBlueAU() -- updates orange highlights on board and control panel
       (keyboard presses queue moves for the Active Unit)
     tick() -- makes the seconds clock tick down
     newTurn() -- starts a new turn, called every 3 seconds
@@ -109,9 +109,9 @@ qpo = {
   "socketCodes" : {"bomb":0,"shoot":1,"moveLeft":2,"moveUp":3,"moveRight":4,"moveDown":5,"stay":6},
   */
   // "socket" : io(),
-  "lastMsgTime" : new Date().getTime(),
+  "lastMoveTime" : new Date().getTime(),
   "moveName" : null,
-  "timeSinceLastMsg" : null,
+  "timeSinceLastMove" : null, //time since keyboard stroke was most recently processed as a move
   "cpIconsGens" : [85, 475, 20, 10, 40] //centers and radius -- for (leftmost) controlPanel icons
 }
 
@@ -147,6 +147,25 @@ qpo.setup = function(){ // set up global vars and stuff
   // MISCELLANEOUS STUFF:
   qpo.timeScale = 0.5; // Bigger means slower; 1 is original 3-seconds-per-turn
   qpo.aiTypes = ["neural","rigid","random"];
+  qpo.keyCodes = {
+    81:"bomb",
+    69:"shoot",
+    65:"moveLeft",
+    87:"moveUp",
+    68:"moveRight",
+    83:"moveDown",
+    88:"stay"
+  }
+  qpo.COLOR_DICT = {
+    "blue": "#0055bb",
+    "red": "#bb0000",
+    "orange": "#ffbb66",
+    "shot color": "#00bb55",
+    "green": "#00bb55", //same as shot color
+    "bomb color": "#bb00bb",
+    "grey": "#bbbbbb"
+  };
+  qpo.waitTime = 100; //ms between moves
 
   // NEURAL STUFF:
   qpo.trainingMode = false;
@@ -163,16 +182,7 @@ qpo.setup = function(){ // set up global vars and stuff
   qpo.aiType = qpo.aiTypes[0]; // controls source of red's moves in singlePlayer
   qpo.trainerOpponent = qpo.aiTypes[2]; // controls source of blue's moves in training mode
 
-  qpo.COLOR_DICT = {
-    "blue": "#0055bb",
-    "red": "#bb0000",
-    "orange": "#ffbb66",
-    "shot color": "#00bb55",
-    "green": "#00bb55", //same as shot color
-    "bomb color": "#bb00bb",
-    "grey": "#bbbbbb",
-    "purple":"#cc66ff"
-  };
+
   qpo.blueMovesQueue = [];
   qpo.redMovesQueue = [];
   qpo.shots = [];
@@ -376,8 +386,8 @@ function drawBoard(cols, rows){ //draw the walls and grid and push to gui
   }
 }
 
-function placeUnits(){
-  //TODO: Implement these rules for placing U units, on an NxM board (N columns, M rows)
+function placeUnits(){ //called from startGame()
+  //  Place U units on an NxM board (N columns, M rows)
   //  Remember that rows and columns are zero-indexed.
   //  Also, blue is on top, red on bottom.
   //    1. Board must be at least 3x3.
@@ -395,7 +405,6 @@ function placeUnits(){
     "red" : qpo.redUnits,
     "blue" : qpo.blueUnits
   }
-
 
   units = []; //all Units (red and blue);
   var chooseSpots = function(unitsChosen){
@@ -433,8 +442,7 @@ function placeUnits(){
     gridY.push(row);
     gridXs.push(column);
   };
-  // Find a spawn point for each unit:
-  for (var i=0; i<qpo.activeGame.po; i++) {
+  for (var i=0; i<qpo.activeGame.po; i++) { // Make a new unit at the spot
     chooseSpots(i);
     qpo.blueUnits[i] = makeUnit("blue",gridXs[i],gridY[i],i);
     qpo.redUnits[i] = makeUnit("red", qpo.guiDimens.columns-1-gridXs[i], qpo.guiDimens.rows-1-gridY[i],i);
@@ -481,6 +489,7 @@ function startControlPanel(po){
     "stroke-width": 3
   });
   this.widthEach = widthEach;
+  this.disabled = false;
 
   this.orange = c.rect(leftWall+3, bottomWall+3, widthEach-6, height-6).attr(
       {"stroke":qpo.COLOR_DICT["orange"],"stroke-width":4});
@@ -546,7 +555,11 @@ function startControlPanel(po){
     "threes" : [c.text(qpo.cpIconsGens[0], qpo.cpIconsGens[1], "3").attr({qpoText:[30,"black"]})],
     "fours" : [c.text(qpo.cpIconsGens[0], qpo.cpIconsGens[1], "4").attr({qpoText:[30,"black"]})]
   };
-  this.actives = [];
+  this.actives = new Array();
+
+  qpo.cpMap = [null, this.icons.ones, this.icons.twos,
+    this.icons.threes, this.icons.fours];
+
   this.all = c.set();
 }
 function finishControlPanel(cp){
@@ -576,45 +589,103 @@ function finishControlPanel(cp){
     cp.icons.fours[i] = cp.icons.fours[0].clone().attr(
       {"transform":("t" + cp.widthEach*i + "," + 0)});
   }
-
-  qpo.cpMap = [null, cp.icons.ones, cp.icons.twos, cp.icons.threes, cp.icons.fours];
-  cp.resetIcons = function(){ //to be called once every turn
-    for (var i=0; i<cp.po; i++){
-      cp.icons.rightArrows[i].hide();
-      cp.icons.leftArrows[i].hide();
-      cp.icons.upArrows[i].hide();
-      cp.icons.downArrows[i].hide();
-      cp.icons.rects[i].hide();
-      cp.icons.bombs[i].hide();
-      cp.icons.circles[i].hide();
-      cp.icons.ones[i].hide();
-      cp.icons.twos[i].hide();
-      cp.icons.threes[i].hide();
-      cp.icons.fours[i].hide();
-      try {
-        if (qpo.blueUnits[i].alive){ //reset to circle
-          cp.icons.xs[i].hide();
-          cp.actives[i] = cp.icons.circles[i];
+  cp.targetIcons = { //map the moveStr to one set of [po identical] icons
+    "moveLeft" : controlPanel.icons.leftArrows,
+    "moveUp" : controlPanel.icons.upArrows,
+    "moveRight" : controlPanel.icons.rightArrows,
+    "moveDown" : controlPanel.icons.downArrows,
+    "shoot" : controlPanel.icons.rects,
+    "bomb" : controlPanel.icons.bombs,
+    "stay" : controlPanel.icons.circles
+  }
+  cp.resetIcons = function(){ //at start of every turn, reset icons to circles and numbers
+    // console.log("resetIcons() called");
+    for (var i=0; i<cp.po; i++){ //act on each po's icons separately
+      controlPanel.actives[i] = controlPanel.icons.circles[i];
+      (function(){ // hide all icons
+        cp.icons.rightArrows[i].hide();
+        cp.icons.leftArrows[i].hide();
+        cp.icons.upArrows[i].hide();
+        cp.icons.downArrows[i].hide();
+        cp.icons.rects[i].hide();
+        cp.icons.bombs[i].hide();
+        cp.icons.circles[i].hide();
+        cp.icons.ones[i].hide();
+        cp.icons.twos[i].hide();
+        cp.icons.threes[i].hide();
+        cp.icons.fours[i].hide();
+        cp.icons.xs[i].hide();
+      })();
+      try { // show circle, spawn timer, or x
+        if (qpo.blueUnits[i].alive){ // reset to circle
+          controlPanel.actives[i].hide();
+          controlPanel.actives[i] = controlPanel.icons.circles[i];
           qpo.gui.push(controlPanel.actives[i]);
         }
         else { //show spawn timer or x
-          if (qpo.activeGame.respawnEnabled){ //show spawn timer
-            cp.actives[i]= qpo.cpMap[qpo.unitLists[qpo.playerTeam][i].spawnTimer];
+          if (qpo.activeGame.respawnEnabled){ //show spawn timer and turn orange on, or don't.
+            var st = qpo.unitLists[qpo.playerTeam][i].spawnTimer // this is after it's been decremented in newTurn
+            controlPanel.actives[i]= qpo.cpMap[st + 1][i]; //so compensate here.
+            if(st == 0 && qpo.blueActiveUnit == i){controlPanel.enable();} //
           }
           else { //show x
-            cp.actives[i]=cp.icons.xs[i];
+            controlPanel.actives[i] = controlPanel.icons.xs[i];
           }
           qpo.gui.push(controlPanel.actives[i]);
         }
-      }
-      catch(e){ // if qpo.blueUnits doesn't exist... show xs.
+      }       //end try
+      catch(e){ // if an error is thrown, show x
+        // qpo.err = e;
         cp.actives[i] = cp.icons.xs[i];
         qpo.gui.push(controlPanel.actives[i]);
-      }
-      cp.actives[i].show();
+      }       //end catch
+      controlPanel.actives[i].show();
     }
+  } ;
+  cp.enable = function(){ //turn the orange on (if active unit is eligible)
+    if(qpo.unitLists["blue"][qpo.blueActiveUnit].spawnTimer < 1){
+      cp.orange.attr({"stroke":qpo.COLOR_DICT["orange"]});
+      cp.disabled = false;
+    }
+  } ;
+  cp.disable = function(){ //turn the orange off and queue it to be turned on, or don't
+    cp.orange.attr({"stroke":"grey"});
+    cp.disabled = true;
+    setTimeout(function(){cp.enable()}, qpo.waitTime);
+  } ;
+  cp.accept = function(event, nau){ //allow keyboard input to affect the controlPanel
+    //(change the icon, move the highlight, and update the blue active unit)
+    // NAU is Number of Active Unit (i.e. qpo.blueUnits.activeUnit.num)
+    event.preventDefault();
+    var code = event.keyCode; //get the keyCode
+    var move = qpo.keyCodes[code]; //translate it into a string like "moveLeft","shoot",or "bomb"
+    // console.log("controlPanel.accept() called, move is " + move);
+    //call the proper functions on that string:
+    queueMove(move);
+    controlPanel.changeIcon(move);
+    updateBlueAU(qpo.activeGame.po,"move"); //move highlight on CP and board
+  } ;
+  cp.changeIcon = function(move){
+    if (!qpo.activeGame.isEnding) { //As long as the game isn't ending, update the icon.
+      //hide icon for active unit, update the icon, and show updated icon
+      controlPanel.actives[qpo.blueActiveUnit].hide();
+      controlPanel.actives[qpo.blueActiveUnit] = controlPanel.targetIcons[move][qpo.blueActiveUnit];
+      qpo.gui.push(controlPanel.actives[qpo.blueActiveUnit]);
+      controlPanel.actives[qpo.blueActiveUnit].show();
+    }
+    // console.log("controlPanel.changeIcon() called");
   }
-  cp.resetIcons();
+  cp.moveHighlight = function(howMuch){
+    // INSTANT SNAP
+    controlPanel.orange.attr({'x': (controlPanel.orange.attr('x') + howMuch)});
+    // SMOOTH BOUNCE (glitchy)
+    //   (When interrupted, the box ends up in wonky places.)
+    // var prevX = controlPanel.orange.attr('x');
+    // var newX = prevX + howMuch;
+    // controlPanel.orange.animate({'x': newX}, qpo.waitTime, "bounce", function(){
+    //   controlPanel.orange.attr({'x': newX}); }
+    // );
+  }
   cp.all.push(cp.outline, cp.secLines, cp.orange,
     cp.icons.circles, cp.icons.rightArrows, cp.icons.leftArrows,
     cp.icons.upArrows, cp.icons.downArrows, cp.icons.xs,
@@ -643,29 +714,6 @@ function drawGUI(q,po){ //create the turn timer (pie), board, and control panel.
 }
 
 //INCREMENT FUNCTIONS (no new Raph elements created)
-function updateBlueAU(po){ //Called when a command is sent and when a unit dies.
-  /*
-  deactivate the old active unit. Find the next living unit and activate it.
-  Move the highlighting on the control panel to reflect this.
-  Update the "blueActiveUnit" var.
-  */
-  var findingUnit = true;
-  var ind = qpo.blueActiveUnit + 1;
-  var tries = 0;
-  while (findingUnit) {
-    if (ind == po) { ind = 0; }
-    if (qpo.blueUnits[ind].alive && qpo.activeGame.isEnding == false){ //this is our new active unit. Do stuff.
-      qpo.blueUnits[qpo.blueActiveUnit].deactivate();
-      qpo.blueUnits[ind].activate();
-      controlPanel.orange.attr({'x': (controlPanel.orange.attr('x')+(ind-qpo.blueActiveUnit)*controlPanel.widthEach)});
-      qpo.blueActiveUnit = ind;
-      findingUnit = false; //unit has now been found.
-    }
-    ind++;
-    tries++;
-    if (tries == po) { findingUnit = false; } // stop looking.
-  }
-}
 
 function newTurn(){ // called every time game clock is divisible by 3
   qpo.activeGame.turnNumber++;
@@ -690,16 +738,17 @@ function newTurn(){ // called every time game clock is divisible by 3
 
   //// SPAWN SECTION
   var completedSpawnIndices = new Array();
+  var spawn, spawnTurn, spawnerTeam;
   for (var i = 0; i<qpo.activeGame.upcomingSpawns.length; i++) { //if it's the right turn, spawn the unit.
     spawn = qpo.activeGame.upcomingSpawns[i];
-    if(spawn[0] == qpo.activeGame.turnNumber){ //if it's time, spawn the unit.
-      if(spawn[2] == "red"){ //spawn[2] is unit's team, "red" or "blue"
-        qpo.redUnits[spawn[1]].spawn();         //spawn red unit
-      } else { //spawn blue unit
-        qpo.blueUnits[spawn[1]].spawn();
-      }
+    spawnTurn = spawn[0];
+    spawnerTeam = spawn[2];
+    spawnerNum = spawn[1];
+    if(spawnTurn == qpo.activeGame.turnNumber){ //if it's time, spawn the unit.
+      qpo.unitLists[spawnerTeam][spawnerNum].spawn();
       completedSpawnIndices.push(i);
     }
+    else{qpo.unitLists[spawnerTeam][spawnerNum].spawnTimer--;} //otherwise, reduce its timer
   }
   for(index in completedSpawnIndices){qpo.activeGame.upcomingSpawns.splice(index,index+1);}
 
@@ -779,7 +828,7 @@ function newTurn(){ // called every time game clock is divisible by 3
       }
     }
 
-    // !!! This scripting is unfair to blue -- red's moves get executed first.
+    // This scripting is unfair to blue -- red's moves get executed first.
     // But not THAT unfair -- red's moves are only as far ahead as the time
     //  it takes to execute one move, because they are woven, red-blue-red-blue-...
 
@@ -1103,34 +1152,47 @@ function detectCollisions(ts){
   }
 }
 
-function updateCPIcon(team, move){
-  if (!qpo.activeGame.isEnding) { //As long as the game isn't ending, update the icon.
-    var targetIcons = { //map the moveStr to the set of icons from which the active icon will be selected using blueActiveUnit / redActiveUnit
-      "moveLeft" : controlPanel.icons.leftArrows,
-      "moveUp" : controlPanel.icons.upArrows,
-      "moveRight" : controlPanel.icons.rightArrows,
-      "moveDown" : controlPanel.icons.downArrows,
-      "shoot" : controlPanel.icons.rects,
-      "bomb" : controlPanel.icons.bombs,
-      "stay" : controlPanel.icons.circles
+function updateBlueAU(po, cond){ //Called when a command is sent and when a unit dies.
+  /*
+  Deactivate the old active unit. Find the next eligible unit and activate it.
+  ("eligible" means "alive or about to be alive").
+  Update the "blueActiveUnit" var.
+  Call "controlPanel.moveHighlight()".
+  cond is condition, either "move" or "death".
+  */
+  var findingUnit = true;
+  var ind = qpo.blueActiveUnit + 1;
+  var tries = 0;
+  var oldBlueAU, newBlueAU;
+  var patience = qpo.timeSinceLastMove; //(called in sendMoveToServer())
+  while (findingUnit) { // keep looking until you find the new active unit.
+    if (ind == po) { ind = 0; }
+    newBlueAU = qpo.blueUnits[ind];
+    oldBlueAU = qpo.blueUnits[qpo.blueActiveUnit];
+    //When you find the new one, deactivate the old unit, activate the new one,
+    //  do controlPanel.moveHighlight(), and update qpo.blueActiveUnit.
+    if ((newBlueAU.spawnTimer < 1) && (qpo.activeGame.isEnding == false) && (patience > qpo.waitTime)){
+      //  This is our new active unit. It's either alive or about to be. Do stuff.
+      //    Also, the game isn't ending, and it's been long enough since the last move.
+      findingUnit = false; //unit has now been found. Exit the While loop after this iteration.
+      qpo.moveHighlights(oldBlueAU, newBlueAU, ind);
+      controlPanel.disable();
+      // DO ALL THIS IN SOME OTHER FUNCTION (see qpo.moveHighlights)
+      // oldBlueAU.deactivate(); //turn off old highlight on gameboard
+      // newBlueAU.activate(); // turn on new hightight on gameboard
+      // //move the orange highlight on the control panel:
+      // controlPanel.moveHighlight((ind-qpo.blueActiveUnit)*controlPanel.widthEach);
+      qpo.blueActiveUnit = ind;
     }
-    switch (team){ //hide icon for active unit, update the icon, and show  updated icon
-      case "blue":
-        controlPanel.actives[qpo.blueActiveUnit].hide();
-        controlPanel.actives[qpo.blueActiveUnit] = targetIcons[move][qpo.blueActiveUnit];
-        qpo.gui.push(controlPanel.actives[qpo.blueActiveUnit]);
-        controlPanel.actives[qpo.blueActiveUnit].show();
-        break;
-      case "red":
-        controlPanel.actives[qpo.redActiveUnit].hide();
-        controlPanel.actives[qpo.redActiveUnit] = targetIcons[move][qpo.redActiveUnit];
-        qpo.gui.push(controlPanel.actives[qpo.redActiveUnit]);
-        controlPanel.actives[qpo.redActiveUnit].show();
-        break;
-      default: //"this was unexpected"
-        console.log("this was unexpected");
-    }
+    ind++;
+    tries++;
+    if (tries == po) { findingUnit = false; } // stop looking. Old AU is new AU.
   }
+}
+qpo.moveHighlights = function(old, neww, index){
+  old.deactivate(); //turn off old highlight on gameboard
+  neww.activate(); // turn on new hightight on gameboard
+  controlPanel.moveHighlight((index-qpo.blueActiveUnit)*controlPanel.widthEach); //move the orange highlight on the control panel:
 }
 function queueMove(move){
   //Takes in a string that should match one of the seven in the "moves" array (in the setup() function),
@@ -1143,11 +1205,11 @@ function queueMove(move){
 }
 function sendMoveToServer(moveStr){
   // console.log(eval("new Date().getTime()"));
-  qpo.timeSinceLastMsg = ( eval("new Date().getTime()") - qpo.lastMsgTime );
-  // mlog("qpo.timeSinceLastMsg");
-  if (qpo.timeSinceLastMsg > 100){ //if they've waited at least 100 ms:
+  qpo.timeSinceLastMove = ( eval("new Date().getTime()") - qpo.lastMoveTime );
+  // mlog("qpo.timeSinceLastMove");
+  if (qpo.timeSinceLastMove > qpo.waitTime){ //if they've waited at least 100 ms:
     // qpo.socket.send(qpo.socketCodes[moveStr]);
-    qpo.lastMsgTime = eval("new Date().getTime()");
+    qpo.lastMoveTime = eval("new Date().getTime()");
   } else { //otherwise, tell them they're sending msgs too fast
     console.log("slow your roll, Mr. Jones");
   }
@@ -1243,52 +1305,25 @@ $(window).keydown(function(event){
       }
       break;
     case "game":
-      switch (event.keyCode){
-        case 81: //q -- blue pressed bomb
-          event.preventDefault();
-          queueMove("bomb");
-          updateCPIcon("blue","bomb");
-          updateBlueAU(qpo.activeGame.po);
-          break;
-        case 69: //e -- blue pressed shoot
-          event.preventDefault();
-          queueMove("shoot");
-          updateCPIcon("blue","shoot");
-          updateBlueAU(qpo.activeGame.po);
-          break;
-        case 65: //a (move left)
-          event.preventDefault();
-          queueMove("moveLeft");
-          updateCPIcon("blue","moveLeft");
-          updateBlueAU(qpo.activeGame.po);
-          break;
-        case 87: //w (move up)
-          event.preventDefault();
-          queueMove("moveUp");
-          updateCPIcon("blue","moveUp");
-          updateBlueAU(qpo.activeGame.po);
-          break;
-        case 68: //d (move right)
-          event.preventDefault();
-          queueMove("moveRight");
-          updateCPIcon("blue","moveRight");
-          updateBlueAU(qpo.activeGame.po);
-          break;
-        case 83: //s (move down)
-          event.preventDefault();
-          queueMove("moveDown");
-          updateCPIcon("blue","moveDown");
-          updateBlueAU(qpo.activeGame.po);
-          break;
-        case 88: //x (stay)
-          event.preventDefault();
-          queueMove("stay");
-          updateCPIcon("blue","stay");
-          updateBlueAU(qpo.activeGame.po);
-          break;
-
-        default: //anything else
-          break;
+      //If active unit is dead and not spawning next turn, try moving to another unit (as a fallback:)
+      if (qpo.blueUnits[qpo.blueActiveUnit].spawnTimer>0){
+        event.preventDefault();
+        updateBlueAU(qpo.activeGame.po, "dead");
+      }
+      else { //Otherwise, respond to the keypress by updating the control panel
+        switch (event.keyCode){
+          case 81:
+          case 69:
+          case 65:
+          case 87:
+          case 68:
+          case 83:
+          case 88: //qweasdx detected (valid)
+            controlPanel.accept(event);
+            break;
+          default: //some other key detected (invalid)
+            break;
+        }
       }
       break;
     case "tut":
@@ -1328,7 +1363,7 @@ function startGame(settings){ //called when countdown reaches 0
   try{qpo.menus["main"].blackness.hide();}
   catch(e){ console.log("no blackness to hide"); }
 
-  drawGUI(qpo.activeGame.q,qpo.activeGame.po);
+  drawGUI(qpo.activeGame.q, qpo.activeGame.po);
   placeUnits(settings[0]); // puts the units on the board
   qpo.blueActiveUnit = 0;
   qpo.redActiveUnit = 0;
