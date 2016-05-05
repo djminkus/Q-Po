@@ -5,7 +5,11 @@ Q-Po is a competitive browser game that combines elements of real-time strategy 
   but hard to master.
 
 How to get familiar with the code:
-  Start with the startGame() and newTurn() functions. They will reference
+  0. Open index.html in your browser window.
+  1. Understand raphael.js basics.
+  2. Look at qpo.setup() first.
+  3. See menus.js.
+  3. Pay attention with the startGame() and newTurn() functions. They will reference
     the other functions in a logical order.
   To understand the first thing you see when you load the page,
     look at menus.js. When a new game is started, countdownScreen()
@@ -456,26 +460,26 @@ function placeUnits(){ //called from startGame()
   qpo.blueUnits[0].activate();
   controlPanel.resetIcons();
 }
-function placeUnitsTut(){
-  qpo.blueUnits = [];
-  qpo.redUnits = [];
-
-  qpo.blueUnits[0] = new startUnit("blue",3,1,0);
-  qpo.redUnits[0] = new startUnit("red",3,5,"");
-  improveUnit(qpo.blueUnits[0]);
-  improveUnit(qpo.redUnits[0]);
-  finishUnit(qpo.blueUnits[0]);
-  finishUnit(qpo.redUnits[0]);
-  units = []; //all Units (red and blue);
-  for (var i=0;i<qpo.blueUnits.length;i++){
-    units.push(qpo.blueUnits[i]);
-    units.push(qpo.redUnits[i]); //assumes qpo.blueUnits.length =
-                                //        qpo.redUnits.length
-    //evens are blue, odds are red, low numbers to the left
-  }
-  qpo.blueUnits[0].activate();
-  controlPanel.resetIcons();
-}
+// function placeUnitsTut(){ //NOT IMPLEMENTED
+//   qpo.blueUnits = [];
+//   qpo.redUnits = [];
+//
+//   qpo.blueUnits[0] = new startUnit("blue",3,1,0);
+//   qpo.redUnits[0] = new startUnit("red",3,5,"");
+//   improveUnit(qpo.blueUnits[0]);
+//   improveUnit(qpo.redUnits[0]);
+//   finishUnit(qpo.blueUnits[0]);
+//   finishUnit(qpo.redUnits[0]);
+//   units = []; //all Units (red and blue);
+//   for (var i=0;i<qpo.blueUnits.length;i++){
+//     units.push(qpo.blueUnits[i]);
+//     units.push(qpo.redUnits[i]); //assumes qpo.blueUnits.length =
+//                                 //        qpo.redUnits.length
+//     //evens are blue, odds are red, low numbers to the left
+//   }
+//   qpo.blueUnits[0].activate();
+//   controlPanel.resetIcons();
+// }
 
 function startControlPanel(po){
   var leftWall = qpo.guiCoords.gameBoard.leftWall;
@@ -893,23 +897,22 @@ function newTurn(){ // called every time game clock is divisible by 3
 
 //IFFY TO IMPLEMENT DUE TO USAGE OF LOGIC SPECIFIC TO
 //  EACH TYPE OF OBJECT WITHIN detectCollisions()
-qpo.objectsAreColliding = function(object1,object2){
-  //object1 and 2 are Raphael objects -- specifically rects in this case
-  var box1 = object1.getBBox();
-  var sb1 = box1.y2;
-  var nb1 = box1.y;
-  var wb1 = box1.x;
-  var eb1 = box1.x2;
-
-  var box2 = object2.getBBox();
-  var sb2 = box2.y2;
-  var nb2 = box2.y;
-  var wb2 = box2.x;
-  var eb2 = box2.x2;
-  if (box1.x > box2.x && box1.x2){
-    ;
-  }
-}
+// qpo.objectsAreColliding = function(object1,object2){
+//   //object1 and 2 are Raphael objects -- specifically rects in this case
+//   var box1 = object1.getBBox();
+//   var sb1 = box1.y2;
+//   var nb1 = box1.y;
+//   var wb1 = box1.x;
+//   var eb1 = box1.x2;
+//
+//   var box2 = object2.getBBox();
+//   var sb2 = box2.y2;
+//   var nb2 = box2.y;
+//   var wb2 = box2.x;
+//   var eb2 = box2.x2;
+//
+//   (box1.x > box2.x && box1.x2) ? (return true;) : (return false;){
+// }
 
 function detectCollisions(ts){
   // called every 10 ms once game has begun
@@ -1329,13 +1332,12 @@ $(window).keydown(function(event){
     case "tut":
       switch(event.keyCode){
         case 13: //enter
-          tutFuncs["enter"]();
+          qpo.tut.tutFuncs.enter();
           break;
         case 69: //"e"
-          tutFuncs["ekey"]();
+          qpo.tut.tutFuncs.ekey();
           break;
         default:
-          //console.log("you pressed key " + event.keyCode);
           break;
       }
       break;
@@ -1347,6 +1349,22 @@ $(window).keydown(function(event){
 });
 
 //"SCREEN" FUNCTIONS
+qpo.countdownScreen = function(settings){ //settings are [q,po,multi,music,music]
+  var numbers = c.text(c.width/2,c.height/2,"3")
+    .attr({"font-size":72,"fill":"white"});
+  setTimeout( //2
+    function(){numbers.attr({"text":"2"})},
+    1000);
+  setTimeout( //1
+    function(){numbers.attr({"text":"1"})},
+    2000);
+  setTimeout(function(){ //set blackness opacity to 0 when countdown is finished
+             qpo.menus["main"].blackness.animate({"opacity":0},200,"<")},
+             2800);
+  setTimeout(function(){numbers.remove()},3000);
+  setTimeout(function(){startGame(settings);},3000);
+  qpo.mode="other";
+}
 function startGame(settings){ //called when countdown reaches 0
   //settings are [q,po,multi,music,respawn]
   //GET RID OF MENU MUSIC
@@ -1397,22 +1415,7 @@ qpo.snap = function(){ //correct unit positions just before the start of each tu
   }
 };
 
-qpo.countdownScreen = function(settings){ //settings are [q,po,multi,music,music]
-  var numbers = c.text(c.width/2,c.height/2,"3")
-    .attr({"font-size":72,"fill":"white"});
-  setTimeout( //2
-    function(){numbers.attr({"text":"2"})},
-    1000);
-  setTimeout( //1
-    function(){numbers.attr({"text":"1"})},
-    2000);
-  setTimeout(function(){ //set blackness opacity to 0 when countdown is finished
-             qpo.menus["main"].blackness.animate({"opacity":0},200,"<")},
-             2800);
-  setTimeout(function(){numbers.remove()},3000);
-  setTimeout(function(){startGame(settings);},3000);
-  qpo.mode="other";
-}
+
 
 function endGame(result){
   clearInterval(qpo.clockUpdater);

@@ -7,7 +7,6 @@ qpo.menus = {
   "selectP" : null
 };
 qpo.mode = "menu"; //type of screen that's active -- can be "menu", "game", "tut", or "other"
-//activeMenu = []; //a list of button objects within the current menu
 var activeMenu = "main"; //the key within "qpo.menus" of the currently-displayed menu
 var activeButton = "singleP"; //the key within "buttons" of the orange-highlighted button
 var buttons = {
@@ -18,9 +17,10 @@ var buttons = {
   "gameS" : null,
   "customG" : null,
   "startG" : null,
-  "mainM" : null
-}
-var buttonsKeys = ["singleP","multiP","selectP","customG","startG","newR","gameS","mainM"];
+  "mainM" : null,
+  "tut" : null
+};
+var buttonsKeys = ["singleP","multiP","selectP","customG","startG","newR","gameS","mainM", "tut"];
 qpo.activeSession = null;
 
 c.customAttributes.qpoText = function(size, fill){ //style text white with Open Sans family and "size" font-size.
@@ -149,6 +149,11 @@ buttonList = function(buttonsInOrder){
     }
     this.buttons[this.activeIndex].activate();
   }
+  this.raphs = c.set();
+  for (button in this.buttons){ //populate raphs with buttons
+    this.raphs.push(button.set);
+  }
+  return this;
 }
 
 Menu = function(name, buttonArgs){
@@ -168,26 +173,27 @@ Menu = function(name, buttonArgs){
   };
 };
 
-var makeMainMenu = function(){
+var makeMainMenu = function(letters){
   activeMenu = "main";
   qpo.menus["main"] = this;
-  //console.log(this);
 
-  this.open = function(){
+  // this.open = function(){
+  //   return false;
+  // }
 
-  }
-
-  //1st layer (background)
+  //1st layer (blackness and letters)
   this.blackness = c.rect(0,0,c.width,c.height).attr({"fill":"black"});
-  this.letters = c.set().push(
-    c.text(500,500,"q"),
-    c.text(520,500,"w"),
-    c.text(540,500,"e"),
-    c.text(510,520,"a"),
-    c.text(530,520,"s"),
-    c.text(550,520,"d"),
-    c.text(520,540,"x")
-  ).attr({qpoText: 20});
+  if(letters){ //show letters
+    this.letters = c.set().push(
+      c.text(500,500,"q"),
+      c.text(520,500,"w"),
+      c.text(540,500,"e"),
+      c.text(510,520,"a"),
+      c.text(530,520,"s"),
+      c.text(550,520,"d"),
+      c.text(520,540,"x")
+    ).attr({qpoText: 20});
+  }
 
   //2nd layer (animation)
   qpo.activeGame = new qpo.Game(7,3,false,false,true); //to define the unit size and all
@@ -254,7 +260,13 @@ var makeMainMenu = function(){
 
   //3rd layer (title, menu buttons)
   this.title = c.text(300,100,"Q-PO").attr({"font-size":120,"fill":"white","font-family":"'Open Sans',sans-serif"});
-  this.singlePlayerButton = new button("Single-Player",300,250,function(e){
+  this.tutorialButton = new button("Tutorial",300,250,function(e){
+    qpo.mode = "tut";
+    qpo.menus.main.hideAll();
+    qpo.multiplayer = false;
+    qpo.tut = new qpo.Tut();
+  }, 15, true, "tut");
+  this.singlePlayerButton = new button("Single-Player",300,340,function(e){
     gameSetupMenu = new makeGameSetupMenu();
     qpo.menus.main.hideAll();
     qpo.multiplayer = false;
@@ -278,11 +290,9 @@ var makeMainMenu = function(){
         }
       }
     }
-    else{
-      qpo.activeSession = new session("pvn"); //human versus neural session
-    }
-  }, 30, true, "singleP");
-  this.multiplayerButton = new button("Multiplayer",300,340,function(e){
+    else{ qpo.activeSession = new session("pvn"); } //new 'human vs neural' session
+  }, 30, false, "singleP");
+  this.multiplayerButton = new button("Multiplayer",300,430,function(e){
     qpo.menus.main.multiplayerButton.deactivate();
     qpo.multiplayerMenu = new makeMultiplayerMenu();
     qpo.menus.main.hideAll();
@@ -290,7 +300,7 @@ var makeMainMenu = function(){
     qpo.activeSession = new session('pvp');
   }, 10, false, "multiP");
 
-  this.buttonList = new buttonList([this.singlePlayerButton, this.multiplayerButton]);
+  this.buttonList = new buttonList([this.tutorialButton, this.singlePlayerButton, this.multiplayerButton]);
 
   /* "w" and "s" indicators near buttons
   this.w = c.set(
@@ -304,12 +314,11 @@ var makeMainMenu = function(){
   */
 
   this.all = c.set();
-  this.all.push(this.title, this.blackness, this.letters,
-    this.singlePlayerButton.set, this.multiplayerButton.set,
+  this.all.push(this.title, this.blackness,
+    this.singlePlayerButton.set, this.multiplayerButton.set, this.tutorialButton.set,
+    // this.buttonList.raphs,
     this.unit.phys, this.otherUnit.phys);
-
-  // this.song = new Audio("music/stars.mp3"); // Uncomment once there are different
-  // this.song.play();                         //   songs for different menus.
+  if(letters){this.all.push(this.letters);}
 
   this.showAll = function(){
     this.all.show();
@@ -320,18 +329,18 @@ var makeMainMenu = function(){
   };
   this.hideAll = function(){
     this.all.hide();
-    clearInterval(this.mmsai);
-    clearInterval(this.mmrai);
-    clearInterval(this.mmlai);
-    clearTimeout(this.turn1,this.turn2);
-    for (var i = 0; i < qpo.shots.length; i++){
+    clearInterval(this.mmsai); //main menu stop animation interval
+    clearInterval(this.mmrai); //main menu right animation interval
+    clearInterval(this.mmlai); //main menu left animation interval
+    clearTimeout(this.turn1,this.turn2); //queued animations
+    for (var i = 0; i < qpo.shots.length; i++){ //remove shots
       if (qpo.shots[i]) {qpo.shots[i].remove();}
     }
-    for (var i = 0; i < qpo.bombs.length; i++){
+    for (var i = 0; i < qpo.bombs.length; i++){ //remove bombs
       if (qpo.bombs[i]) {qpo.bombs[i].phys.remove();}
     }
-    this.unit.instakill();
-    this.otherUnit.instakill();
+    this.unit.instakill(); //remove unit
+    this.otherUnit.instakill(); //remove other unit
   }
 
   this.close = function(){
@@ -354,18 +363,18 @@ var makeMainMenu = function(){
 //CREATE MAIN MENU:
 qpo.menus.main = new makeMainMenu();
 qpo.menus.main.animate(); //could be better designed but oh well
-qpo.muteButton = c.path("M-4,-4 L4,-4 L10,-10 L10,10 L4,4 L-4,4 L-4,-4")
-  .attr({"stroke-width":2, "stroke":qpo.COLOR_DICT["green"],
-    "fill":qpo.COLOR_DICT["green"], "opacity":0.7})
-  .transform("t15,580")
-  .click(function(){
-    switch(qpo.menuSong.volume){
-      case 1: { qpo.menuSong.volume = 0.2; break;}
-      case 0.2: { qpo.menuSong.volume = 0; break; }
-      case 0: { qpo.menuSong.volume = 1; break; }
-      default: {console.log("this was unexpected"); break;}
-    }
-  });
+// qpo.muteButton = c.path("M-4,-4 L4,-4 L10,-10 L10,10 L4,4 L-4,4 L-4,-4")
+//   .attr({"stroke-width":2, "stroke":qpo.COLOR_DICT["green"],
+//     "fill":qpo.COLOR_DICT["green"], "opacity":0.7})
+//   .transform("t15,580")
+//   .click(function(){
+//     switch(qpo.menuSong.volume){
+//       case 1: { qpo.menuSong.volume = 0.2; break;}
+//       case 0.2: { qpo.menuSong.volume = 0; break; }
+//       case 0: { qpo.menuSong.volume = 1; break; }
+//       default: {console.log("this was unexpected"); break;}
+//     }
+//   });
 
 var makeMultiplayerMenu = function(){ //fill this in later
   qpo.menus["multiP"] = this;
