@@ -7,8 +7,8 @@ qpo.menus = {
   "selectP" : null
 };
 qpo.mode = "menu"; //type of screen that's active -- can be "menu", "game", "tut", or "other"
-var activeMenu = "main"; //the key within "qpo.menus" of the currently-displayed menu
-var activeButton = "singleP"; //the key within "buttons" of the orange-highlighted button
+var activeMenu = "title"; //the key within "qpo.menus" of the currently-displayed menu
+var activeButton; //the key within "buttons" of the orange-highlighted button
 var buttons = {
   "singleP": null,
   "multiP" : null,
@@ -32,15 +32,12 @@ c.customAttributes.qpoText = function(size, fill){ //style text white with Open 
 }
 
 button = function(text,x,y,onclick,adj,active,nameStr){
-  /*
-  x is x-center of button, y is y-center of button
-  adj is button width adjustment (positive value --> thinner button)
-  */
-  if (adj===undefined){
-    var adj = 0;
-  }
+  //  x is x-center of button.
+  //  y is y-center of button.
+  //  adj is button width adjustment (positive value --> thinner button)
+  if(adj===undefined){var adj = 0;} //set adjustment to 0 default
   this.name = nameStr; //they key within "buttons" that'll have this button as a value
-  this.rectEl = c.rect( x- (text.length)*11 + adj, y-30, text.length*22 - 2*adj , 60 ).attr({
+  this.rectEl = c.rect((x- text.length*11 + adj), y-30, (text.length*22 - 2*adj), 60, 5).attr({
     "fill":"#000000","stroke":"white","stroke-width":2});
   this.textEl = c.text(x,y,text).attr({"font-size":30,"fill":"white","font-family":"'Open Sans',sans-serif"});
   this.set = c.set().push(this.textEl,this.rectEl);
@@ -56,10 +53,22 @@ button = function(text,x,y,onclick,adj,active,nameStr){
     activeButton = null;
     this.active = false;
   }
-  if (active){
-    this.activate();
-  }
+  if(active){this.activate();}
   this.onclick = function(){onclick()};
+  // console.log(this);
+  return this;
+}
+
+qpo.Highlight = function(x1,y1,width,height){ //not used yet
+  this.rect = c.rect(x1,y1,width,height).attr({"stroke": qpo.COLOR_DICT["orange"], "stroke-width":4});
+  this.change = function(dx,dy,xRatio,yRatio){ //change the highlight
+    console.log(this); //should return the Highlight object
+    //dx, dy is change in x1 and y1
+    //xRatio, y ratio are fractional changes in width and height, respectively
+    this.rect.attr({'x':(this.rect.x+dx),'y':(this.rect.y+dy),
+      "width": (this.rect.width*xRatio), "height":(this.rect.height*yRatio)});
+  }; //if this is buggy, try ".bind(this)"
+  return this;
 }
 
 slider = function(label, min, max, defaultt, y, spawnActive){
@@ -150,40 +159,146 @@ buttonList = function(buttonsInOrder){
     this.buttons[this.activeIndex].activate();
   }
   this.raphs = c.set();
-  for (button in this.buttons){ //populate raphs with buttons
-    this.raphs.push(button.set);
-  }
+  for(var i=0; i<this.buttons.length; i++){this.raphs.push(this.buttons[i].set);} //populate raphs with buttons
   return this;
 }
 
-Menu = function(name, buttonArgs){
-  qpo.menus[name] = this;
-  this.buttonList = new buttonList(buttonArgs);
-  this.next = function(){ //select next item in this menu
+// Menu = function(name, title){ // draft for a "Menu" class
+//   // name is name for qpo.menus (ex. "mainM")
+//   // title is title string (ex. "Game Setup")
+//   qpo.menus[name] = this;
+//   qpo.mode = "menu";
+//   activeMenu = name;
+//   this.all = c.set();
+//   this.title = c.text(300,100,title).attr({qpoText:[120]});
+//   this.up = function(){ // return to previous screen/menu
+//
+//   };
+//   this.close = function(){ // remove this menu's Raphael elements & deactivate it
+//     c.clear();
+//   };
+//   this.enter = function(){ //called when enter key is struck. Change as highlight changes.
+//     ;
+//   }
+// };
 
-  };
-  this.previous = function(){ //select previous item in this menu
-
-  };
-  this.up = function(){ // return to previous screen/menu
-
-  };
-  this.close = function(){ // remove this menu's Raphael elements & deactivate it
-
-  };
-};
-
-var makeMainMenu = function(letters){
-  activeMenu = "main";
-  qpo.menus["main"] = this;
-
-  // this.open = function(){
-  //   return false;
-  // }
+qpo.makeTitleScreen = function(){
+  activeMenu = "title";
+  qpo.menus["title"] = this;
+  qpo.mode = "menu";
 
   //1st layer (blackness and letters)
   this.blackness = c.rect(0,0,c.width,c.height).attr({"fill":"black"});
-  if(letters){ //show letters
+  this.layer1 = c.set().push(this.blackness);
+
+  //2nd layer (animation)
+  this.layer2 = c.set();
+  qpo.activeGame = new qpo.Game(7,3,false,false,true); //just to define the unit size and all
+  this.unit = makeUnit("red",3,7.5,0);
+  this.otherUnit = makeUnit("blue",1,2,1);
+  this.animate = function(){
+    //order the layers properly:
+    this.unit.phys.toBack();
+    this.otherUnit.phys.toBack();
+    this.blackness.toBack();
+
+    //make the red unit move right and the blue unit fire a bomb every three turns, starting this turn
+    this.unit.moveRight();
+    this.otherUnit.bomb();
+    this.bombCounter = 1;
+    this.all.push(qpo.bombs[(qpo.menus.title.bombCounter-1) % 2].phys);
+    // bombs[(qpo.menus.main.bombCounter-1) % 2].phys.toBack();
+    this.mmrai = setInterval(
+      function(){
+        qpo.menus.title.unit.moveRight();
+        qpo.menus.title.otherUnit.bomb();
+        qpo.menus.title.bombCounter++;
+        qpo.menus.title.all.push(qpo.bombs[(qpo.menus.title.bombCounter-1) % 2].phys);
+      },
+    9000*qpo.timeScale)//mmrai = Main Menu Rightward Animation Interval
+
+    //make the red unit move left and blue move right every 3 "turns", starting in two turns
+    this.turn2 = setTimeout(
+      function(){
+        qpo.menus.title.mmlai = setInterval( //leftward anim
+          function(){
+            qpo.menus.title.unit.moveLeft();
+            qpo.menus.title.otherUnit.moveRight();
+            // console.log("main menu left anim!")
+          }, 9000*qpo.timeScale);
+        qpo.menus.title.unit.moveLeft();
+        qpo.menus.title.otherUnit.moveRight();
+      },
+    6000*qpo.timeScale);
+
+    //make the red unit shoot and the blue unit move left every 3 "turns", starting in 1 turn
+    this.turn1 = setTimeout(
+      function(){
+        qpo.menus.title.mmsai = setInterval(function(){
+          qpo.shots[qpo.menus.title.shotCounter-1].hide();
+          qpo.menus.title.unit.shoot();
+          qpo.menus.title.shotCounter++;
+          qpo.shots[qpo.menus.title.shotCounter-1].toBack();
+          qpo.menus.title.blackness.toBack();
+          qpo.menus.title.otherUnit.moveLeft();
+          // console.log("title menu shoot anim!");
+        }, 9000*qpo.timeScale);
+        qpo.menus.title.unit.shoot();
+        qpo.shots[0].toBack();
+        qpo.menus.title.shotCounter = 1;
+        qpo.menus.title.blackness.toBack();
+        qpo.menus.title.otherUnit.moveLeft();
+      },
+    3000*qpo.timeScale);
+  };
+  this.layer2.push(this.unit.phys, this.otherUnit.phys);
+
+  //3rd layer (title, menu buttons)
+  this.title = c.text(300,100,"Q-Po").attr({qpoText:[120,"white"]});
+  this.promptt = c.text(qpo.guiDimens.gpWidth/2, qpo.guiDimens.gpHeight/2, "Press enter to start")
+    .attr({qpoText:[32,qpo.COLOR_DICT["red"]], "opacity":0.8});
+  var promptAnim1 = Raphael.animation({'opacity':0}, 1000, '<', function(){
+    this.promptt.animate(promptAnim2)}.bind(this));
+  var promptAnim2 = Raphael.animation({'opacity':1}, 1000, '>', function(){
+    this.promptt.animate(promptAnim1)}.bind(this));
+  this.promptt.animate(promptAnim1);
+
+  this.layer3 = c.set().push(this.title, this.promptt);
+
+  this.all = c.set();
+  this.all.push(this.title, this.promptt, this.blackness, this.unit.phys, this.otherUnit.phys);
+
+  this.close = function(){ //clear screen and make main menu
+    clearInterval(this.mmsai); //main menu stop animation interval (now a misnomer)
+    clearInterval(this.mmrai); //main menu right animation interval
+    clearInterval(this.mmlai); //main menu left animation interval
+    clearTimeout(this.turn1,this.turn2); //queued animations
+    for (var i = 0; i < qpo.shots.length; i++){if (qpo.shots[i]) {qpo.shots[i].remove();}} //remove shots
+    for (var i = 0; i < qpo.bombs.length; i++){if (qpo.bombs[i]) {qpo.bombs[i].phys.remove();}} //remove bombs
+    this.unit.instakill(); //remove unit
+    this.otherUnit.instakill(); //remove other unit
+    // this.all.remove();
+    c.clear();
+    // create the main menu (the one with buttons)
+    qpo.menus.main = new makeMainMenu();
+    qpo.menus.main.animate(); //could be better designed but oh well
+  };
+
+  this.animate();
+
+  return this;
+}
+
+var makeMainMenu = function(letters){
+  activeMenu = "main";
+  activeButton = "tut"
+  qpo.menus["main"] = this;
+  qpo.mode = "menu";
+
+  //1st layer (blackness and letters)
+  this.blackness = c.rect(0,0,c.width,c.height).attr({"fill":"black"});
+  this.layer1 = c.set().push(this.blackness);
+  if(letters){ //make letters and add to layer1
     this.letters = c.set().push(
       c.text(500,500,"q"),
       c.text(520,500,"w"),
@@ -192,11 +307,13 @@ var makeMainMenu = function(letters){
       c.text(530,520,"s"),
       c.text(550,520,"d"),
       c.text(520,540,"x")
-    ).attr({qpoText: 20});
+    ).attr({qpoText: [20]});
+    this.layer1.push(this.letters);
   }
 
   //2nd layer (animation)
-  qpo.activeGame = new qpo.Game(7,3,false,false,true); //to define the unit size and all
+  this.layer2 = c.set();
+  qpo.activeGame = new qpo.Game(7,3,false,false,true); //just to define the unit size and all
   this.unit = makeUnit("red",3,7.5,0);
   this.otherUnit = makeUnit("blue",1,2,1);
   this.animate = function(){
@@ -224,7 +341,7 @@ var makeMainMenu = function(letters){
     //make the red unit move left and blue move right every 3 "turns", starting in two turns
     qpo.menus.main.turn2 = setTimeout(
       function(){
-        qpo.menus.main.mmlai = setInterval(
+        qpo.menus.main.mmlai = setInterval( //leftward anim
           function(){
             qpo.menus.main.unit.moveLeft();
             qpo.menus.main.otherUnit.moveRight();
@@ -254,21 +371,22 @@ var makeMainMenu = function(letters){
         qpo.menus.main.otherUnit.moveLeft();
       },
     3000*qpo.timeScale);
-
-    // qpo.menus.main.blackness.toBack();
   };
+  this.layer2.push(this.unit.phys, this.otherUnit.phys);
 
   //3rd layer (title, menu buttons)
-  this.title = c.text(300,100,"Q-PO").attr({"font-size":120,"fill":"white","font-family":"'Open Sans',sans-serif"});
+  this.title = c.text(300,100,"Q-PO").attr({qpoText:[120]});
   this.tutorialButton = new button("Tutorial",300,250,function(e){
     qpo.mode = "tut";
-    qpo.menus.main.hideAll();
+    qpo.menus.main.close();
+    // qpo.menus.main.hideAll();
     qpo.multiplayer = false;
     qpo.tut = new qpo.Tut();
   }, 15, true, "tut");
   this.singlePlayerButton = new button("Single-Player",300,340,function(e){
+    qpo.menus.main.close();
     gameSetupMenu = new makeGameSetupMenu();
-    qpo.menus.main.hideAll();
+    // qpo.menus.main.hideAll();
     qpo.multiplayer = false;
     if(qpo.trainingMode){ // If training, do "new session('ravn'/'rivn'/'nvn')"
       switch(qpo.trainerOpponent){
@@ -294,11 +412,14 @@ var makeMainMenu = function(letters){
   }, 30, false, "singleP");
   this.multiplayerButton = new button("Multiplayer",300,430,function(e){
     qpo.menus.main.multiplayerButton.deactivate();
+    qpo.menus.main.close()
     qpo.multiplayerMenu = new makeMultiplayerMenu();
-    qpo.menus.main.hideAll();
+    // qpo.menus.main.hideAll();
     qpo.multiplayer = true;
     qpo.activeSession = new session('pvp');
   }, 10, false, "multiP");
+  this.layer3 = c.set().push(this.title, this.tutorialButton.set, this.singlePlayerButton.set,
+    this.multiplayerButton.set);
 
   this.buttonList = new buttonList([this.tutorialButton, this.singlePlayerButton, this.multiplayerButton]);
 
@@ -320,49 +441,45 @@ var makeMainMenu = function(letters){
     this.unit.phys, this.otherUnit.phys);
   if(letters){this.all.push(this.letters);}
 
-  this.showAll = function(){
-    this.all.show();
-    this.unit = makeUnit("red",3,7.5,0);
-    this.otherUnit = makeUnit("blue",1,2,1);
-    this.animate();
-    this.blackness.toBack();
-  };
-  this.hideAll = function(){
-    this.all.hide();
+  // this.hideAll = function(){ //old version of close
+  //   this.all.hide();
+  //   clearInterval(this.mmsai); //main menu stop animation interval
+  //   clearInterval(this.mmrai); //main menu right animation interval
+  //   clearInterval(this.mmlai); //main menu left animation interval
+  //   clearTimeout(this.turn1,this.turn2); //queued animations
+  //   for (var i = 0; i < qpo.shots.length; i++){ //remove shots
+  //     if (qpo.shots[i]) {qpo.shots[i].remove();}
+  //   }
+  //   for (var i = 0; i < qpo.bombs.length; i++){ //remove bombs
+  //     if (qpo.bombs[i]) {qpo.bombs[i].phys.remove();}
+  //   }
+  //   this.unit.instakill(); //remove unit
+  //   this.otherUnit.instakill(); //remove other unit
+  // }
+
+  this.close = function(){
     clearInterval(this.mmsai); //main menu stop animation interval
     clearInterval(this.mmrai); //main menu right animation interval
     clearInterval(this.mmlai); //main menu left animation interval
     clearTimeout(this.turn1,this.turn2); //queued animations
-    for (var i = 0; i < qpo.shots.length; i++){ //remove shots
-      if (qpo.shots[i]) {qpo.shots[i].remove();}
-    }
-    for (var i = 0; i < qpo.bombs.length; i++){ //remove bombs
-      if (qpo.bombs[i]) {qpo.bombs[i].phys.remove();}
-    }
+    for (var i = 0; i < qpo.shots.length; i++){if (qpo.shots[i]) {qpo.shots[i].remove();}} //remove shots
+    for (var i = 0; i < qpo.bombs.length; i++){if (qpo.bombs[i]) {qpo.bombs[i].phys.remove();}} //remove bombs
     this.unit.instakill(); //remove unit
     this.otherUnit.instakill(); //remove other unit
-  }
-
-  this.close = function(){
-    this.all.remove();
+    // this.all.remove();
+    c.clear();
   };
 
   //for changing button highlight:
-  this.next = function(){
-    this.buttonList.next();
-  };
-  this.previous = function(){
-    this.buttonList.previous();
-  };
-  this.show = function(){
-    qpo.menus.main.showAll();
-  };
+  this.next = function(){ this.buttonList.next(); };
+  this.previous = function(){ this.buttonList.previous(); };
+
   return this;
 };
 
-//CREATE MAIN MENU:
-qpo.menus.main = new makeMainMenu();
-qpo.menus.main.animate(); //could be better designed but oh well
+//CREATE TITLE SCREEN:
+qpo.titleScreen = new qpo.makeTitleScreen();
+
 // qpo.muteButton = c.path("M-4,-4 L4,-4 L10,-10 L10,10 L4,4 L-4,4 L-4,-4")
 //   .attr({"stroke-width":2, "stroke":qpo.COLOR_DICT["green"],
 //     "fill":qpo.COLOR_DICT["green"], "opacity":0.7})
@@ -376,9 +493,8 @@ qpo.menus.main.animate(); //could be better designed but oh well
 //     }
 //   });
 
-var makeMultiplayerMenu = function(){ //fill this in later
+var makeMultiplayerMenu = function(){
   qpo.menus["multiP"] = this;
-  qpo.activeSession = new session("multiplayer");
   activeMenu = "multiP";
 
   this.blackness = c.rect(0,0,c.width,c.height).attr({"fill":"black","opacity":1});
@@ -387,11 +503,13 @@ var makeMultiplayerMenu = function(){ //fill this in later
   this.all = c.set().push(this.blackness,this.title);
 
   this.up = function(){
+    this.close();
+    // console.log(this); //prints the makeMultiplayerMenu object, as expected
     goMainMenu();
   }
 
   this.close = function(){
-    // this.all.hide();
+    // console.log(this); //prints the makeMultiplayerMenu object, as expected
     this.all.remove();
   }
 
@@ -402,21 +520,17 @@ var makeGameSetupMenu = function(){
     activeMenu = "gameS";
     qpo.menus["gameS"] = this;
     // qpo.menus.main.unit.kill();
-    // activeMenu = this;
-    // modes : { 0: Single-Player, 1: Multiplayer}
     this.blackness = c.rect(0,0,c.width,c.height).attr({"fill":"black","opacity":1});
     this.title = c.text(300,50,"Game Setup").attr({"font-size":50,"fill":"white","font-family":"'Open Sans',sans-serif"});
 
     this.quickPlay = new button("Quick-Play",qpo.guiDimens.gpWidth/2,190, (function(e){
       this.close();
-      settings = [8,4,false,true,true]; //q,po,multi,music,respawn
+      settings = [7,3,false,true,true]; //q,po,multi,music,respawn
       qpo.countdownScreen(settings);
-      qpo.menus.main.blackness.show();
     }).bind(this), 0, true, "quickP")
 
     this.customGame = new button("Custom Game",qpo.guiDimens.gpWidth/2,280, (function(e){
-      this.close(); //wrong. this tries to close the window.
-      qpo.menus.main.blackness.show();
+      this.close();
       qpo.menus["customG"] = new makeCustomGameMenu();
     }).bind(this), 0, false, "customG");
 
@@ -424,6 +538,7 @@ var makeGameSetupMenu = function(){
 
     this.close = function(){
       this.all.remove();
+      c.clear();
       activeButton = null;
     }
 
@@ -446,7 +561,9 @@ var makeGameSetupMenu = function(){
       }
     }
     this.up = function(){
-      goMainMenu();
+      this.close();
+      // goMainMenu();
+      qpo.menus.main = new makeMainMenu();
     }
 
     return this;
@@ -463,11 +580,9 @@ var makeCustomGameMenu = function(){
     this.poSlider = new slider("PO", 1, 7, 4, 260, false);
 
     this.startGame = new button("Start Game", qpo.guiDimens.gpWidth/2, 360, (function(e){
-      //this.activate();
       this.close();
       var settings = [this.qSlider.value,this.poSlider.value,false,true,true]; //[q,po,multi,music,respawn]
       qpo.countdownScreen(settings);
-      qpo.menus.main.blackness.show();
     }).bind(this), 0, false, "startG");
 
     this.active = this.qSlider;
@@ -479,6 +594,7 @@ var makeCustomGameMenu = function(){
 
     this.close = function(){
       this.all.remove();
+      c.clear();
     }
 
     this.next = function(){
@@ -556,6 +672,7 @@ var makeEndGameMenu = function(result){
 
   this.close = function(){
     this.all.remove();
+    c.clear();
   }
 
   this.next = function(){
@@ -585,6 +702,7 @@ var makeEndGameMenu = function(result){
     }
   }
   this.up = function(){
+    this.close();
     goMainMenu();
   }
 
@@ -592,10 +710,14 @@ var makeEndGameMenu = function(result){
 };
 
 function goMainMenu(){
-  qpo.menus[activeMenu].close();
-  qpo.menus.main.showAll();
-  qpo.mode = "menu";
+  // qpo.menus[activeMenu].close();
+  c.clear();
+  qpo.menus.main = new makeMainMenu();
+  qpo.menus.main.animate();
+  // qpo.menus.main.layer1.toBack();
+  // qpo.mode = "menu";
   activeMenu = "main";
   qpo.menus.main.blackness.attr({"opacity":1});
-  qpo.menus.main.singlePlayerButton.activate();
+  // qpo.menus.main.tutorialButton.activate();
+  // qpo.menus.main.singlePlayerButton.activate();
 };

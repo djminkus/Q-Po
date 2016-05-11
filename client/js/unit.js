@@ -4,7 +4,7 @@ function startUnit(color, gx, gy, num){
   this.team = color; //"red" or "blue"
   this.rect = c.rect(qpo.guiCoords.gameBoard.leftWall + qpo.guiDimens.squareSize*gx,
     qpo.guiCoords.gameBoard.topWall+qpo.guiDimens.squareSize*gy,
-    qpo.guiDimens.squareSize,qpo.guiDimens.squareSize).attr({"fill":qpo.COLOR_DICT[color],"opacity":0.7});
+    qpo.guiDimens.squareSize,qpo.guiDimens.squareSize,2).attr({"fill":qpo.COLOR_DICT[color],"opacity":0.7});
   this.phys = c.set();
   this.x = gx; //absolute grid position. (column, 0 to q-1)
   this.y = gy; //absolute grid position (row, 0 to q-1)
@@ -32,8 +32,7 @@ function startUnit(color, gx, gy, num){
   }
   return this;
 }
-function improveUnit(unit){ //add the unit.rect to the unit.phys, and the unit.phys
-                            //to the qpo.gui
+function improveUnit(unit){ //add the unit.rect to the unit.phys, and the unit.phys to the qpo.gui
   unit.phys.push(unit.rect);
   qpo.gui.push(unit.phys);
 }
@@ -58,27 +57,28 @@ function finishUnit(unit){
   }
   unit.kill = function(){
     unit.alive = false;
-    unit.spawnTimer = 4;
+    unit.spawnTimer = qpo.spawnTimers[qpo.activeGame.po];
     unit.rect.stop();
     unit.rect.animate({"opacity":0},2000*qpo.timeScale,function(){
       unit.rect.hide();
       unit.rect.attr({"opacity":0.7});
     });
-    if(qpo.mode == "game"){
+    if(qpo.mode == "game"){ //deal with scoreboard, AI, spawn, control panel, and ending game
       switch(unit.team){ // update scoreboard, prep to reward AI
         case qpo.otherTeam: //enemy team ("red" until server implementation)
           qpo.redDead++;
           qpo.scoreBoard.addPoint("blue");
-          qpo.redRewardQueue.push(1);
+          qpo.redRewardQueue.push(1); //is this backwards?
           break;
         case qpo.playerTeam: //player team ("blue" until server implementation)
           qpo.blueDead++;
           qpo.scoreBoard.addPoint("red");
           var number = unit.num;
-          qpo.redRewardQueue.push(-1);
+          qpo.redRewardQueue.push(-1); //is this backwards?
           // controlPanel.actives[number].hide();
           // qpo.gui.push(controlPanel.actives[number]);
           // controlPanel.actives[number].show();
+          controlPanel.changeIcon("death");
           updateBlueAU(qpo.activeGame.po);
           controlPanel.disable();
           break;
@@ -90,7 +90,7 @@ function finishUnit(unit){
       if (qpo.activeGame.respawnEnabled) { //queue the spawn if respawn is on
         // Get current turn number, add 5 to it, and spawn the unit then:
         var thisTurn = qpo.activeGame.turnNumber;
-        var spawnTurn = thisTurn + 5;
+        var spawnTurn = thisTurn + unit.spawnTimer + 1;
         qpo.activeGame.upcomingSpawns.push([spawnTurn,unit.num,unit.team]); //add spawn to queue (checked from newTurn())
       }
       else if (qpo.scoreBoard.redScore >= qpo.activeGame.scoreToWin // otherwise, end the game, if score limit reached.
@@ -117,13 +117,22 @@ function finishUnit(unit){
   unit.spawn = function(){ //call this at the moment you want a new unit to spawn
     var spawnLoc = qpo.findSpawn(unit.team); //get the [row, column] for the spawn (loc is location)
     //put the unit at its spawn, show the unit, and set its "alive" property to "true":
-    var spawnSpot = [
+    var spawnSpot = [ //raph x,y coords of spawn
       qpo.guiCoords.gameBoard.leftWall + qpo.guiDimens.squareSize*spawnLoc[1],
       qpo.guiCoords.gameBoard.topWall + qpo.guiDimens.squareSize*spawnLoc[0]
-    ] //raph x,y coords of spawn
+    ]
+    // if(typeof spawnSpot[1] != "number"){ //console.log some stuff
+    //   console.log("NaN happening... chosen spawn was " + spawnLoc);
+    //   console.log(typeof spawnSpot[1]);
+    // }
+    // if(typeof spawnSpot[0] != "number"){ //console.log some stuff
+    //   console.log("NaN happening... chosen spawn was " + spawnLoc);
+    //   console.log(typeof spawnSpot[1]);
+    // }
+    // console.log(spawnSpot, spawnLoc);
     unit.rect.attr({'x': spawnSpot[0], 'y': spawnSpot[1]}); //put the Raph element where it goes
-    unit.x = spawnLoc[1]; //update the grid positions
-    unit.y = spawnLoc[0]; //update the grid positions
+    unit.x = spawnLoc[1]; //update the grid positions, for qpo.snap
+    unit.y = spawnLoc[0]; //update the grid positions, for qpo.snap
     unit.rect.show();
     unit.alive = true;
     (unit.team == "red") ? (qpo.redDead -= 1) : (qpo.blueDead -= 1);
@@ -197,7 +206,7 @@ function finishUnit(unit){
   }
   unit.moveRight = function(){
     if (unit.rect.attr('x') + unit.rect.attr('width') < qpo.guiCoords.gameBoard.rightWall || qpo.mode == "menu") {
-      /*
+      /* slide-style
       unit.rect.stop();
       var anim = Raphael.animation( {"x":unit.rect.attr('x') + qpo.guiDimens.columns*qpo.guiDimens.squareSize},
         qpo.guiDimens.columns*1500*qpo.timeScale);
@@ -263,9 +272,12 @@ function finishUnit(unit){
     bomb.next();
     unit.bombReady = false;
     setTimeout(unit.reloadBomb,3000*qpo.timeScale);
-    if(activeMenu=="main"){
+    if(qpo.mode=="menu"){ //put the bomb's phys in the correct layer
       bomb.phys.toBack();
-      qpo.menus.main.blackness.toBack();
+      try{qpo.menus.main.blackness.toBack();}
+      catch(e){}
+      try{qpo.menus.title.blackness.toBack();}
+      catch(e){}
     }
     switch(unit.team){ //record the move (in qpo.activeGame.record)
       case "blue": {
@@ -318,9 +330,9 @@ function finishUnit(unit){
         }
         break;
     }
-    shot.attr({"fill":qpo.COLOR_DICT["shot color"],
+    shot.attr({"fill":qpo.COLOR_DICT["green"],
                "opacity":0.5,
-               "stroke":qpo.COLOR_DICT["shot color"]});
+               "stroke":qpo.COLOR_DICT["green"]});
     shot.data("team",unit.team);
     shot.animate(anim);
     qpo.gui.push(shot);

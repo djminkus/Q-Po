@@ -2,24 +2,26 @@
 // var song = new Audio("./music/gameMode.mp3")        //uncomment for gameMode (second version)
 // var song = new Audio("./music/underwaterStars.mp3")  //uncomment for underwaterStars
 
-qpo.Game = function(q, po, multi, playMusic, respawn){ //"Game" class. Instantiated every time a new round is called.
+qpo.Game = function(q, po, multi, playMusic, respawn, turns){ //"Game" class. Instantiated every time a new round is called.
   this.po = po; //# of units per team. Min 1, max 7.
-  qpo.timeScale = (function(){
+  qpo.timeScale = (function(){ //adjust timeScale based on po.
     var adj = 0.25; //adjustment
     var factor = 1/5;
-    return (adj + po*factor) ; //adjust timeScale. Bigger means slower; 1 is 3 s/turn; 0.5 is 1.5 s/turn.
+    return (adj + po*factor);
   })(); //0.45, 0.65, 0.85, 1.05, 1.25, etc
 
   this.q = (q || qpo.difficPairings[po-1]); //size of board. (q x q)
   this.multiplayer = multi; //false for single player (local vs. AI) mode
   this.turnNumber = 0;
+  this.incrementTurn = function(){this.turnNumber++;};
+  this.lastTurn = (turns || 40);
   this.isEnding = false;
   this.upcomingSpawns = new Array();
   var exponent = 0.8;
   var factor = 12;
   var correction = 2;
-  var thinger = function(e,f,c,also){return Math.floor(Math.pow(also,e) * f - c)}
-  this.scoreToWin = thinger(exponent,factor,correction,po); // 10,18,26,34,41,48,54,61
+  var thinger = function(e,f,c,also){return Math.floor(Math.pow(also,e) * f - c);};
+  this.scoreToWin = thinger(exponent,factor,correction,po); // 10, 18, 26, 34, 41, 48, 54, 61
   this.respawnEnabled = respawn;
   if (respawn == false){this.scoreToWin = this.po;}
 
@@ -115,16 +117,10 @@ qpo.Game = function(q, po, multi, playMusic, respawn){ //"Game" class. Instantia
   if(qpo.mode == "game"){this.state = this.getState();}
 
   if(playMusic == true){ // stop menu song and play game song. (not used)
-    try { //remove old song
-      qpo.activeGame.song.remove();
-    }
-    catch(err) { //or don't, if it doesn't exist
-      ;
-    }
+    try { qpo.activeGame.song.remove(); } //try removing the previously existing song
+    catch(err) { ; } //if error is thrown, probably doesn't exist, do nothing
     this.end = function(){
-
     }
-
     //MAKE MUSIC:
     // qpo.menuSong.pause();
     // qpo.menuSong.currentTime = 0;

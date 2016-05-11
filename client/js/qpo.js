@@ -80,7 +80,7 @@ Contents of this code: (updated June 2, 2015)
     countdownScreen() -- Shows 3,2,1, then calls startGame()
     startGame() -- draws GUI, spawns units, and starts the game clock and collisionDetector
     endGame() -- removes the game gui elements and shows a menu
-    newRound() -- called when player presses "new round" button --
+    newRound() -- called when player presses "new round" --
       hides the end-of-game menu and calls countdownScreen() again
     goMainMenu() --
 */
@@ -148,10 +148,16 @@ qpo.setup = function(){ // set up global vars and stuff
   //   // console.log("ws says:" + message);
   // };
 
-  // MISCELLANEOUS STUFF:
+  // TOP-LEVEL SETTINGS:
   qpo.timeScale = 0.5; // Bigger means slower; 1 is original 3-seconds-per-turn
+  qpo.playMusic = false;
+  qpo.trainingMode = false;
+  qpo.waitTime = 100; //ms between moves
+
+  // (DNA): DICTS N ARRAYS
+  qpo.spawnTimers = [null, 1,2,3,3,4,5,5,5]; //index is po
   qpo.aiTypes = ["neural","rigid","random"];
-  qpo.keyCodes = {
+  qpo.keyCodes = { //pair keycodes with move strings
     81:"bomb",
     69:"shoot",
     65:"moveLeft",
@@ -160,19 +166,17 @@ qpo.setup = function(){ // set up global vars and stuff
     83:"moveDown",
     88:"stay"
   }
-  qpo.COLOR_DICT = {
+  qpo.COLOR_DICT = { //define colors using hex
     "blue": "#0055bb",
     "red": "#bb0000",
     "orange": "#ffbb66",
-    "shot color": "#00bb55",
     "green": "#00bb55", //same as shot color
     "bomb color": "#bb00bb",
     "grey": "#bbbbbb"
   };
-  qpo.waitTime = 100; //ms between moves
+  qpo.moves = ["moveUp","moveDown","moveLeft","moveRight","shoot","bomb","stay"];
 
   // NEURAL STUFF:
-  qpo.trainingMode = false;
   (qpo.trainingMode) ? (qpo.timeScale=0.05) : (qpo.timeScale=0.5) ;
   qpo.trainingCounter = 0;
   qpo.batchCounter = 0;
@@ -186,12 +190,10 @@ qpo.setup = function(){ // set up global vars and stuff
   qpo.aiType = qpo.aiTypes[0]; // controls source of red's moves in singlePlayer
   qpo.trainerOpponent = qpo.aiTypes[2]; // controls source of blue's moves in training mode
 
-
   qpo.blueMovesQueue = [];
   qpo.redMovesQueue = [];
   qpo.shots = [];
   qpo.bombs = [];
-  qpo.moves = ["moveUp","moveDown","moveLeft","moveRight","shoot","bomb","stay"];
   qpo.gui = c.set(); // Should contain only elements relevant to the current screen.
   qpo.blueActiveUnit = 0;
   qpo.redActiveUnit = 0;
@@ -199,8 +201,7 @@ qpo.setup = function(){ // set up global vars and stuff
   playerColor = "blue"; // for now
   opponentColor = "red";
 
-  //SET UP DIMENSIONS AND COORDINATES:
-  (function(){
+  (function(){ //SET UP DIMENSIONS AND COORDINATES:
     qpo.guiCoords = { // cp height, gameBoard wall locations, gamePanel vs debugPanel
       "cp" : {
         "height" : 100,
@@ -222,6 +223,8 @@ qpo.setup = function(){ // set up global vars and stuff
     qpo.guiDimens = { //width of panels, square size, # columns, # rows
       "gpWidth" : 600, //game panel width
       "gpHeight" : 600, //game panel height
+      "tpWidth" : 300, //tut panel width
+      "tpHeight": 200, //tut panel height
       "squareSize" : 50,
       "columns" : 7,
       "rows" : 7
@@ -235,13 +238,11 @@ qpo.setup = function(){ // set up global vars and stuff
   qpo.bombSize = 2*qpo.guiDimens.squareSize;
   qpo.difficPairings = [4, 6, 8, 10, 13, 16, 20]; //array index is po-1. Value at index is recommended q for said po.
 
-  //MAKE MUSIC
-  qpo.playMusic = false;
+  //MAKE MUSIC (or don't)
   (qpo.playMusic) ? (qpo.menuMusic()) : (console.log("no music mode!"));
 
-  qpo.add = function(a,b){
-    return (a+b);
-  }
+  qpo.add = function(a,b){ return (a+b); }
+
 }
 qpo.setup();
 
@@ -259,7 +260,7 @@ function findSlot(array){ //find the first empty slot in an array
 qpo.findSpawn = function(color){
   //CHOOSE A ROW.
   var foundSpawn;
-  var demerits = [new Array(),new Array()];
+  var demerits = [new Array(), new Array()];
   var po = qpo.activeGame.po;
   var q = qpo.activeGame.q
   for(var i=0; i<q; i++){ //populate demerits with zeros
@@ -285,31 +286,27 @@ qpo.findSpawn = function(color){
 
   var fewestDemerits = [100,100]; //a comparer
   for (var i=0; i<demerits[0].length;i++){ //find the lowest number of demerits
-    if(demerits[0][i]<fewestDemerits[0]){
-      fewestDemerits[0] = demerits[0][i];
-    }
-    if(demerits[1][i]<fewestDemerits[1]){
-      fewestDemerits[1] = demerits[1][i];
-    }
+    if(demerits[0][i]<fewestDemerits[0]){ fewestDemerits[0] = demerits[0][i]; }
+    if(demerits[1][i]<fewestDemerits[1]){ fewestDemerits[1] = demerits[1][i]; }
   }
   //find rows with least demerits and columns with least demerits:
   var indices = [[],[]]; //rows, columns
   var utilIndex = [0,0];
   var increment = [false,false];
-  for (var i=0; i<demerits[0].length;i++){ //
-    if(demerits[0][i]==fewestDemerits[0]){
+  for (var i=0; i<demerits[0].length; i++){ //0 and 1 have same lengths
+    if(demerits[0][i]==fewestDemerits[0]){ //this row is a candidate.
       indices[0][utilIndex[0]] = i;
       increment[0] = true;
     }
-    if(demerits[1][i]==fewestDemerits[1]){
+    if(demerits[1][i]==fewestDemerits[1]){ //this col is a candidate.
       indices[1][utilIndex[1]] = i;
       increment[1] = true;
     }
     (increment[0] == true) ? (utilIndex[0]+=1) : (null);
     (increment[1] == true) ? (utilIndex[1]+=1) : (null);
-
+    increment = [false,false];
   }
-  //choose random index from "indices" array:
+  //choose random indices from "indices" arrays:
   var chosenRow = indices[0][Math.floor(Math.random()*indices[0].length)];
   var chosenColumn = indices[1][Math.floor(Math.random()*indices[1].length)];
 
@@ -460,26 +457,6 @@ function placeUnits(){ //called from startGame()
   qpo.blueUnits[0].activate();
   controlPanel.resetIcons();
 }
-// function placeUnitsTut(){ //NOT IMPLEMENTED
-//   qpo.blueUnits = [];
-//   qpo.redUnits = [];
-//
-//   qpo.blueUnits[0] = new startUnit("blue",3,1,0);
-//   qpo.redUnits[0] = new startUnit("red",3,5,"");
-//   improveUnit(qpo.blueUnits[0]);
-//   improveUnit(qpo.redUnits[0]);
-//   finishUnit(qpo.blueUnits[0]);
-//   finishUnit(qpo.redUnits[0]);
-//   units = []; //all Units (red and blue);
-//   for (var i=0;i<qpo.blueUnits.length;i++){
-//     units.push(qpo.blueUnits[i]);
-//     units.push(qpo.redUnits[i]); //assumes qpo.blueUnits.length =
-//                                 //        qpo.redUnits.length
-//     //evens are blue, odds are red, low numbers to the left
-//   }
-//   qpo.blueUnits[0].activate();
-//   controlPanel.resetIcons();
-// }
 
 function startControlPanel(po){
   var leftWall = qpo.guiCoords.gameBoard.leftWall;
@@ -539,8 +516,8 @@ function startControlPanel(po){
                             "L" + qpo.cpIconsGens[0] + "," + qpo.cpIconCoords[2] +
                             "L" + qpo.cpIconCoords[1] + "," + qpo.cpIconsGens[1])] ,
     "rects": [c.rect(qpo.cpIconsGens[0]-qpo.cpIconsGens[3]/2*2/3, qpo.cpIconsGens[1]-qpo.cpIconsGens[4]/2*2/3,
-                     qpo.cpIconsGens[3]*2/3,qpo.cpIconsGens[4]*2/3).attr({"fill":qpo.COLOR_DICT["shot color"],
-                                            "stroke":qpo.COLOR_DICT["shot color"],
+                     qpo.cpIconsGens[3]*2/3,qpo.cpIconsGens[4]*2/3).attr({"fill":qpo.COLOR_DICT["green"],
+                                            "stroke":qpo.COLOR_DICT["green"],
                                             "opacity":0.6})] ,
     "xs" : [c.path("M" + (qpo.cpIconsGens[0] - qpo.cpIconsGens[2]) + "," + (qpo.cpIconsGens[1] - qpo.cpIconsGens[2]) +
                     "L" + qpo.cpIconsGens[0] + "," + qpo.cpIconsGens[1] +
@@ -555,11 +532,11 @@ function startControlPanel(po){
                                             "stroke":qpo.COLOR_DICT["bomb color"],
                                             "opacity":0.6})],
     "ones" : [c.text(qpo.cpIconsGens[0], qpo.cpIconsGens[1], "1").attr({qpoText:[30,"black"]})],
-    "twos" : [c.text(qpo.cpIconsGens[0], qpo.cpIconsGens[1], "2").attr({qpoText:[30,"black"]})],
-    "threes" : [c.text(qpo.cpIconsGens[0], qpo.cpIconsGens[1], "3").attr({qpoText:[30,"black"]})],
-    "fours" : [c.text(qpo.cpIconsGens[0], qpo.cpIconsGens[1], "4").attr({qpoText:[30,"black"]})]
+    "twos" : [c.text(qpo.cpIconsGens[0], qpo.cpIconsGens[1], "2").attr({qpoText:[30,"gray"]})],
+    "threes" : [c.text(qpo.cpIconsGens[0], qpo.cpIconsGens[1], "3").attr({qpoText:[30,"gray"]})],
+    "fours" : [c.text(qpo.cpIconsGens[0], qpo.cpIconsGens[1], "4").attr({qpoText:[30,"gray"]})]
   };
-  this.actives = new Array();
+  this.actives = new Array(); //would be better named "displayed". An array of the po icons shown in the control panel.
 
   qpo.cpMap = [null, this.icons.ones, this.icons.twos,
     this.icons.threes, this.icons.fours];
@@ -600,10 +577,10 @@ function finishControlPanel(cp){
     "moveDown" : controlPanel.icons.downArrows,
     "shoot" : controlPanel.icons.rects,
     "bomb" : controlPanel.icons.bombs,
-    "stay" : controlPanel.icons.circles
+    "stay" : controlPanel.icons.circles,
+    "death" : controlPanel.icons.xs
   }
   cp.resetIcons = function(){ //at start of every turn, reset icons to circles and numbers
-    // console.log("resetIcons() called");
     for (var i=0; i<cp.po; i++){ //act on each po's icons separately
       controlPanel.actives[i] = controlPanel.icons.circles[i];
       (function(){ // hide all icons
@@ -677,7 +654,6 @@ function finishControlPanel(cp){
       qpo.gui.push(controlPanel.actives[qpo.blueActiveUnit]);
       controlPanel.actives[qpo.blueActiveUnit].show();
     }
-    // console.log("controlPanel.changeIcon() called");
   }
   cp.moveHighlight = function(howMuch){
     // INSTANT SNAP
@@ -699,11 +675,12 @@ function finishControlPanel(cp){
 }
 
 function drawGUI(q,po){ //create the turn timer (pie), board, and control panel.
+  qpo.gui.push(c.rect(0,0,qpo.guiDimens.gpWidth,qpo.guiDimens.gpHeight).attr({"fill":"white"})); //whiteness
   (function(){ //draw the turn timer (pie) and push it to the gui
     var t = qpo.guiCoords.turnTimer;
-    qpo.timer = {"value": 60};
+    qpo.timer = {"value": qpo.activeGame.lastTurn};
     qpo.timer.pie = c.path().attr({segment: [t.x, t.y, t.r, -90, 269],"stroke":"none"});
-    qpo.timer.text = c.text(t.x, t.y, 60).attr({qpoText:[30,"black"]});
+    qpo.timer.text = c.text(t.x, t.y, qpo.activeGame.lastTurn).attr({qpoText:[30,"black"]});
     qpo.timer.all = c.set(qpo.timer.pie,qpo.timer.text)
     qpo.timer.update = function(){
       qpo.timer.value--;
@@ -720,7 +697,8 @@ function drawGUI(q,po){ //create the turn timer (pie), board, and control panel.
 //INCREMENT FUNCTIONS (no new Raph elements created)
 
 function newTurn(){ // called every time game clock is divisible by 3
-  qpo.activeGame.turnNumber++;
+  // qpo.activeGame.turnNumber++;
+  qpo.activeGame.incrementTurn();
   qpo.timer.update();
 
   //// AI SECTION
@@ -729,12 +707,8 @@ function newTurn(){ // called every time game clock is divisible by 3
   qpo.sixty.cursor = (qpo.sixty.cursor == 59) ? 0 : (qpo.sixty.cursor + 1); //cycle the cursor
   qpo.redRewardQueue = [];
   // Each turn, reward AI for favorable events, and get an action for each ai-controlled unit:
-  try{ // try to reward...
-    qpo.ali.nn.backward(qpo.sixty.list.reduce(qpo.add,0)); // <-- learning magic happens here
-  }
-  catch(err){ // ...but it won't work if no actions have been taken.
-    console.log("can't train without having acted.");
-  }
+  try{qpo.ali.nn.backward(qpo.sixty.list.reduce(qpo.add,0));} // try to reward
+  catch(err){console.log("can't train without having acted.");} // but will fail if no actions have been taken
   // Manage the game state variables and get input array for nn:
   qpo.activeGame.prevState = qpo.activeGame.state;
   qpo.activeGame.state = qpo.activeGame.getState();
@@ -743,7 +717,7 @@ function newTurn(){ // called every time game clock is divisible by 3
   //// SPAWN SECTION
   var completedSpawnIndices = new Array();
   var spawn, spawnTurn, spawnerTeam;
-  for (var i = 0; i<qpo.activeGame.upcomingSpawns.length; i++) { //if it's the right turn, spawn the unit.
+  for(var i = 0; i<qpo.activeGame.upcomingSpawns.length; i++){ //if it's the right turn, spawn the unit.
     spawn = qpo.activeGame.upcomingSpawns[i];
     spawnTurn = spawn[0];
     spawnerTeam = spawn[2];
@@ -754,7 +728,15 @@ function newTurn(){ // called every time game clock is divisible by 3
     }
     else{qpo.unitLists[spawnerTeam][spawnerNum].spawnTimer--;} //otherwise, reduce its timer
   }
-  for(index in completedSpawnIndices){qpo.activeGame.upcomingSpawns.splice(index,index+1);}
+  for(var i=0; i<completedSpawnIndices.length; i++){
+     //remove the spawn with that index from the array,
+     //  and decrement all higher indices in the list.
+    var index = completedSpawnIndices[i];
+    qpo.activeGame.upcomingSpawns.splice(index,index+1);
+    for (var j=i; j<completedSpawnIndices.length; j++){ //decrement all higher indices in the list.
+      if(completedSpawnIndices[j]>index){completedSpawnIndices[j]--;}
+    }
+  }
 
   //// MOVE EXECUTION SECTION
   qpo.snap(); //snap all units into their correct positions prior to executing new moves
@@ -874,7 +856,7 @@ function newTurn(){ // called every time game clock is divisible by 3
     qpo.timer.pie.attr({segment: [qpo.guiCoords.turnTimer.x, qpo.guiCoords.turnTimer.y, qpo.guiCoords.turnTimer.r, -90, 269]});
     qpo.timer.pie.animate({segment: [qpo.guiCoords.turnTimer.x, qpo.guiCoords.turnTimer.y, qpo.guiCoords.turnTimer.r, -90, -90]}, 3000*qpo.timeScale);
   }
-  if (qpo.activeGame.turnNumber == 60){ //End the game, if it's time.
+  if (qpo.activeGame.turnNumber == qpo.activeGame.lastTurn){ //End the game, if it's time.
     if (qpo.activeGame.isEnding == false){ //find the winner and store to gameResult
       var gameResult;
       if(qpo.scoreBoard.redScore==qpo.scoreBoard.blueScore){
@@ -894,6 +876,27 @@ function newTurn(){ // called every time game clock is divisible by 3
     qpo.redActiveUnit = -1;
   }
 }
+qpo.snap = function(){ //correct unit positions just before the start of each turn
+  // for each unit, check its grid position, stop the unit's animation,
+  //   and put it in its proper place.
+  var po = qpo.activeGame.po;
+  var raphX;
+  var raphY;
+  for (var i = 0; i<po; i++){
+    //Raphael x coord = leftWall + (qpoGridCoordX * qpoSquareSize)
+    //Raphael y coord = topWall + (qpoGridCoordY * qpoSquareSize)
+    if(qpo.blueUnits[i].alive){
+      raphX = qpo.guiCoords.gameBoard.leftWall + (qpo.guiDimens.squareSize*qpo.blueUnits[i].x);
+      raphY = qpo.guiCoords.gameBoard.topWall + (qpo.guiDimens.squareSize*qpo.blueUnits[i].y);
+      qpo.blueUnits[i].phys.attr({"x":raphX, "y":raphY});
+    }
+    if(qpo.redUnits[i].alive){
+      raphX = qpo.guiCoords.gameBoard.leftWall + (qpo.guiDimens.squareSize*qpo.redUnits[i].x);
+      raphY = qpo.guiCoords.gameBoard.topWall + (qpo.guiDimens.squareSize*qpo.redUnits[i].y);
+      qpo.redUnits[i].phys.attr({"x":raphX, "y":raphY});
+    }
+  }
+};
 
 //IFFY TO IMPLEMENT DUE TO USAGE OF LOGIC SPECIFIC TO
 //  EACH TYPE OF OBJECT WITHIN detectCollisions()
@@ -1238,8 +1241,9 @@ $(window).keydown(function(event){
           // console.log("backspace pressed");
           break;
         case 13: //enter
-          try { activeButton.onclick(); }
-          catch(err){ return false; } //do nothing if there is no activeButton
+          try {activeButton.onclick();}
+          catch(err){;} //do nothing if there is no activeButton
+          if(activeMenu == "title"){qpo.menus.title.close()}
           break;
         case 87: //w
           event.preventDefault();
@@ -1337,6 +1341,10 @@ $(window).keydown(function(event){
         case 69: //"e"
           qpo.tut.tutFuncs.ekey();
           break;
+        case 8: // backspace
+          c.clear();
+          qpo.menus.main = new makeMainMenu();
+          break;
         default:
           break;
       }
@@ -1349,9 +1357,10 @@ $(window).keydown(function(event){
 });
 
 //"SCREEN" FUNCTIONS
-qpo.countdownScreen = function(settings){ //settings are [q,po,multi,music,music]
-  var numbers = c.text(c.width/2,c.height/2,"3")
-    .attr({"font-size":72,"fill":"white"});
+qpo.countdownScreen = function(settings){ //settings are [q,po,multi,music,respawn]
+  qpo.cdblackness = c.rect(0, 0, qpo.guiCoords.gamePanel.width, qpo.guiCoords.gamePanel.height);
+  qpo.cdblackness.attr({"fill":"black"});
+  var numbers = c.text(c.width/2,c.height/2,"3").attr({qpoText:[72]});
   setTimeout( //2
     function(){numbers.attr({"text":"2"})},
     1000);
@@ -1359,20 +1368,22 @@ qpo.countdownScreen = function(settings){ //settings are [q,po,multi,music,music
     function(){numbers.attr({"text":"1"})},
     2000);
   setTimeout(function(){ //set blackness opacity to 0 when countdown is finished
-             qpo.menus["main"].blackness.animate({"opacity":0},200,"<")},
-             2800);
+             qpo.menus["main"].blackness.animate({"opacity":0},200,"<");
+             qpo.cdblackness.animate({"opacity":0},200,"<");
+             }, 2800);
   setTimeout(function(){numbers.remove()},3000);
   setTimeout(function(){startGame(settings);},3000);
   qpo.mode="other";
 }
 function startGame(settings){ //called when countdown reaches 0
   //settings are [q,po,multi,music,respawn]
-  //GET RID OF MENU MUSIC
+
+  // KILL MENU MUSIC:
   // qpo.menuSong.pause();
   // qpo.menuSong.currentTime = 0 ;
   // clearInterval(qpo.menuSongInterval);
 
-  qpo.activeGame = new qpo.Game(settings[0], settings[1], false, true, true); //10 for base-10
+  qpo.activeGame = new qpo.Game(settings[0], settings[1], false, true, true, 40); //10 for base-10
   qpo.redDead = 0;
   qpo.blueDead = 0;
   qpo.shots=[];
@@ -1393,30 +1404,6 @@ function startGame(settings){ //called when countdown reaches 0
   qpo.mode = "game";
   console.log('NEW GAME');
 }
-qpo.snap = function(){ //correct unit positions just before the start of each turn
-  // for each unit, check its grid position, stop the unit's animation,
-  //   and put it in its proper place.
-  var po = qpo.activeGame.po;
-  var raphX;
-  var raphY;
-  for (var i = 0; i<po; i++){
-    //Raphael x coord = leftWall + (qpoGridCoordX * qpoSquareSize)
-    //Raphael y coord = topWall + (qpoGridCoordY * qpoSquareSize)
-    if(qpo.blueUnits[i].alive){
-      raphX = qpo.guiCoords.gameBoard.leftWall + (qpo.guiDimens.squareSize*qpo.blueUnits[i].x);
-      raphY = qpo.guiCoords.gameBoard.topWall + (qpo.guiDimens.squareSize*qpo.blueUnits[i].y);
-      qpo.blueUnits[i].phys.attr({"x":raphX, "y":raphY});
-    }
-    if(qpo.redUnits[i].alive){
-      raphX = qpo.guiCoords.gameBoard.leftWall + (qpo.guiDimens.squareSize*qpo.redUnits[i].x);
-      raphY = qpo.guiCoords.gameBoard.topWall + (qpo.guiDimens.squareSize*qpo.redUnits[i].y);
-      qpo.redUnits[i].phys.attr({"x":raphX, "y":raphY});
-    }
-  }
-};
-
-
-
 function endGame(result){
   clearInterval(qpo.clockUpdater);
   clearInterval(qpo.collisionDetector);
@@ -1431,7 +1418,8 @@ function endGame(result){
   units = [];
   (result == "red") ? (qpo.ali.nn.backward(2)) : (qpo.ali.nn.backward(0)); //reward AI for winning, not losing
   (result == "tie") ? (qpo.ali.nn.backward(1)) : (qpo.ali.nn.backward(0)); //reward it a little for tying
-  qpo.activeSession.update(result); //add to the proper tally
+  try{qpo.activeSession.update(result);} //add to the proper tally
+  catch(e){}
 
   if(qpo.trainingMode){ //Stop and display results if counter is satisfied. Otherwise, start game.
     qpo.trainingCounter++;

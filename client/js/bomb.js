@@ -1,8 +1,11 @@
 //CREATE BOMB TYPE/CLASS -- not implemented (see "explode()")
 function startBomb(su){ //su = source unit
+  var UNIT = qpo.guiDimens.squareSize;
   var INITIAL_BOMB_SIZE = 14*qpo.guiDimens.squareSize/50;
   var BOMB_MARGIN_Y = 19*qpo.guiDimens.squareSize/50;
   var BOMB_MARGIN_X = 18*qpo.guiDimens.squareSize/50;
+  var INITIAL_RADIUS = 14/50; //multiply by unit to get actual
+  var MAX_RADIUS = 2;
 
   this.team = su.team;
   this.timer = 3;
@@ -11,12 +14,12 @@ function startBomb(su){ //su = source unit
     case "blue":
       this.phys = c.rect(su.rect.attr("x") + BOMB_MARGIN_X,
                     su.rect.attr("y") + qpo.guiDimens.squareSize + BOMB_MARGIN_Y,
-                    INITIAL_BOMB_SIZE, INITIAL_BOMB_SIZE);
+                    INITIAL_BOMB_SIZE, INITIAL_BOMB_SIZE, 2);
       break;
     case "red":
       this.phys = c.rect(su.rect.attr("x") + BOMB_MARGIN_X,
                   su.rect.attr("y") - BOMB_MARGIN_Y - INITIAL_BOMB_SIZE,
-                  INITIAL_BOMB_SIZE, INITIAL_BOMB_SIZE);
+                  INITIAL_BOMB_SIZE, INITIAL_BOMB_SIZE, 2);
       break;
   }
   qpo.gui.push(this.phys);
