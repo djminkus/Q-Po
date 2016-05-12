@@ -99,7 +99,7 @@ slider = function(label, min, max, defaultt, y, spawnActive){
   }
 
   this.knobRect = c.rect((this.xPositions[this.value-this.min]) - KNOB_SIZE/2, y - KNOB_SIZE/2,
-    KNOB_SIZE, KNOB_SIZE).attr({"stroke":"white", "stroke-width":4, "fill":"black"});
+    KNOB_SIZE, KNOB_SIZE, 3).attr({"stroke":"white", "stroke-width":4, "fill":"black"});
   this.knobDisplay = c.text((this.xPositions[this.value-this.min]), y, this.value).attr({qpoText:10});
   this.knob = c.set(this.knobDisplay, this.knobRect);
 
@@ -163,7 +163,7 @@ buttonList = function(buttonsInOrder){
   return this;
 }
 
-// Menu = function(name, title){ // draft for a "Menu" class
+// qpo.Menu = function(name, title){ // draft for a "Menu" class
 //   // name is name for qpo.menus (ex. "mainM")
 //   // title is title string (ex. "Game Setup")
 //   qpo.menus[name] = this;
@@ -181,6 +181,8 @@ buttonList = function(buttonsInOrder){
 //     ;
 //   }
 // };
+
+/* ------------------------------------- */
 
 qpo.makeTitleScreen = function(){
   activeMenu = "title";
@@ -257,12 +259,7 @@ qpo.makeTitleScreen = function(){
   this.title = c.text(300,100,"Q-Po").attr({qpoText:[120,"white"]});
   this.promptt = c.text(qpo.guiDimens.gpWidth/2, qpo.guiDimens.gpHeight/2, "Press enter to start")
     .attr({qpoText:[32,qpo.COLOR_DICT["red"]], "opacity":0.8});
-  var promptAnim1 = Raphael.animation({'opacity':0}, 1000, '<', function(){
-    this.promptt.animate(promptAnim2)}.bind(this));
-  var promptAnim2 = Raphael.animation({'opacity':1}, 1000, '>', function(){
-    this.promptt.animate(promptAnim1)}.bind(this));
-  this.promptt.animate(promptAnim1);
-
+  qpo.blink(this.promptt);
   this.layer3 = c.set().push(this.title, this.promptt);
 
   this.all = c.set();
@@ -375,7 +372,7 @@ var makeMainMenu = function(letters){
   this.layer2.push(this.unit.phys, this.otherUnit.phys);
 
   //3rd layer (title, menu buttons)
-  this.title = c.text(300,100,"Q-PO").attr({qpoText:[120]});
+  this.title = c.text(300,100,"Q-Po").attr({qpoText:[120,'white']});
   this.tutorialButton = new button("Tutorial",300,250,function(e){
     qpo.mode = "tut";
     qpo.menus.main.close();
@@ -441,27 +438,11 @@ var makeMainMenu = function(letters){
     this.unit.phys, this.otherUnit.phys);
   if(letters){this.all.push(this.letters);}
 
-  // this.hideAll = function(){ //old version of close
-  //   this.all.hide();
-  //   clearInterval(this.mmsai); //main menu stop animation interval
-  //   clearInterval(this.mmrai); //main menu right animation interval
-  //   clearInterval(this.mmlai); //main menu left animation interval
-  //   clearTimeout(this.turn1,this.turn2); //queued animations
-  //   for (var i = 0; i < qpo.shots.length; i++){ //remove shots
-  //     if (qpo.shots[i]) {qpo.shots[i].remove();}
-  //   }
-  //   for (var i = 0; i < qpo.bombs.length; i++){ //remove bombs
-  //     if (qpo.bombs[i]) {qpo.bombs[i].phys.remove();}
-  //   }
-  //   this.unit.instakill(); //remove unit
-  //   this.otherUnit.instakill(); //remove other unit
-  // }
-
   this.close = function(){
     clearInterval(this.mmsai); //main menu stop animation interval
     clearInterval(this.mmrai); //main menu right animation interval
     clearInterval(this.mmlai); //main menu left animation interval
-    clearTimeout(this.turn1,this.turn2); //queued animations
+    clearTimeout(this.turn1, this.turn2); //queued animations
     for (var i = 0; i < qpo.shots.length; i++){if (qpo.shots[i]) {qpo.shots[i].remove();}} //remove shots
     for (var i = 0; i < qpo.bombs.length; i++){if (qpo.bombs[i]) {qpo.bombs[i].phys.remove();}} //remove bombs
     this.unit.instakill(); //remove unit
@@ -492,29 +473,6 @@ qpo.titleScreen = new qpo.makeTitleScreen();
 //       default: {console.log("this was unexpected"); break;}
 //     }
 //   });
-
-var makeMultiplayerMenu = function(){
-  qpo.menus["multiP"] = this;
-  activeMenu = "multiP";
-
-  this.blackness = c.rect(0,0,c.width,c.height).attr({"fill":"black","opacity":1});
-  this.title = c.text(300,100,"coming soon!").attr({"font-size":60,"fill":"white","font-family":"'Open Sans',sans-serif"});
-
-  this.all = c.set().push(this.blackness,this.title);
-
-  this.up = function(){
-    this.close();
-    // console.log(this); //prints the makeMultiplayerMenu object, as expected
-    goMainMenu();
-  }
-
-  this.close = function(){
-    // console.log(this); //prints the makeMultiplayerMenu object, as expected
-    this.all.remove();
-  }
-
-  return this;
-}
 
 var makeGameSetupMenu = function(){
     activeMenu = "gameS";
@@ -565,7 +523,6 @@ var makeGameSetupMenu = function(){
       // goMainMenu();
       qpo.menus.main = new makeMainMenu();
     }
-
     return this;
 }
 
@@ -577,7 +534,7 @@ var makeCustomGameMenu = function(){
     this.title = c.text(300,50,"Custom Game").attr({"font-size":50,"fill":"white","font-family":"'Open Sans',sans-serif"});
 
     this.qSlider = new slider("Q", 4, 20, 8, 160, true);
-    this.poSlider = new slider("PO", 1, 7, 4, 260, false);
+    this.poSlider = new slider("Po", 1, 7, 4, 260, false);
 
     this.startGame = new button("Start Game", qpo.guiDimens.gpWidth/2, 360, (function(e){
       this.close();
@@ -708,6 +665,28 @@ var makeEndGameMenu = function(result){
 
   return this;
 };
+
+var makeMultiplayerMenu = function(){
+  qpo.menus["multiP"] = this;
+  activeMenu = "multiP";
+
+  this.blackness = c.rect(0,0,c.width,c.height).attr({"fill":"black","opacity":1});
+  this.title = c.text(300,100,"coming soon!").attr({"font-size":60,"fill":"white","font-family":"'Open Sans',sans-serif"});
+
+  this.all = c.set().push(this.blackness,this.title);
+
+  this.up = function(){
+    this.close();
+    // console.log(this); //prints the makeMultiplayerMenu object, as expected
+    goMainMenu();
+  }
+  this.close = function(){
+    // console.log(this); //prints the makeMultiplayerMenu object, as expected
+    this.all.remove();
+  }
+  return this;
+}
+
 
 function goMainMenu(){
   // qpo.menus[activeMenu].close();

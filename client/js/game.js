@@ -2,7 +2,7 @@
 // var song = new Audio("./music/gameMode.mp3")        //uncomment for gameMode (second version)
 // var song = new Audio("./music/underwaterStars.mp3")  //uncomment for underwaterStars
 
-qpo.Game = function(q, po, multi, playMusic, respawn, turns){ //"Game" class. Instantiated every time a new round is called.
+qpo.Game = function(q, po, type, playMusic, respawn, turns){ //"Game" class. Instantiated every time a new round is called.
   this.po = po; //# of units per team. Min 1, max 7.
   qpo.timeScale = (function(){ //adjust timeScale based on po.
     var adj = 0.25; //adjustment
@@ -11,7 +11,7 @@ qpo.Game = function(q, po, multi, playMusic, respawn, turns){ //"Game" class. In
   })(); //0.45, 0.65, 0.85, 1.05, 1.25, etc
 
   this.q = (q || qpo.difficPairings[po-1]); //size of board. (q x q)
-  this.multiplayer = multi; //false for single player (local vs. AI) mode
+  this.type = type; //tutorial, single, multi
   this.turnNumber = 0;
   this.incrementTurn = function(){this.turnNumber++;};
   this.lastTurn = (turns || 40);
@@ -20,14 +20,18 @@ qpo.Game = function(q, po, multi, playMusic, respawn, turns){ //"Game" class. In
   var exponent = 0.8;
   var factor = 12;
   var correction = 2;
-  var thinger = function(e,f,c,also){return Math.floor(Math.pow(also,e) * f - c);};
-  this.scoreToWin = thinger(exponent,factor,correction,po); // 10, 18, 26, 34, 41, 48, 54, 61
+  var scoringFormula = function(e,f,c,also){
+    var result = Math.pow(also,e) * f - c // po^e * factor - correction
+    result *= this.lastTurn/60; //multiply by num turns divided by 60
+    return Math.floor(result);;
+  }; //pass po as also when calling
+  this.scoreToWin = scoringFormula(exponent,factor,correction,po); // 10, 18, 26, 34, 41, 48, 54, 61 for 60-turn game
   this.respawnEnabled = respawn;
   if (respawn == false){this.scoreToWin = this.po;}
 
   qpo.guiDimens.squareSize = 350/this.q;   //aim to keep width of board at 7*50 (350). So, qpo.guiDimens.squareSize = 350/q.
   qpo.bombSize = 2 * qpo.guiDimens.squareSize;
-  qpo.currentSettings = [q,po,multi,playMusic,respawn];
+  qpo.currentSettings = [q,po,type,playMusic,respawn,turns];
 
   this.gui = c.set();
 

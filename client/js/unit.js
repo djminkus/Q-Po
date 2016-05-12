@@ -4,7 +4,8 @@ function startUnit(color, gx, gy, num){
   this.team = color; //"red" or "blue"
   this.rect = c.rect(qpo.guiCoords.gameBoard.leftWall + qpo.guiDimens.squareSize*gx,
     qpo.guiCoords.gameBoard.topWall+qpo.guiDimens.squareSize*gy,
-    qpo.guiDimens.squareSize,qpo.guiDimens.squareSize,2).attr({"fill":qpo.COLOR_DICT[color],"opacity":0.7});
+    qpo.guiDimens.squareSize,qpo.guiDimens.squareSize)
+    .attr({"fill":qpo.COLOR_DICT[color], "opacity":0.7, 'stroke':qpo.COLOR_DICT['highlight'], 'stroke-width':qpo.unitStroke});
   this.phys = c.set();
   this.x = gx; //absolute grid position. (column, 0 to q-1)
   this.y = gy; //absolute grid position (row, 0 to q-1)
@@ -42,7 +43,7 @@ function finishUnit(unit){
     unit.active = true;
   }
   unit.deactivate = function(){
-    unit.rect.attr({"stroke":"black", "stroke-width":1});
+    unit.rect.attr({"stroke":qpo.COLOR_DICT['highlight'], "stroke-width":qpo.unitStroke});
     unit.active = false;
   }
   unit.reload = function(){

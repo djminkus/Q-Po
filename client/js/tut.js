@@ -1,12 +1,13 @@
 /* TUTORIAL Sequence
   ========
- [x]  1. Welcome to QPO! (scene)
- [x]  2. Units (scene)
- [x]  3. Turns (scene)
- [x]  4. Control Panel (scene)
- [x]  5. Execution (scene)
- [x]  6. Keyboard Controls (SCREEN)
- [x]  7. Practice (game)
+ [x]  Welcome to QPO! (scene)
+ [x]  Units (scene)
+ [x]  Turns (scene)
+ [x]  Control Panel (scene)
+ [x]  Execution (scene)
+ [x]  Keyboard Controls (SCREEN)
+ [ ]
+ [x]  Practice (game)
 */
 
 qpo.Scene = function(headline, body, x, y, highx, highy, highSizeModx, highSizeMody, hideHigh, promptt){
@@ -29,6 +30,8 @@ qpo.Scene = function(headline, body, x, y, highx, highy, highSizeModx, highSizeM
   this.high = c.rect(highx, highy, 70+highSizeModx, 70+highSizeMody); //high for highlight
   this.high.attr({"fill":"none", "stroke":qpo.COLOR_DICT["orange"], "stroke-width":4});
 
+  qpo.blink(this.promptt);
+
   this.all = c.set().push(this.pane, this.head, this.bod1, this.bod2, this.bod3, this.promptt, this.high);
   if (hideHigh) { this.high.hide(); } //hide the highlight, or don't
 
@@ -47,11 +50,11 @@ qpo.Tut = function(){
   this.turnNumber;
 
   this.scenes = [ //Generate all scenes (in side panel.)
-    new qpo.Scene("Welcome!",["Hi! Welcome to Q-Po. Let's", "get you up to speed.",""],50,50,0,0,0,0,true,
+    new qpo.Scene("Welcome!",["Welcome to Q-Po. Let's", "get you up to speed.",""],50,50,0,0,0,0,true,
         "Press enter to continue."),
-    new qpo.Scene("Units",["This is a unit. Destroy enemy", "units to win the round.",""],150,50,65,115,0,0,false,
+    new qpo.Scene("Units",["This is a unit. Destroy enemy", "units to score points and"," win the round."],150,50,65,115,0,0,false,
       "Press enter to continue."),
-    new qpo.Scene("Turns",["This is the turn timer.", "One turn takes 3 seconds.",
+    new qpo.Scene("Turns",["This is the turn timer.", "One turn takes about one second.",
       "Each unit gets one move per turn."],250,50,380,180,70,70,false,
       "Press enter to continue."),
     new qpo.Scene("Control Panel",["This is the control panel. It shows", "you your plans. Every command",
@@ -60,40 +63,27 @@ qpo.Tut = function(){
     new qpo.Scene("Moving",["When the turn timer hits 0, your", "units follow your commands. Let's",
       'learn the commands!'],100,250,10,410,320,60,false,
       "Press enter to continue.")
-  ];
 
-  // this.scenes = [ //Generate all scenes (in main panel).
-  //   new qpo.Scene("Welcome!",["Hi! You must be new. We'll get", "you up to speed in no time.",""],50,50,0,0,0,0,true,
-  //       "Press enter to continue."),
-  //   new qpo.Scene("Units",["This is a unit. Destroy enemy", "units to win the round.",""],150,50,65,115,0,0,false,
-  //     "Press enter to continue."),
-  //   new qpo.Scene("Turns",["This is the turn timer.", "One turn takes 3 seconds.",
-  //     "Each unit gets one move per turn."],250,50,380,180,70,70,false,
-  //     "Press enter to continue."),
-  //   new qpo.Scene("Control Panel",["This is the control panel. It shows", "you your plans. Every command",
-  //     "you give shows up here."],100,250,10,410,320,60,false,
-  //     "Press enter to continue."),
-  //   new qpo.Scene("Moving",["When the turn timer hits 0, your", "units follow your commands. Let's",
-  //     'learn the commands!'],100,250,10,410,320,60,false,
-  //     "Press enter to continue.")
-  // ];
+  ];
 
   for(i=1; i<this.scenes.length; i++){this.scenes[i].all.hide();}//hide all except the first one
   this.status=0;
   controlPanel.orange.hide();
 
-  this.transition = function(){ // Transition between scenes, and increment this. status
+  this.transition = function(){ // Transition between scenes, and increment this.status
     if(this.status < 4){ // Remove raphs from old scene, update this.status, show the raphs from the new one
       this.scenes[this.status].all.remove();
       this.status++;
       this.scenes[this.status].all.show();
     }
-    else { // Just update this.status
+    else if (this.status > 7){
+      ;
+    } else { // Just update this.status
       this.status++;
     }
   }
 
-  this.tutFuncs = { //functions to be called on "enter" keypress and "escape" keypress
+  this.tutFuncs = { //functions to be called on "enter" keypress (and maybe others?)
     "enter": function(){ // enter/return key (transition to next scene)
       switch(qpo.tut.status){
         case 0: //transition from "welcome" to "units"
@@ -123,24 +113,23 @@ qpo.Tut = function(){
         case 5: //transition from keyboard controls to "try it out"
           qpo.tut.controlsScreen.all.remove();
           qpo.tut.blackness = c.rect(0,0,600,600).attr({"fill":"black"});
-          qpo.tut.scenes[5] = new qpo.Scene("Try It Out",["Those are the basics. Go", "ahead and play your first game.",
-            'Good luck!'], 170, 250, 10,410,320,60,true, "Press enter to continue.");
+          qpo.tut.scenes[5] = new qpo.Scene("1v1 the AI",["Beat me!", '1st to 4 wins!',
+            ' ~ Alice'], 170, 250, 10,410,320,60,true, "Press enter to continue.");
+          qpo.tut.scenes[5].all.transform('t-500,0');
           break;
         case 6: //start a game.
           qpo.tut.scenes[5].all.remove();
           qpo.tut.blackness.remove();
           c.setSize(qpo.guiDimens.gpWidth, qpo.guiDimens.gpHeight);
-          qpo.countdownScreen([7,1,false,false,true]);
+          qpo.countdownScreen([7,1,'tut',false,true]);
           break;
+        case 7:
         default: //nada
           console.log("You forgot a 'break', David.");
           break;
       }
       qpo.tut.transition();
     },
-    "ekey": function(){ // "e" (shoot)
-      //qpo.tut.blue0.shoot();
-    }
   };
 
   this.makeControlsScreen = function(tutt){
@@ -177,12 +166,13 @@ qpo.Tut = function(){
     this.keys.transform("t170,170");
     this.labels.transform("t170,170");
 
-    this.shot = c.rect(460,100,6,20).attr({"fill":qpo.COLOR_DICT["green"]});
-    this.bomb = c.rect(140,100,14,14).attr({"fill":qpo.COLOR_DICT["purple"]});
+    this.shot = c.rect(450,100,6,20).attr({"fill":qpo.COLOR_DICT["green"],'opacity':0.5});
+    this.bomb = c.rect(130,100,14,14).attr({"fill":qpo.COLOR_DICT["purple"],'opacity':0.5});
 
     this.promptt = c.text(300,500, "Press enter to continue.")
       .attr({qpoText:[20, qpo.COLOR_DICT["red"]]});
 
+    qpo.blink(this.promptt);
     this.all = c.set().push(this.blackness, this.keys, this.labels, this.promptt, this.shot, this.bomb);
     return this;
   };
