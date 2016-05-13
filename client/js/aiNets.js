@@ -128,7 +128,6 @@ qpo.closingCode = function(){
     localStorage['aliNN'] = JSON.stringify(qpo.ali.nn.value_net.toJSON()); //stores network to local storage for persistence
     localStorage['aliCopy'] = JSON.stringify(qpo.ali.nn);
     localStorage['aliCopy2'] = JSON.stringify(qpo.ali.nn.value_net.toJSON());
-
   }
   catch(err){
     console.log("UH-OH. looks like there's no network to store.")

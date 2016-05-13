@@ -153,7 +153,7 @@ qpo.setup = function(){ // set up global vars and stuff
   qpo.playMusic = false;
   qpo.trainingMode = false;
   qpo.waitTime = 100; //ms between moves
-  qpo.gameLength = 25;
+  qpo.gameLength = 15;
   qpo.unitStroke = -3;
 
   // (DNA): STATIC DICTS N ARRAYS
@@ -299,8 +299,8 @@ qpo.findSpawn = function(color){
   //TODO: APPLY BOOSTS : friendly side, friendly proximity
 
   //TODO: SELECT row and column based on demerits. (base this on rigid ai.)
-  // console.log("demerits: " + demerits);
-  // console.log("demerits[0]: " + demerits[0]);
+  console.log("demerits: " + demerits);
+  console.log("demerits[0]: " + demerits[0]);
 
   var fewestDemerits = [100,100]; //a comparer
   for (var i=0; i<demerits[0].length;i++){ //find the lowest number of demerits
@@ -308,31 +308,31 @@ qpo.findSpawn = function(color){
     if(demerits[1][i]<fewestDemerits[1]){ fewestDemerits[1] = demerits[1][i]; }
   }
   //find rows with least demerits and columns with least demerits:
-  var indices = [[],[]]; //rows, columns
+  var choices = [[],[]]; //rows, columns
   var utilIndex = [0,0];
   var increment = [false,false];
   for (var i=0; i<demerits[0].length; i++){ //0 and 1 have same lengths
     if(demerits[0][i]==fewestDemerits[0]){ //this row is a candidate.
-      indices[0][utilIndex[0]] = i;
+      choices[0][utilIndex[0]] = i;
       increment[0] = true;
     }
     if(demerits[1][i]==fewestDemerits[1]){ //this col is a candidate.
-      indices[1][utilIndex[1]] = i;
+      choices[1][utilIndex[1]] = i;
       increment[1] = true;
     }
     (increment[0] == true) ? (utilIndex[0]+=1) : (null);
     (increment[1] == true) ? (utilIndex[1]+=1) : (null);
     increment = [false,false];
   }
-  //choose random indices from "indices" arrays:
-  var chosenRow = indices[0][Math.floor(Math.random()*indices[0].length)];
-  var chosenColumn = indices[1][Math.floor(Math.random()*indices[1].length)];
+  //choose random choices from "choices" arrays:
+  var chosenRow = choices[0][Math.floor(Math.random()*choices[0].length)];
+  var chosenColumn = choices[1][Math.floor(Math.random()*choices[1].length)];
 
-  // console.log("indices[0]: " + indices[0]);
-  // console.log("indices[1]: " + indices[1]);
+  console.log("choices[0]: " + choices[0]);
+  console.log("choices[1]: " + choices[1]);
 
   foundSpawn = [chosenRow,chosenColumn];
-  // console.log(foundSpawn);
+  console.log(foundSpawn);
 
   return foundSpawn;
 }
@@ -652,10 +652,13 @@ function finishControlPanel(cp){
     }
   } ;
   cp.enable = function(){ //turn the orange on (if active unit is eligible)
-    if(qpo.unitLists["blue"][qpo.blueActiveUnit].spawnTimer < 1){
-      cp.orange.attr({"stroke":qpo.COLOR_DICT["orange"]});
-      cp.disabled = false;
+    try{
+      if(qpo.unitLists["blue"][qpo.blueActiveUnit].spawnTimer < 1){
+        cp.orange.attr({"stroke":qpo.COLOR_DICT["orange"]});
+        cp.disabled = false;
+      }
     }
+    catch(err){;}//if err, that unit doesn't exist so the game's ended so do nothing
   } ;
   cp.disable = function(){ //turn the orange off and queue it to be turned on, or don't
     cp.orange.attr({"stroke":"grey"});
@@ -677,10 +680,13 @@ function finishControlPanel(cp){
   cp.changeIcon = function(move){
     if (!qpo.activeGame.isEnding) { //As long as the game isn't ending, update the icon.
       //hide icon for active unit, update the icon, and show updated icon
-      controlPanel.actives[qpo.blueActiveUnit].hide();
-      controlPanel.actives[qpo.blueActiveUnit] = controlPanel.targetIcons[move][qpo.blueActiveUnit];
-      qpo.gui.push(controlPanel.actives[qpo.blueActiveUnit]);
-      controlPanel.actives[qpo.blueActiveUnit].show();
+      try{ //do things
+        controlPanel.actives[qpo.blueActiveUnit].hide();
+        controlPanel.actives[qpo.blueActiveUnit] = controlPanel.targetIcons[move][qpo.blueActiveUnit];
+        qpo.gui.push(controlPanel.actives[qpo.blueActiveUnit]);
+        controlPanel.actives[qpo.blueActiveUnit].show();
+      }
+      catch(err){;} //game already ended, do nothing
     }
   }
   cp.moveHighlight = function(howMuch){
@@ -898,8 +904,9 @@ function newTurn(){ // called every time game clock is divisible by 3
         gameResult = "blue";
       }
       qpo.activeGame.isEnding = true;
-      qpo.gui.toBack();
+      // qpo.gui.toBack();
       setTimeout(function(){
+        console.log('about to end game');
         endGame(gameResult);
       },3000*qpo.timeScale);
     }
@@ -1342,24 +1349,29 @@ $(window).keydown(function(event){
       break;
     case "game":
       //If active unit is dead and not spawning next turn, try moving to another unit (as a fallback:)
-      if (qpo.blueUnits[qpo.blueActiveUnit].spawnTimer>0){
-        event.preventDefault();
-        updateBlueAU(qpo.activeGame.po, "dead");
-      }
-      else { //Otherwise, respond to the keypress by updating the control panel
-        switch (event.keyCode){
-          case 81:
-          case 69:
-          case 65:
-          case 87:
-          case 68:
-          case 83:
-          case 88: //qweasdx detected (valid)
-            controlPanel.accept(event);
-            break;
-          default: //some other key detected (invalid)
-            break;
+      try {
+        if (qpo.blueUnits[qpo.blueActiveUnit].spawnTimer>0){
+          event.preventDefault();
+          updateBlueAU(qpo.activeGame.po, "dead");
         }
+        else { //Otherwise, respond to the keypress by updating the control panel
+          switch (event.keyCode){
+            case 81:
+            case 69:
+            case 65:
+            case 87:
+            case 68:
+            case 83:
+            case 88: //qweasdx detected (valid)
+              controlPanel.accept(event);
+              break;
+            default: //some other key detected (invalid)
+              break;
+          }
+        }
+      }
+      catch(err){ //probably because qpo.blueUnits[-1] doesn't exist. do nothing.
+        ;
       }
       break;
     case "tut":
@@ -1438,48 +1450,46 @@ function endGame(result){
   clearInterval(qpo.clockUpdater);
   clearInterval(qpo.collisionDetector);
   clearInterval(qpo.turnStarter);
-
   qpo.gui.stop();
-  qpo.gui.remove();
-  qpo.shots = [];
-  qpo.bombs = [];
-  qpo.units = [];
-  (result == "red") ? (qpo.ali.nn.backward(2)) : (qpo.ali.nn.backward(0)); //reward AI for winning, not losing
-  (result == "tie") ? (qpo.ali.nn.backward(1)) : (qpo.ali.nn.backward(0)); //reward it a little for tying
-  try{qpo.activeSession.update(result);} //add to the proper tally
-  catch(e){}
-
-  if(qpo.trainingMode){ //If in training mode, decide whether to stop or keep going.
-    qpo.trainingCounter++;
-    if (qpo.trainingCounter >= qpo.gamesToTrain){ // If game counter satisfied, check batch
-      qpo.batchCounter++;
-      // var newBatch = new qpo.Batch(qpo.activeSession);
-      // qpo.trainingData.push(newBatch);
-      qpo.trainingData.push(new qpo.Batch(qpo.activeSession));
-      console.log("we got here...");
-      if (qpo.batchCounter >= qpo.batchesToTrain){ // If batch counter satisfied, exit trainingMode
-        qpo.trainingMode = false;
-        qpo.menus["endG"] = new makeEndGameMenu(result); //generate the menus["endG"] GUI
-        for (var i=0; i<qpo.batchesToTrain; i++){ // log each batch's data to console
-          console.log(qpo.trainingData[i]);
+  qpo.gui.animate({'opacity':0}, 2000, 'linear');
+  setTimeout(function(){ //clear the gui, reward the ai, and figure out what to do next
+    qpo.gui.clear();
+    qpo.shots = [];
+    qpo.bombs = [];
+    qpo.units = [];
+    (result == "red") ? (qpo.ali.nn.backward(2)) : (qpo.ali.nn.backward(0)); //reward AI for winning, not losing
+    (result == "tie") ? (qpo.ali.nn.backward(1)) : (qpo.ali.nn.backward(0)); //reward it a little for tying
+    try{qpo.activeSession.update(result);} //add to the proper tally
+    catch(e){;}
+    if(qpo.trainingMode){ //If in training mode, decide whether to stop or keep going.
+      qpo.trainingCounter++;
+      if (qpo.trainingCounter >= qpo.gamesToTrain){ // If game counter satisfied, check batch
+        qpo.batchCounter++;
+        // var newBatch = new qpo.Batch(qpo.activeSession);
+        // qpo.trainingData.push(newBatch);
+        qpo.trainingData.push(new qpo.Batch(qpo.activeSession));
+        console.log("we got here...");
+        if (qpo.batchCounter >= qpo.batchesToTrain){ // If batch counter satisfied, exit trainingMode
+          qpo.trainingMode = false;
+          qpo.menus["endG"] = new makeEndGameMenu(result); //generate the menus["endG"] GUI
+          for (var i=0; i<qpo.batchesToTrain; i++){ // log each batch's data to console
+            console.log(qpo.trainingData[i]);
+          }
+        }
+        else { // If batch counter not exceeded, train another batch
+          qpo.retrain();
         }
       }
-      else { // If batch counter not exceeded, train another batch
-        qpo.retrain();
+      else { // If game counter not exceeded, train another game
+        startGame([8,4]);
       }
     }
-    else { // If game counter not exceeded, train another game
-      startGame([8,4]);
-    }
-  }
-  else { // If we never were in training mode, move on
-    if(qpo.activeGame.type == 'tut'){ //TODO
-      //TODO: resume tut (explain q, po, and play 2v2 and 6v6)
+    else if (qpo.activeGame.type == 'tut'){
+      qpo.mode = 'tut';
       qpo.tut.tutFuncs.enter();
-      // c.text(300,300,"broken state").attr({qpoText:[30,'gray']});
-    }
-    else{qpo.menus["endG"] = new makeEndGameMenu(result); } //generate the menus["endG"] GUI
-  }
+    } //in tut mode, resume tut
+    else{ qpo.menus["endG"] = new makeEndGameMenu(result); } //we're not in tutorial or training. Generate the menus["endG"] GUI
+  }, 2000);
 
   // qpo.activeGame.song.pause();
   // qpo.activeGame.song.currentTime=0;

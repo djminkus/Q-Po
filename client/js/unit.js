@@ -109,8 +109,6 @@ function finishUnit(unit){
         qpo.blueActiveUnit = -1;
         qpo.redActiveUnit = -1;
         qpo.activeGame.isEnding = true;
-        qpo.menus["main"].blackness.animate({"opacity": 0.9},2000*qpo.timeScale);
-        qpo.gui.toBack();
         setTimeout(function(){endGame(gameResult);}, 2000*qpo.timeScale);
       }
     }

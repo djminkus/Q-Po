@@ -479,15 +479,15 @@ var makeGameSetupMenu = function(){
     qpo.menus["gameS"] = this;
     // qpo.menus.main.unit.kill();
     this.blackness = c.rect(0,0,c.width,c.height).attr({"fill":"black","opacity":1});
-    this.title = c.text(300,50,"Game Setup").attr({"font-size":50,"fill":"white","font-family":"'Open Sans',sans-serif"});
+    this.title = c.text(300,100,"Game Setup").attr({"font-size":50,"fill":"white","font-family":"'Open Sans',sans-serif"});
 
-    this.quickPlay = new button("Quick-Play",qpo.guiDimens.gpWidth/2,190, (function(e){
+    this.quickPlay = new button("Quick-Play",qpo.guiDimens.gpWidth/2,250, (function(e){
       this.close();
-      settings = [7,3,false,true,true]; //q,po,multi,music,respawn
+      settings = [7,3,'single',false,true]; //q,po,multi,music,respawn
       qpo.countdownScreen(settings);
     }).bind(this), 0, true, "quickP")
 
-    this.customGame = new button("Custom Game",qpo.guiDimens.gpWidth/2,280, (function(e){
+    this.customGame = new button("Custom Game",qpo.guiDimens.gpWidth/2,340, (function(e){
       this.close();
       qpo.menus["customG"] = new makeCustomGameMenu();
     }).bind(this), 0, false, "customG");
@@ -686,7 +686,6 @@ var makeMultiplayerMenu = function(){
   }
   return this;
 }
-
 
 function goMainMenu(){
   // qpo.menus[activeMenu].close();

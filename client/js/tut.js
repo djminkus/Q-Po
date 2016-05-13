@@ -71,16 +71,12 @@ qpo.Tut = function(){
   controlPanel.orange.hide();
 
   this.transition = function(){ // Transition between scenes, and increment this.status
-    if(this.status < 4){ // Remove raphs from old scene, update this.status, show the raphs from the new one
+    if(this.status < 4 || this.status > 9){ // Remove raphs from old scene, update this.status, show the raphs from the new one
       this.scenes[this.status].all.remove();
       this.status++;
       this.scenes[this.status].all.show();
     }
-    else if (this.status > 7){
-      ;
-    } else { // Just update this.status
-      this.status++;
-    }
+    else { this.status++; }// Just update this.status
   }
 
   this.tutFuncs = { //functions to be called on "enter" keypress (and maybe others?)
@@ -123,7 +119,48 @@ qpo.Tut = function(){
           c.setSize(qpo.guiDimens.gpWidth, qpo.guiDimens.gpHeight);
           qpo.countdownScreen([7,1,'tut',false,true]);
           break;
-        case 7:
+        case 7: //the game was ended. Get ready for 2v2.
+          qpo.tut.blackness = c.rect(0,0,600,600).attr({"fill":"black"});
+          qpo.tut.scenes[7] = new qpo.Scene("Game Over",["That was 1v1.","Let's try 2v2.",
+            "Get ready to multitask."], 170, 250, 10,410,320,60,true, "Press enter to continue.");
+          qpo.tut.scenes[7].all.transform('t-500,0');
+
+          // qpo.tut.scenes[7] = new qpo.Scene("Q and Po",["Q is the size of the grid.", 'Po is the units per team.',
+          //   ' ~ Alice'], 170, 250, 10,410,320,60,true, "Press enter to continue.");
+          // qpo.tut.scenes[7].all.transform('t-500,0');
+          break;
+        case 8: //
+          qpo.tut.scenes[7].all.remove();
+          qpo.tut.blackness.remove();
+          qpo.countdownScreen([7,2,'tut',false,true]);
+          break;
+
+          // drawGUI(7,2); //q=7, po=1;
+          // controlPanel.resetIcons();
+          // qpo.tut.scenes[8] = new qpo.Scene("Q and Po",["Q is the size of the grid.", 'Po is the units per team.',
+          //   ' ~ Alice'], 170, 250, 10,410,320,60,true, "Press enter to continue.");
+        case 9:
+          qpo.tut.blackness = c.rect(0,0,600,600).attr({"fill":"black"});
+          qpo.tut.scenes[9] = new qpo.Scene("Game Over",["And that's only the beginning.",
+           "Let's try 5v5",""], 170, 250, 10,410,320,60,true, "Press enter to continue.");
+          qpo.tut.scenes[9].all.transform('t-500,0');
+          break;
+        case 10:
+          qpo.tut.scenes[9].all.remove();
+          qpo.tut.blackness.remove();
+          qpo.countdownScreen([10,5,'tut',false,true]);
+          break;
+        case 11:
+          qpo.tut.blackness = c.rect(0,0,600,600).attr({"fill":"black"});
+          qpo.tut.scenes[11] = new qpo.Scene("Game Over",["Now you know what's up.",
+           "Go play.",""], 170, 250, 10,410,320,60,true, "Press enter to continue.");
+          qpo.tut.scenes[11].all.transform('t-500,0');
+        case 12:
+          qpo.tut.scenes[11].all.remove();
+          qpo.tut.blackness.remove();
+          qpo.mode = 'menu';
+          qpo.menus['main'] = makeMainMenu();
+          break;
         default: //nada
           console.log("You forgot a 'break', David.");
           break;
