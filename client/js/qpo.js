@@ -153,11 +153,11 @@ qpo.setup = function(){ // set up global vars and stuff
   qpo.playMusic = false;
   qpo.trainingMode = false;
   qpo.waitTime = 100; //ms between moves
-  qpo.gameLength = 15;
+  qpo.gameLength = 20;
   qpo.unitStroke = -3;
 
   // (DNA): STATIC DICTS N ARRAYS
-  qpo.spawnTimers = [null, 1,2,3,3,4,5,5,5]; //index is po
+  qpo.spawnTimers = [null, 1,2,3,3,4,4,5,5]; //index is po
   qpo.aiTypes = ["neural","rigid","random"];
   qpo.keyCodes = { //pair keycodes with move strings
     81:"bomb",
@@ -214,6 +214,20 @@ qpo.setup = function(){ // set up global vars and stuff
   qpo.board = {};
   playerColor = "blue"; // for now
   opponentColor = "red";
+  qpo.fadeOut = function(set, extra){ //fade out a Raph set and do an extra function after it fades
+    var TIME = 500; //ms
+    var anim = Raphael.animation({'opacity':0},TIME);
+    set.animate(anim);
+    setTimeout(function(){ //after delay, remove set and do extra()
+      set.remove();
+      extra();
+    }, TIME);
+  };
+  qpo.fadeIn = function(set){
+    var TIME = 500; //ms
+    var anim = Raphael.animation({'opacity':1},TIME);
+    set.animate(anim);
+  };
 
   (function(){ //SET UP DIMENSIONS AND COORDINATES:
     qpo.guiCoords = { // cp height, gameBoard wall locations, gamePanel vs debugPanel
@@ -285,22 +299,20 @@ qpo.findSpawn = function(color){
     demerits[0].push(0);
     demerits[1].push(0);
   }
-  //TODO: APPLY BLOCKS : enemy side, enemy proximity, danger (incoming shot/bomb)
+  //APPLY BLOCKS : enemy side (TODO: enemy proximity, shots/bombs)
   if (color == "blue"){ //block red side (rows po/2 through po-1)
-    for (var i=0; i<Math.floor(q/2); i++){
-      demerits[0][i+Math.floor(q/2)]++;
-    }
+    for (var i=0; i<Math.floor(q/2); i++){ demerits[0][i+Math.floor(q/2)]++; }
+    if (q%2 == 1){ demerits[0][q-1]++; } //fix blue spawn glitch (happens for odd q)
   }
   else { //block blue side
-    for (var i=0; i<Math.floor(q/2); i++){
-      demerits[0][i]++;
-    }
+    for (var i=0; i<Math.floor(q/2); i++){ demerits[0][i]++; }
+    if (q%2 == 1){ demerits[0][Math.floor(q/2)]++; } //block middle row
   }
   //TODO: APPLY BOOSTS : friendly side, friendly proximity
 
   //TODO: SELECT row and column based on demerits. (base this on rigid ai.)
-  console.log("demerits: " + demerits);
-  console.log("demerits[0]: " + demerits[0]);
+  // console.log("demerits: " + demerits);
+  // console.log("demerits[0]: " + demerits[0]);
 
   var fewestDemerits = [100,100]; //a comparer
   for (var i=0; i<demerits[0].length;i++){ //find the lowest number of demerits
@@ -328,11 +340,11 @@ qpo.findSpawn = function(color){
   var chosenRow = choices[0][Math.floor(Math.random()*choices[0].length)];
   var chosenColumn = choices[1][Math.floor(Math.random()*choices[1].length)];
 
-  console.log("choices[0]: " + choices[0]);
-  console.log("choices[1]: " + choices[1]);
+  // console.log("choices[0]: " + choices[0]);
+  // console.log("choices[1]: " + choices[1]);
 
   foundSpawn = [chosenRow,chosenColumn];
-  console.log(foundSpawn);
+  // console.log(foundSpawn);
 
   return foundSpawn;
 }
@@ -718,8 +730,10 @@ function drawGUI(q,po){ //create the turn timer (pie), board, and control panel.
     qpo.timer.text = c.text(t.x, t.y, qpo.activeGame.lastTurn).attr({qpoText:[30,qpo.COLOR_DICT['highlight']]});
     qpo.timer.all = c.set(qpo.timer.pie,qpo.timer.text)
     qpo.timer.update = function(){
-      qpo.timer.value--;
-      qpo.timer.text.attr({"text":qpo.timer.value});
+      if(qpo.timer.value>0){
+        qpo.timer.value--;
+        qpo.timer.text.attr({"text":qpo.timer.value});
+      }
     }
     qpo.gui.push(qpo.timer.all);
   })();
@@ -752,7 +766,7 @@ function newTurn(){ // called every time game clock is divisible by 3
   //// SPAWN SECTION
   var completedSpawnIndices = new Array();
   var spawn, spawnTurn, spawnerTeam;
-  for(var i = 0; i<qpo.activeGame.upcomingSpawns.length; i++){ //if it's the right turn, spawn the unit.
+  for(var i=0; i<qpo.activeGame.upcomingSpawns.length; i++){ //if it's the right turn, spawn the unit.
     spawn = qpo.activeGame.upcomingSpawns[i];
     spawnTurn = spawn[0];
     spawnerTeam = spawn[2];
