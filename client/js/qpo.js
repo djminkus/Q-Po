@@ -154,7 +154,7 @@ qpo.setup = function(){ // set up global vars and stuff
   qpo.trainingMode = false;
   qpo.waitTime = 100; //ms between moves
   qpo.gameLength = 20;
-  qpo.unitStroke = -3;
+  qpo.unitStroke = -2;
 
   // (DNA): STATIC DICTS N ARRAYS
   qpo.spawnTimers = [null, 1,2,3,3,4,4,5,5]; //index is po
@@ -214,20 +214,6 @@ qpo.setup = function(){ // set up global vars and stuff
   qpo.board = {};
   playerColor = "blue"; // for now
   opponentColor = "red";
-  qpo.fadeOut = function(set, extra){ //fade out a Raph set and do an extra function after it fades
-    var TIME = 500; //ms
-    var anim = Raphael.animation({'opacity':0},TIME);
-    set.animate(anim);
-    setTimeout(function(){ //after delay, remove set and do extra()
-      set.remove();
-      extra();
-    }, TIME);
-  };
-  qpo.fadeIn = function(set){
-    var TIME = 500; //ms
-    var anim = Raphael.animation({'opacity':1},TIME);
-    set.animate(anim);
-  };
 
   (function(){ //SET UP DIMENSIONS AND COORDINATES:
     qpo.guiCoords = { // cp height, gameBoard wall locations, gamePanel vs debugPanel
@@ -255,7 +241,8 @@ qpo.setup = function(){ // set up global vars and stuff
       "tpHeight": 200, //tut panel height
       "squareSize" : 50,
       "columns" : 7,
-      "rows" : 7
+      "rows" : 7,
+      "CROSS_SIZE": 7
     }
     qpo.guiCoords.gameBoard.width = qpo.guiDimens.columns * qpo.guiDimens.squareSize,
     qpo.guiCoords.gameBoard.height = qpo.guiDimens.rows * qpo.guiDimens.squareSize;
@@ -268,13 +255,35 @@ qpo.setup = function(){ // set up global vars and stuff
   //MAKE MUSIC (or don't)
   (qpo.playMusic) ? (qpo.menuMusic()) : (console.log("no music mode!"));
 
+  //DEFINE SOME NICE FUNCTIONS...
   qpo.add = function(a,b){ return (a+b); }
   qpo.blink = function(raph, time){ //make something's opacity go to 0, then come back to 1
     var anim1 = Raphael.animation({'opacity':0}, (time || 1000), '<', function(){raph.animate(anim2)});
     var anim2 = Raphael.animation({'opacity':1}, (time || 1000), '>', function(){raph.animate(anim1)});
     raph.animate(anim1);
   }
-
+  qpo.fadeOut = function(set, extra){ //fade out a Raph set and do an extra function after it fades
+    var TIME = 300; //ms
+    var anim = Raphael.animation({'opacity':0},TIME);
+    set.animate(anim);
+    setTimeout(function(){ //after delay, remove set and do extra()
+      set.remove();
+      extra();
+    }, TIME);
+  };
+  qpo.fadeIn = function(set){
+    var TIME = 300; //ms
+    var anim = Raphael.animation({'opacity':1},TIME);
+    set.animate(anim);
+  };
+  qpo.cross = function(x,y){ //draw a cross centered on x,y
+    var set = c.set();
+    var hcs = qpo.guiDimens.CROSS_SIZE/2 ; //half cross size
+    set.push(c.path('M' + (x-hcs) + ',' + y + 'L' + (x+hcs) + "," + y)); //vert section
+    set.push(c.path('M' + x + ',' + (y-hcs) + 'L' + x + "," + (y+hcs))); //vert section
+    set.attr({"stroke-width":2, 'stroke':qpo.COLOR_DICT['highlight']});
+    return set;
+  }
 }
 qpo.setup();
 
@@ -388,7 +397,7 @@ function drawBoard(cols, rows){ //draw the walls and grid and push to gui
 
   // qpo.board.goalLines =
 
-  var crossSize = 7;
+  var crossSize = qpo.guiDimens.CROSS_SIZE;
   var hcs = crossSize/2 //Half Cross Size
 
   qpo.board.verts = c.set();
@@ -910,19 +919,11 @@ function newTurn(){ // called every time game clock is divisible by 3
       var gameResult;
       qpo.blueActiveUnit = 50;
       qpo.redActiveUnit = 50;
-      if(qpo.scoreBoard.redScore==qpo.scoreBoard.blueScore){
-        gameResult = "tie";
-      } else if (qpo.scoreBoard.redScore > qpo.scoreBoard.blueScore) {
-        gameResult = "red";
-      } else {
-        gameResult = "blue";
-      }
+      if (qpo.scoreBoard.redScore==qpo.scoreBoard.blueScore) { gameResult = "tie"; }
+      else if (qpo.scoreBoard.redScore > qpo.scoreBoard.blueScore) { gameResult = "red"; }
+      else { gameResult = "blue"; }
       qpo.activeGame.isEnding = true;
-      // qpo.gui.toBack();
-      setTimeout(function(){
-        console.log('about to end game');
-        endGame(gameResult);
-      },3000*qpo.timeScale);
+      setTimeout(function(){endGame(gameResult);}, 3000*qpo.timeScale);
     }
   }
 }
@@ -1114,24 +1115,16 @@ function detectCollisions(ts){
   } //end iterating over bombs after checking if bombs exists
 
   //ITERATE OVER UNITS HERE. We have the qpo.blueUnits and qpo.redUnits arrays as well
-  //  as the "units" array. All we want to do is check for collisions between
-  //  units of opposite colors, so we only need to iterate over one color of
-  // unit.
+  //  as the "units" array. Check for collisions with walls and for collisions between
+  //  units of opposite colors.
   for (var i=0; i<ts; i++){ //iterate over blue team of units
-    //Get the unit's borders
-    var nBOU = qpo.blueUnits[i].rect.getBBox().y;
-    var wBOU = qpo.blueUnits[i].rect.getBBox().x;
-    var sBOU = nBOU + qpo.guiDimens.squareSize;
-    var eBOU = wBOU + qpo.guiDimens.squareSize;
+    //Get the blue unit's borders
+    var nBOU = qpo.blueUnits[i].rect.getBBox().y + 1; //make it 1 pixel smaller than it really is, to fix collisions glitch
+    var wBOU = qpo.blueUnits[i].rect.getBBox().x + 1;
+    var sBOU = nBOU + qpo.guiDimens.squareSize - 2;
+    var eBOU = wBOU + qpo.guiDimens.squareSize - 2;
 
-    if (qpo.blueUnits[i].active) { //adjust for highlighting on active unit
-      nBOU = nBOU + 2;
-      sBOU = sBOU - 2;
-      wBOU = wBOU + 2;
-      eBOU = eBOU - 2;
-    }
-
-    //if the unit has hit a wall, stop the unit and place it snugly on the wall.
+    //if the blue unit has hit a wall, stop the unit and place it snugly on the wall.
     if( nBOU < qpo.guiCoords.gameBoard.topWall ||
         wBOU < qpo.guiCoords.gameBoard.leftWall ||
         sBOU > qpo.guiCoords.gameBoard.bottomWall ||
@@ -1145,20 +1138,13 @@ function detectCollisions(ts){
     }
 
     //WALL DETECTION RED
-    //get the unit's borders:
+    //get the red unit's borders:
     var nBOUr = qpo.redUnits[i].rect.getBBox().y;
     var wBOUr = qpo.redUnits[i].rect.getBBox().x;
     var sBOUr = nBOUr + qpo.guiDimens.squareSize;
     var eBOUr = wBOUr + qpo.guiDimens.squareSize;
 
-    if (qpo.redUnits[i].active) { //adjust for highlighting on active unit
-      nBOUr = nBOUr + 2;
-      sBOUr = sBOUr - 2;
-      wBOUr = wBOUr + 2;
-      eBOUr = eBOUr - 2;
-    }
-
-    //if the unit has hit a wall, stop the unit and place it snugly on the wall.
+    //if the red unit has hit a wall, stop the unit and place it snugly on the wall.
     if (nBOUr < qpo.guiCoords.gameBoard.topWall || wBOUr < qpo.guiCoords.gameBoard.leftWall ||
         sBOUr > qpo.guiCoords.gameBoard.bottomWall || eBOUr > qpo.guiCoords.gameBoard.rightWall) {
       qpo.redUnits[i].rect.stop();
@@ -1168,20 +1154,13 @@ function detectCollisions(ts){
       if (eBOUr > qpo.guiCoords.gameBoard.rightWall){ qpo.redUnits[i].rect.attr({"x": qpo.guiCoords.gameBoard.rightWall-qpo.guiDimens.squareSize }) }
     }
 
-    for (var j=0; j<ts; j++) { //iterate over red team of units within units
+    for (var j=0; j<ts; j++) { //iterate over red team of units
       //When units of opposite color collide, kill both units.
 
-      var nBOU2 = qpo.redUnits[j].rect.getBBox().y;
-      var wBOU2 = qpo.redUnits[j].rect.getBBox().x;
-      var sBOU2 = nBOU2 + qpo.guiDimens.squareSize;
-      var eBOU2 = wBOU2 + qpo.guiDimens.squareSize;
-
-      if (qpo.redUnits[j].active) { //adjust for highlighting on active unit
-        nBOU = nBOU + 2;
-        sBOU = sBOU - 2;
-        wBOU = wBOU + 2;
-        eBOU = eBOU - 2;
-      }
+      var nBOU2 = qpo.redUnits[j].rect.getBBox().y + 1;
+      var wBOU2 = qpo.redUnits[j].rect.getBBox().x + 1;
+      var sBOU2 = nBOU2 + qpo.guiDimens.squareSize - 2;
+      var eBOU2 = wBOU2 + qpo.guiDimens.squareSize - 2;
 
       if( (( nBOU <= nBOU2 && nBOU2 <= sBOU ) || //vertical overlap
           ( nBOU <= sBOU2 && sBOU2 <= sBOU ) ||

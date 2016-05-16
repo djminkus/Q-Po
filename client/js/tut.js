@@ -39,7 +39,8 @@ qpo.Scene = function(headline, body, x, y, highx, highy, highSizeModx, highSizeM
 }
 
 qpo.Tut = function(){
-  c.setSize(qpo.guiDimens.gpWidth + 300, qpo.guiDimens.gpHeight);
+  c.setSize(qpo.guiDimens.gpWidth+qpo.guiDimens.tpWidth, qpo.guiDimens.gpHeight);
+  qpo.activeGame = new qpo.Game(7,1,'tut',false,true,99);
   drawGUI(7,1); //q=7, po=1;
   controlPanel.resetIcons();
   activeScreen = "tut";
@@ -100,8 +101,8 @@ qpo.Tut = function(){
           qpo.timer.pie.animate(timerAnim);
           break;
         case 2: //transition from "turns" to "control panel 1"
-          qpo.timer.pie.stop();
-          qpo.timer.pie.attr({segment: [450, 250, 50, -90, 269]});
+          // qpo.timer.pie.stop();
+          // qpo.timer.pie.attr({segment: [450, 250, 50, -90, 269]});
           break;
         case 3: //transition from "control panel" to "moving"
           break;

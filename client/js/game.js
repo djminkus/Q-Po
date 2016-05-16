@@ -9,6 +9,9 @@ qpo.Game = function(q, po, type, playMusic, respawn, turns){ //"Game" class. Ins
     var factor = 1/5;
     return (adj + po*factor);
   })(); //0.45, 0.65, 0.85, 1.05, 1.25, etc
+  qpo.guiDimens.squareSize = 350/q;   //aim to keep width of board at 7*50 (350). So, qpo.guiDimens.squareSize = 350/q.
+  qpo.bombSize = 2 * qpo.guiDimens.squareSize;
+  qpo.currentSettings = [q,po,type,playMusic,respawn,turns];
 
   this.q = (q || qpo.difficPairings[po-1]); //size of board. (q x q)
   this.type = type; //tutorial, single, multi
@@ -28,10 +31,6 @@ qpo.Game = function(q, po, type, playMusic, respawn, turns){ //"Game" class. Ins
   this.scoreToWin = scoringFormula(exponent,factor,correction,po); // 10, 18, 26, 34, 41, 48, 54, 61 for 60-turn game
   this.respawnEnabled = respawn;
   if (respawn == false){this.scoreToWin = this.po;}
-
-  qpo.guiDimens.squareSize = 350/this.q;   //aim to keep width of board at 7*50 (350). So, qpo.guiDimens.squareSize = 350/q.
-  qpo.bombSize = 2 * qpo.guiDimens.squareSize;
-  qpo.currentSettings = [q,po,type,playMusic,respawn,turns];
 
   this.gui = c.set();
 
