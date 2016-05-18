@@ -5,7 +5,8 @@ function startBomb(su){ //su = source unit
   var BOMB_MARGIN_Y = 19*qpo.guiDimens.squareSize/50;
   var BOMB_MARGIN_X = 18*qpo.guiDimens.squareSize/50;
   var INITIAL_RADIUS = 14/50; //multiply by unit to get actual
-  var MAX_RADIUS = 2;
+  var MAX_RADIUS = 2; //unused. # of square lengths the explosion takes up
+  var SIDE_RADIUS = 2; //pixels of rounding at the corners
 
   this.team = su.team;
   this.timer = 3;
@@ -14,27 +15,30 @@ function startBomb(su){ //su = source unit
     case "blue":
       this.phys = c.rect(su.rect.attr("x") + BOMB_MARGIN_X,
                     su.rect.attr("y") + qpo.guiDimens.squareSize + BOMB_MARGIN_Y,
-                    INITIAL_BOMB_SIZE, INITIAL_BOMB_SIZE, 2);
+                    INITIAL_BOMB_SIZE, INITIAL_BOMB_SIZE, SIDE_RADIUS);
       break;
     case "red":
       this.phys = c.rect(su.rect.attr("x") + BOMB_MARGIN_X,
                   su.rect.attr("y") - BOMB_MARGIN_Y - INITIAL_BOMB_SIZE,
-                  INITIAL_BOMB_SIZE, INITIAL_BOMB_SIZE, 2);
+                  INITIAL_BOMB_SIZE, INITIAL_BOMB_SIZE, SIDE_RADIUS);
       break;
   }
   qpo.gui.push(this.phys);
 
   //put this in the "bombs" array:
-  var ind = findSlot(qpo.bombs);
+  var ind = qpo.findSlot(qpo.bombs);
   this.index = ind;
   qpo.bombs[this.index] = this;
 
   return this;
 }
 function improveBomb(bomb){ //color it and make it explodable
-  bomb.phys.attr({"fill":qpo.COLOR_DICT["bomb color"],
-             "opacity":0.5,
-             "stroke":qpo.COLOR_DICT["bomb color"]});
+  bomb.phys.attr({
+    // "fill":qpo.COLOR_DICT["purple"],
+    "opacity": 0.8,
+    "stroke":qpo.COLOR_DICT["purple"],
+    'stroke-width':qpo.bombStroke
+  });
   bomb.explode = function(){ //animate the bomb's explosion
     bomb.exploded = true;
     bomb.timer = -1;
@@ -49,15 +53,13 @@ function improveBomb(bomb){ //color it and make it explodable
         "width": qpo.bombSize,
         "height": qpo.bombSize
       },
-      "100%":{
+      "100%": {
         "y":cy+7*qpo.guiDimens.squareSize/50,
         "x":cx+7*qpo.guiDimens.squareSize/50,
         "width":0,
         "height":0
       }
-    }, 3000*qpo.timeScale, function(){
-      qpo.bombs[bomb.index] = false;
-    });
+    }, 3000*qpo.timeScale, function(){ qpo.bombs[bomb.index] = false; });
     bomb.phys.animate(anim);
   }
 }

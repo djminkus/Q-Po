@@ -96,7 +96,8 @@ function session(sessionType){
        Right is red wins, colored red.
        Game window is 600 wide. So 300 is center.
     */
-      var winsSoFarText = c.text(300, 130+adj,"WINS").attr({"fill":qpo.COLOR_DICT[this.leader()],"font-size":50});
+      var winsSoFarText = c.text(300, 130+adj,"WINS").attr({qpoText:[50, qpo.COLOR_DICT[this.leader()] ] });
+        // "fill":qpo.COLOR_DICT[this.leader()],"font-size":50});
 
       var blueSize = (function(){
         var result = 50 * qpo.activeSession.blueWins; //unless totalGames<11:
@@ -136,6 +137,7 @@ function session(sessionType){
       this.blueText = c.text(blueCenter,130+adj,this.blueWins);
       this.greyText = c.text(greyCenter,130+adj,this.ties);
       this.redText = c.text(redCenter,130+adj,this.redWins);
+      this.numTexts = c.set(this.blueText,this.greyText,this.redText).attr({qpoText:20});
       //hide the text if the color has 0 wins:
       if(this.blueWins == 0){
         this.blueText.hide();
@@ -163,7 +165,7 @@ function session(sessionType){
           console.log("this was unexpected"); //debugging
           break;
       }
-      var ratingText = c.text(300, 180+adj, ratingString).attr({ratingColor: this.playerRating,"font-size":30});
+      var ratingText = c.text(300, 190+adj, ratingString).attr({ratingColor: this.playerRating,"font-size":30});
 
       var all = c.set(barGraphPrep, barGraphText, winsSoFarText, ratingText);
       return all;

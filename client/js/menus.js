@@ -205,7 +205,7 @@ qpo.makeTitleScreen = function(){
   var y_start = 2;
   qpo.guiCoords.gameBoard.leftWall = x_adj + UNIT_LENGTH*x_start;
   qpo.guiCoords.gameBoard.topWall = y_adj + UNIT_LENGTH*y_start;
-  this.board = drawBoard(17,7);
+  this.board = qpo.drawBoard(17,7); //note: board's Raphs now found in qpo.gui
   qpo.gui.transform('t' + -(UNIT_LENGTH) + ',' + -(UNIT_LENGTH));
 
   //Spawn units in the shape of the letters "Q-Po".
@@ -257,8 +257,7 @@ qpo.makeTitleScreen = function(){
   for(var i=0; i<this.oUnits.length; i++){ this.oRaphs.push(this.oUnits[i].phys); }
 
   this.title = c.set(this.qRaphs, this.dash, this.pRaphs, this.oRaphs);
-  // this.title.transform('t' + x_adj + ',' + y_adj);
-  //Let them do things.
+  this.layer2.push(this.title);
 
   //3rd layer (prompt)
   this.promptt = c.text(qpo.guiDimens.gpWidth/2, qpo.guiDimens.gpHeight/2, "Press enter to start")
@@ -272,17 +271,17 @@ qpo.makeTitleScreen = function(){
   this.close = function(){ //clear screen and make main menu
     // for (var i = 0; i < qpo.shots.length; i++){if (qpo.shots[i]) {qpo.shots[i].remove();}} //remove shots
     // for (var i = 0; i < qpo.bombs.length; i++){if (qpo.bombs[i]) {qpo.bombs[i].phys.remove();}} //remove bombs
-    
+    qpo.fadeOut(this.all, function(){
+      c.clear();
+      qpo.shots = [];
+      qpo.bombs = [];
 
-    c.clear();
-    qpo.shots = [];
-    qpo.bombs = [];
-
-    qpo.guiCoords.gameBoard.leftWall = 25;
-    qpo.guiCoords.gameBoard.topWall = 75;
-    // create the main menu (the one with buttons)
-    qpo.menus.main = new makeMainMenu();
-    qpo.menus.main.animate(); //could be better designed but oh well
+      qpo.guiCoords.gameBoard.leftWall = 25;
+      qpo.guiCoords.gameBoard.topWall = 75;
+      // create the main menu (the one with buttons)
+      qpo.menus.main = new makeMainMenu();
+      qpo.menus.main.animate(); //could be better designed but oh well
+    });
   };
 
   return this;
@@ -378,45 +377,14 @@ var makeMainMenu = function(letters){
   var vert = -50;
   this.tutorialButton = new button("Tutorial",300,250+vert,function(e){
     qpo.mode = "tut";
-    qpo.menus.main.close();
-    // qpo.menus.main.hideAll();
-    qpo.multiplayer = false;
-    qpo.tut = new qpo.Tut();
+    qpo.menus.main.close('tut');
   }, 15, true, "tut");
   this.singlePlayerButton = new button("Single-Player",300,340+vert,function(e){
-    qpo.menus.main.close();
-    gameSetupMenu = new makeGameSetupMenu();
-    // qpo.menus.main.hideAll();
-    qpo.multiplayer = false;
-    if(qpo.trainingMode){ // If training, do "new session('ravn'/'rivn'/'nvn')"
-      switch(qpo.trainerOpponent){
-        case "random": {
-          qpo.activeSession = new session("ravn"); //neural versus random session
-          break;
-        }
-        case "neural": {
-          qpo.activeSession = new session("nvn"); //neural versus neural session
-          break;
-        }
-        case "rigid": {
-          qpo.activeSession = new session("rivn"); //neural versus rigid session
-          break;
-        }
-        default: {
-          console.log("OOPS. WAT");
-          break;
-        }
-      }
-    }
-    else{ qpo.activeSession = new session("pvn"); } //new 'human vs neural' session
+    qpo.menus.main.close('sp');
   }, 30, false, "singleP");
   this.multiplayerButton = new button("Multiplayer",300,430+vert,function(e){
     qpo.menus.main.multiplayerButton.deactivate();
-    qpo.menus.main.close()
-    qpo.multiplayerMenu = new makeMultiplayerMenu();
-    // qpo.menus.main.hideAll();
-    qpo.multiplayer = true;
-    qpo.activeSession = new session('pvp');
+    qpo.menus.main.close('mp')
   }, 10, false, "multiP");
   this.layer3 = c.set().push(this.title, this.tutorialButton.set, this.singlePlayerButton.set,
     this.multiplayerButton.set);
@@ -444,18 +412,62 @@ var makeMainMenu = function(letters){
     // this.buttonList.raphs,
     this.unit.phys, this.otherUnit.phys);
   if(letters){this.all.push(this.letters);}
+  this.all.attr({'opacity':0});
+  qpo.fadeIn(this.all);
 
-  this.close = function(){
+  this.close = function(status){
     clearInterval(this.mmsai); //main menu stop animation interval
     clearInterval(this.mmrai); //main menu right animation interval
     clearInterval(this.mmlai); //main menu left animation interval
     clearTimeout(this.turn1, this.turn2); //queued animations
-    for (var i = 0; i < qpo.shots.length; i++){if (qpo.shots[i]) {qpo.shots[i].remove();}} //remove shots
-    for (var i = 0; i < qpo.bombs.length; i++){if (qpo.bombs[i]) {qpo.bombs[i].phys.remove();}} //remove bombs
-    this.unit.instakill(); //remove unit
-    this.otherUnit.instakill(); //remove other unit
-    // this.all.remove();
-    c.clear();
+    qpo.fadeOut(this.all, function(){ //clear arrays
+      // for (var i = 0; i < qpo.shots.length; i++){if (qpo.shots[i]) {qpo.shots[i].remove();}} //remove shots
+      // for (var i = 0; i < qpo.bombs.length; i++){if (qpo.bombs[i]) {qpo.bombs[i].phys.remove();}} //remove bombs
+      qpo.shots = new Array();
+      qpo.bombs = new Array();
+      this.unit.instakill(); //remove unit
+      this.otherUnit.instakill(); //remove other unit
+      this.all.remove();
+      c.clear();
+      switch(status){ //decide what to do depending on why menu was closed
+        case 'tut': //enter Tutorial
+          qpo.multiplayer = false;
+          qpo.tut = new qpo.Tut();
+          break;
+        case 'sp': //single player. make setup menu, make new session
+          gameSetupMenu = new makeGameSetupMenu();
+          qpo.multiplayer = false;
+          if(qpo.trainingMode){ // If training, do "new session('ravn'/'rivn'/'nvn')"
+            switch(qpo.trainerOpponent){
+              case "random": {
+                qpo.activeSession = new session("ravn"); //neural versus random session
+                break;
+              }
+              case "neural": {
+                qpo.activeSession = new session("nvn"); //neural versus neural session
+                break;
+              }
+              case "rigid": {
+                qpo.activeSession = new session("rivn"); //neural versus rigid session
+                break;
+              }
+              default: {
+                console.log("OOPS. WAT");
+                break;
+              }
+            }
+          }
+          else{ qpo.activeSession = new session("pvn"); } //new 'human vs neural' session
+          break;
+        case 'mp': //multiplayer. make multiplayer menu, make new session
+          qpo.multiplayerMenu = new makeMultiplayerMenu();
+          qpo.multiplayer = true;
+          qpo.activeSession = new session('pvp');
+          break;
+        default:
+          console.log('unexpected...');
+      }
+    }.bind(this));
   };
 
   //for changing button highlight:
@@ -595,7 +607,7 @@ var makeEndGameMenu = function(result){
 
   // create teh big text:
   this.gameOverText = c.text(300,50,"round over")
-    .attr({"font-size":50,"fill":"black"});
+    .attr({qpoText:[60,"black"]});
   // set teh big text to "Victory"/"Tie"/etc:
   switch (result){
     case "tie":

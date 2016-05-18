@@ -41,7 +41,7 @@ qpo.Scene = function(headline, body, x, y, highx, highy, highSizeModx, highSizeM
 qpo.Tut = function(){
   c.setSize(qpo.guiDimens.gpWidth+qpo.guiDimens.tpWidth, qpo.guiDimens.gpHeight);
   qpo.activeGame = new qpo.Game(7,1,'tut',false,true,99);
-  drawGUI(7,1); //q=7, po=1;
+  qpo.drawGUI(7,1); //q=7, po=1;
   controlPanel.resetIcons();
   activeScreen = "tut";
   this.status = -1;
@@ -140,7 +140,7 @@ qpo.Tut = function(){
           });
           break;
 
-          // drawGUI(7,2); //q=7, po=1;
+          // qpo.drawGUI(7,2); //q=7, po=1;
           // controlPanel.resetIcons();
           // qpo.tut.scenes[8] = new qpo.Scene("Q and Po",["Q is the size of the grid.", 'Po is the units per team.',
           //   ' ~ Alice'], 170, 250, 10,410,320,60,true, "Press enter to continue.");
