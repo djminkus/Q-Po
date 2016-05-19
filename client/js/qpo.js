@@ -89,14 +89,15 @@ console.log("RESET " + Date());
 var c = new Raphael("raphContainer", 600, 600); //create the Raphael canvas
 
 // CHOOSE A SONG:
-var songURL = "./music/qpo.mp3"          //  neil's first iteration
+var songURL = "./music/timekeeper.mp3"
+// var songURL = "./music/qpo.mp3"                 // neil's first iteration
 // var songURL =  "./music/loadingScreen.mp3"      // neil's menu song
 // var songURL =  "./music/underwaterStars.mp3"  //uncomment for underwaterStars
 // var song = new Audio("./music/qpo.mp3")            //  neil's first iteration
 // var song = new Audio("./music/loadingScreen.mp3")        // neil's menu song
 // var song = new Audio("./music/underwaterStars.mp3")  //uncomment for underwaterStars
 
-c.customAttributes.segment = function (x, y, r, a1, a2) {
+c.customAttributes.segment = function (x, y, r, a1, a2) { //for pie timer
   var flag = (a2 - a1) > 180,
   color = (a2 - a1 + 120) / (360*5)  ;
   a1 = (a1 % 360) * Math.PI / 180;
@@ -120,22 +121,21 @@ qpo = {
 }
 
 qpo.menuMusic = function(){
-  if (!(qpo.menuSong)){ //load song if it hasn't been loaded yet
-    qpo.menuSong = new Audio(songURL);
-  }
+  if (!(qpo.menuSong)){ qpo.menuSong = new Audio(songURL); } //load song if it hasn't been loaded yet
   if (qpo.activeGame){ //stop game song and reset it
     qpo.activeGame.song.pause();
     qpo.activeGame.song.currentTime=0;
   }
   qpo.menuSong.currentTime = 0;
   qpo.menuSong.play();
-  if (qpo.playMusic) { // loop the menuSong every 1 minute and 48 seconds
-    qpo.menuSongInterval = setInterval(function(){
-      qpo.menuSong.currentTime = 0;
-      qpo.menuSong.play();
+  // if (qpo.playMusic) { // loop the menuSong every 1 minute and 48 seconds
+  //   qpo.en
+  //   qpo.menuSongInterval = setInterval(function(){
+  //     qpo.menuSong.currentTime = 0;
+  //     qpo.menuSong.play();
       // console.log("playing menu song again.");
-    },113000);
-  }
+    // },113000);
+  // }
 }
 
 qpo.setup = function(){ // set up global vars and stuff
@@ -150,7 +150,7 @@ qpo.setup = function(){ // set up global vars and stuff
 
   // TOP-LEVEL SETTINGS:
   qpo.timeScale = 0.5; // Bigger means slower; 1 is original 3-seconds-per-turn
-  qpo.playMusic = false;
+  qpo.playMusic = true;
   qpo.trainingMode = false;
   qpo.waitTime = 100; //ms between moves
   qpo.gameLength = 20;

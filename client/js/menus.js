@@ -480,18 +480,18 @@ var makeMainMenu = function(letters){
 //CREATE TITLE SCREEN:
 qpo.titleScreen = new qpo.makeTitleScreen();
 
-// qpo.muteButton = c.path("M-4,-4 L4,-4 L10,-10 L10,10 L4,4 L-4,4 L-4,-4")
-//   .attr({"stroke-width":2, "stroke":qpo.COLOR_DICT["green"],
-//     "fill":qpo.COLOR_DICT["green"], "opacity":0.7})
-//   .transform("t15,580")
-//   .click(function(){
-//     switch(qpo.menuSong.volume){
-//       case 1: { qpo.menuSong.volume = 0.2; break;}
-//       case 0.2: { qpo.menuSong.volume = 0; break; }
-//       case 0: { qpo.menuSong.volume = 1; break; }
-//       default: {console.log("this was unexpected"); break;}
-//     }
-//   });
+qpo.muteButton = c.path("M-4,-4 L4,-4 L10,-10 L10,10 L4,4 L-4,4 L-4,-4")
+  .attr({"stroke-width":2, "stroke":qpo.COLOR_DICT["green"],
+    "fill":qpo.COLOR_DICT["green"], "opacity":1})
+  .transform("t15,580")
+  .click(function(){
+    switch(qpo.menuSong.volume){
+      case 1: { qpo.menuSong.volume = 0.2; break;}
+      case 0.2: { qpo.menuSong.volume = 0; break; }
+      case 0: { qpo.menuSong.volume = 1; break; }
+      default: {console.log("this was unexpected"); break;}
+    }
+  });
 
 var makeGameSetupMenu = function(){
     activeMenu = "gameS";
