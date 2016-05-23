@@ -168,7 +168,7 @@ qpo.Tut = function(){
           qpo.fadeOut(qpo.tut.scenes[11].all, function(){
             qpo.tut.blackness.remove();
             qpo.mode = 'menu';
-            qpo.menus['main'] = makeMainMenu();
+            qpo.menus['main'] = qpo.makeMainMenu();
           });
           break;
         default: //default case

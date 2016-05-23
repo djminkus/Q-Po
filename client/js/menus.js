@@ -6,20 +6,10 @@ qpo.menus = {
   "endG" : null,
   "selectP" : null
 };
-qpo.mode = "menu"; //type of screen that's active -- can be "menu", "game", "tut", or "other"
-var activeMenu = "title"; //the key within "qpo.menus" of the currently-displayed menu
-var activeButton; //the key within "buttons" of the orange-highlighted button
-var buttons = {
-  "singleP": null,
-  "multiP" : null,
-  "quickP" : null,
-  "newR" : null,
-  "gameS" : null,
-  "customG" : null,
-  "startG" : null,
-  "mainM" : null,
-  "tut" : null
-};
+qpo.mode = "menu"; // Type of screen that's active -- can be "menu", "game", "tut", or "other"
+var activeMenu = "title"; // The key within "qpo.menus" of the currently-displayed menu
+// So, qpo.menus[activeMenu] will return the actual menu object that is "active", aka displayed
+var activeButton; // The key within "buttons" of the orange-highlighted button
 var buttonsKeys = ["singleP","multiP","selectP","customG","startG","newR","gameS","mainM", "tut"];
 qpo.activeSession = null;
 
@@ -139,23 +129,16 @@ buttonList = function(buttonsInOrder){
   //pass in a list of the buttons in the order they appear on the list.
   this.activeIndex = 0;
   this.buttons = buttonsInOrder;
-  this.next = function(){
+  this.next = function(){ //highlight the next button on the list
     this.buttons[this.activeIndex].deactivate();
-    if (this.activeIndex == this.buttons.length - 1){ //if last button is highlighted, return to first button:
-      this.activeIndex = 0;
-    }
-    else { //otherwise, increment this.activeIndex by 1:
-      this.activeIndex += 1;
-    }
+    if (this.activeIndex == this.buttons.length - 1){ this.activeIndex = 0; } // loop back to first button
+    else { this.activeIndex += 1; }
     this.buttons[this.activeIndex].activate();
   }
-  this.previous = function(){
+  this.previous = function(){ //highlight the previous button on the list
     this.buttons[this.activeIndex].deactivate();
-    if (this.activeIndex == 0){ //if first button is highlighted, go to last button:
-      this.activeIndex = this.buttons.length-1;
-    } else { //otherwise, decrement this.activeIndex by 1:
-      this.activeIndex -= 1;
-    }
+    if (this.activeIndex == 0){ this.activeIndex = this.buttons.length-1; } // highlight last button if first is active
+    else { this.activeIndex -= 1; }
     this.buttons[this.activeIndex].activate();
   }
   this.raphs = c.set();
@@ -163,9 +146,10 @@ buttonList = function(buttonsInOrder){
   return this;
 }
 
-// qpo.Menu = function(name, title){ // draft for a "Menu" class
+// qpo.Menu = function(name, title, items){ // draft for a "Menu" class
 //   // name is name for qpo.menus (ex. "mainM")
 //   // title is title string (ex. "Game Setup")
+//   // items is an array of things that can be highlighted and acted upon (buttons, sliders)
 //   qpo.menus[name] = this;
 //   qpo.mode = "menu";
 //   activeMenu = name;
@@ -184,6 +168,21 @@ buttonList = function(buttonsInOrder){
 
 /* ------------------------------------- */
 
+qpo.makeMuteButton = function(){
+  qpo.muteButton = c.path("M-4,-4 L4,-4 L10,-10 L10,10 L4,4 L-4,4 L-4,-4")
+    .attr({"stroke-width":2, "stroke":qpo.COLOR_DICT["green"],
+      "fill":qpo.COLOR_DICT["green"], "opacity":1})
+    .transform("t15,580")
+    .click(function(){
+      switch(qpo.menuSong.volume){
+        case 1: { qpo.menuSong.volume = 0.2; break;}
+        case 0.2: { qpo.menuSong.volume = 0; break; }
+        case 0: { qpo.menuSong.volume = 1; break; }
+        default: {console.log("this was unexpected"); break;}
+      }
+    });
+}
+
 qpo.makeTitleScreen = function(){
   activeMenu = "title";
   qpo.menus["title"] = this;
@@ -192,6 +191,8 @@ qpo.makeTitleScreen = function(){
   //1ST LAYER (background blackness)
   this.blackness = c.rect(0,0,c.width,c.height).attr({"fill":"black"});
   this.layer1 = c.set().push(this.blackness);
+
+  qpo.makeMuteButton();
 
   //2ND LAYER (foreground)
   this.layer2 = c.set();
@@ -278,8 +279,8 @@ qpo.makeTitleScreen = function(){
 
       qpo.guiCoords.gameBoard.leftWall = 25;
       qpo.guiCoords.gameBoard.topWall = 75;
-      // create the main menu (the one with buttons)
-      qpo.menus.main = new makeMainMenu();
+      // create the main menu
+      qpo.menus.main = new qpo.makeMainMenu();
       qpo.menus.main.animate(); //could be better designed but oh well
     });
   };
@@ -287,7 +288,30 @@ qpo.makeTitleScreen = function(){
   return this;
 }
 
-var makeMainMenu = function(letters){
+//CREATE TITLE SCREEN:
+qpo.titleScreen = new qpo.makeTitleScreen();
+
+qpo.makeMenu = function(which){
+  activeMenu = which;
+  switch(which){
+    case 'main':
+      break;
+    case 'multiP':
+      break;
+    case 'gameS':
+      break;
+    case 'customG':
+      break;
+    case 'endG':
+      break;
+    case 'selectP':
+      break;
+    default:
+      console.log('this was unexpected');
+  }
+}
+
+qpo.makeMainMenu = function(letters){
   activeMenu = "main";
   activeButton = "tut"
   qpo.menus["main"] = this;
@@ -308,6 +332,8 @@ var makeMainMenu = function(letters){
     ).attr({qpoText: [20]});
     this.layer1.push(this.letters);
   }
+
+  qpo.makeMuteButton();
 
   //2nd layer (animation)
   this.layer2 = c.set();
@@ -435,7 +461,7 @@ var makeMainMenu = function(letters){
           qpo.tut = new qpo.Tut();
           break;
         case 'sp': //single player. make setup menu, make new session
-          gameSetupMenu = new makeGameSetupMenu();
+          gameSetupMenu = new qpo.makeGameSetupMenu();
           qpo.multiplayer = false;
           if(qpo.trainingMode){ // If training, do "new session('ravn'/'rivn'/'nvn')"
             switch(qpo.trainerOpponent){
@@ -460,7 +486,7 @@ var makeMainMenu = function(letters){
           else{ qpo.activeSession = new session("pvn"); } //new 'human vs neural' session
           break;
         case 'mp': //multiplayer. make multiplayer menu, make new session
-          qpo.multiplayerMenu = new makeMultiplayerMenu();
+          qpo.multiplayerMenu = new qpo.makeMultiplayerMenu();
           qpo.multiplayer = true;
           qpo.activeSession = new session('pvp');
           break;
@@ -477,126 +503,111 @@ var makeMainMenu = function(letters){
   return this;
 };
 
-//CREATE TITLE SCREEN:
-qpo.titleScreen = new qpo.makeTitleScreen();
+qpo.makeGameSetupMenu = function(){
+  activeMenu = "gameS";
+  qpo.menus["gameS"] = this;
+  // qpo.menus.main.unit.kill();
+  this.blackness = c.rect(0,0,c.width,c.height).attr({"fill":"black","opacity":1});
+  this.title = c.text(300,100,"Game Setup").attr({"font-size":50,"fill":"white","font-family":"'Open Sans',sans-serif"});
 
-qpo.muteButton = c.path("M-4,-4 L4,-4 L10,-10 L10,10 L4,4 L-4,4 L-4,-4")
-  .attr({"stroke-width":2, "stroke":qpo.COLOR_DICT["green"],
-    "fill":qpo.COLOR_DICT["green"], "opacity":1})
-  .transform("t15,580")
-  .click(function(){
-    switch(qpo.menuSong.volume){
-      case 1: { qpo.menuSong.volume = 0.2; break;}
-      case 0.2: { qpo.menuSong.volume = 0; break; }
-      case 0: { qpo.menuSong.volume = 1; break; }
-      default: {console.log("this was unexpected"); break;}
+  qpo.makeMuteButton();
+
+  this.quickPlay = new button("Quick-Play",qpo.guiDimens.gpWidth/2,250, (function(e){
+    this.close();
+    settings = [7,3,'single',false,true]; //q,po,multi,music,respawn
+    qpo.countdownScreen(settings);
+  }).bind(this), 0, true, "quickP")
+
+  this.customGame = new button("Custom Game",qpo.guiDimens.gpWidth/2,340, (function(e){
+    this.close();
+    qpo.menus["customG"] = new qpo.makeCustomGameMenu();
+  }).bind(this), 0, false, "customG");
+
+  this.all = c.set().push(this.blackness, this.title, this.quickPlay.set, this.customGame.set);
+
+  this.close = function(){
+    this.all.remove();
+    c.clear();
+    activeButton = null;
+  }
+
+  this.next = function(){
+    if (this.quickPlay.active == true){
+      this.quickPlay.deactivate();
+      this.customGame.activate();
+    } else {
+      this.customGame.deactivate();
+      this.quickPlay.activate();
     }
-  });
-
-var makeGameSetupMenu = function(){
-    activeMenu = "gameS";
-    qpo.menus["gameS"] = this;
-    // qpo.menus.main.unit.kill();
-    this.blackness = c.rect(0,0,c.width,c.height).attr({"fill":"black","opacity":1});
-    this.title = c.text(300,100,"Game Setup").attr({"font-size":50,"fill":"white","font-family":"'Open Sans',sans-serif"});
-
-    this.quickPlay = new button("Quick-Play",qpo.guiDimens.gpWidth/2,250, (function(e){
-      this.close();
-      settings = [7,3,'single',false,true]; //q,po,multi,music,respawn
-      qpo.countdownScreen(settings);
-    }).bind(this), 0, true, "quickP")
-
-    this.customGame = new button("Custom Game",qpo.guiDimens.gpWidth/2,340, (function(e){
-      this.close();
-      qpo.menus["customG"] = new makeCustomGameMenu();
-    }).bind(this), 0, false, "customG");
-
-    this.all = c.set().push(this.blackness, this.title, this.quickPlay.set, this.customGame.set);
-
-    this.close = function(){
-      this.all.remove();
-      c.clear();
-      activeButton = null;
+  }
+  this.previous = function(){
+    if (this.quickPlay.active == true){
+      this.quickPlay.deactivate();
+      this.customGame.activate();
+    } else {
+      this.customGame.deactivate();
+      this.quickPlay.activate();
     }
-
-    this.next = function(){
-      if (this.quickPlay.active == true){
-        this.quickPlay.deactivate();
-        this.customGame.activate();
-      } else {
-        this.customGame.deactivate();
-        this.quickPlay.activate();
-      }
-    }
-    this.previous = function(){
-      if (this.quickPlay.active == true){
-        this.quickPlay.deactivate();
-        this.customGame.activate();
-      } else {
-        this.customGame.deactivate();
-        this.quickPlay.activate();
-      }
-    }
-    this.up = function(){
-      this.close();
-      // goMainMenu();
-      qpo.menus.main = new makeMainMenu();
-    }
-    return this;
+  }
+  this.up = function(){
+    this.close();
+    qpo.menus.main = new qpo.makeMainMenu();
+  }
+  return this;
 }
 
-var makeCustomGameMenu = function(){
-    activeMenu = "customG";
-    qpo.menus["customG"] = this;
+qpo.makeCustomGameMenu = function(){
+  activeMenu = "customG";
+  qpo.menus["customG"] = this;
 
-    this.blackness = c.rect(0,0,c.width,c.height).attr({"fill":"black","opacity":1});
-    this.title = c.text(300,50,"Custom Game").attr({"font-size":50,"fill":"white","font-family":"'Open Sans',sans-serif"});
+  this.blackness = c.rect(0,0,c.width,c.height).attr({"fill":"black","opacity":1});
+  this.title = c.text(300,50,"Custom Game").attr({"font-size":50,"fill":"white","font-family":"'Open Sans',sans-serif"});
 
-    this.qSlider = new slider("Q", 4, 20, 8, 160, true);
-    this.poSlider = new slider("Po", 1, 7, 4, 260, false);
+  this.qSlider = new slider("Q", 4, 20, 8, 160, true);
+  this.poSlider = new slider("Po", 1, 7, 4, 260, false);
 
-    this.startGame = new button("Start Game", qpo.guiDimens.gpWidth/2, 360, (function(e){
-      this.close();
-      var settings = [this.qSlider.value,this.poSlider.value,false,true,true]; //[q,po,multi,music,respawn]
-      qpo.countdownScreen(settings);
-    }).bind(this), 0, false, "startG");
+  this.startGame = new button("Start Game", qpo.guiDimens.gpWidth/2, 360, (function(e){
+    this.close();
+    var settings = [this.qSlider.value,this.poSlider.value,false,true,true]; //[q,po,multi,music,respawn]
+    qpo.countdownScreen(settings);
+  }).bind(this), 0, false, "startG");
 
-    this.active = this.qSlider;
-    this.activeIndex = 0; //index in this.items of active (orange) thing.
+  this.active = this.qSlider;
+  this.activeIndex = 0; //index in this.items of active (orange) thing.
 
-    this.items = [this.qSlider, this.poSlider, this.startGame];
+  this.items = [this.qSlider, this.poSlider, this.startGame];
 
-    this.all = c.set(this.blackness, this.title, this.qSlider.set, this.poSlider.set, this.startGame.set);
+  this.all = c.set(this.blackness, this.title, this.qSlider.set, this.poSlider.set, this.startGame.set);
 
-    this.close = function(){
-      this.all.remove();
-      c.clear();
+  this.close = function(){
+    this.all.remove();
+    c.clear();
+  }
+
+  this.next = function(){
+    if (this.activeIndex < this.items.length-1){ //active is not last item.
+      this.active.deactivate();
+      this.activeIndex++;
+      this.active=this.items[this.activeIndex];
+      this.active.activate();
     }
+  }
+  this.previous = function(){ //active
+    if (this.activeIndex > 0){ //active is not first item.
+      this.active.deactivate();
+      this.activeIndex--;
+      this.active=this.items[this.activeIndex];
+      this.active.activate();
+    }
+  }
+  this.up = function(){
+    gameSetupMenu = qpo.makeGameSetupMenu();
+  }
 
-    this.next = function(){
-      if (this.activeIndex < this.items.length-1){ //active is not last item.
-        this.active.deactivate();
-        this.activeIndex++;
-        this.active=this.items[this.activeIndex];
-        this.active.activate();
-      }
-    }
-    this.previous = function(){ //active
-      if (this.activeIndex > 0){ //active is not first item.
-        this.active.deactivate();
-        this.activeIndex--;
-        this.active=this.items[this.activeIndex];
-        this.active.activate();
-      }
-    }
-    this.up = function(){
-      gameSetupMenu = makeGameSetupMenu();
-    }
-
-    return this;
+  return this;
 }
 
-var makeEndGameMenu = function(result){
+qpo.makeEndGameMenu = function(result){
   qpo.menus["endG"] = this;
   activeMenu = "endG";
 
@@ -636,11 +647,14 @@ var makeEndGameMenu = function(result){
 
   // create teh buttons
   this.again = new button("New Round",300,260+25,newRound,0,true,"newR");         //make the New Round button
-  this.back = new button("Main Menu",300,440+25,goMainMenu,0,false,"mainM");               // make the Main Menu button
+  this.back = new button("Main Menu",300,440+25,function(){                       // make the Main Menu button
+    this.close();
+    qpo.menus['main'] = new qpo.makeMainMenu();
+  }.bind(this),0,false,"mainM");
   this.selectDiff = new button("Select Difficulty",300,350+25,function(e){ //make the Select Diffuculty button
-    qpo.menus["endG"].all.hide();
-    gameSetupMenu = makeGameSetupMenu();
-  }, 60,false,"gameS");
+    this.close();
+    qpo.menus['gameS'] = new qpo.makeGameSetupMenu();
+  }.bind(this), 60,false,"gameS");
 
   this.all = c.set().push(this.gameOverText,this.again.set,this.back.set,
     this.selectDiff.set,this.barGraph,this.statusPanel, this.blackness);
@@ -679,42 +693,31 @@ var makeEndGameMenu = function(result){
   }
   this.up = function(){
     this.close();
-    goMainMenu();
+    qpo.menus.main = new qpo.makeMainMenu();
   }
 
   return this;
 };
 
-var makeMultiplayerMenu = function(){
+qpo.makeMultiplayerMenu = function(){
   qpo.menus["multiP"] = this;
   activeMenu = "multiP";
 
   this.blackness = c.rect(0,0,c.width,c.height).attr({"fill":"black","opacity":1});
   this.title = c.text(300,100,"coming soon!").attr({"font-size":60,"fill":"white","font-family":"'Open Sans',sans-serif"});
 
+  qpo.makeMuteButton();
+
   this.all = c.set().push(this.blackness,this.title);
 
   this.up = function(){
     this.close();
     // console.log(this); //prints the makeMultiplayerMenu object, as expected
-    goMainMenu();
+    qpo.menus.main = new qpo.makeMainMenu();
   }
   this.close = function(){
-    // console.log(this); //prints the makeMultiplayerMenu object, as expected
     this.all.remove();
+    c.clear();
   }
   return this;
 }
-
-function goMainMenu(){
-  // qpo.menus[activeMenu].close();
-  c.clear();
-  qpo.menus.main = new makeMainMenu();
-  qpo.menus.main.animate();
-  // qpo.menus.main.layer1.toBack();
-  // qpo.mode = "menu";
-  activeMenu = "main";
-  qpo.menus.main.blackness.attr({"opacity":1});
-  // qpo.menus.main.tutorialButton.activate();
-  // qpo.menus.main.singlePlayerButton.activate();
-};

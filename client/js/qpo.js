@@ -85,6 +85,8 @@ Contents of this code: (updated June 2, 2015)
     goMainMenu() --
 */
 
+qpo = new Object();
+
 console.log("RESET " + Date());
 var c = new Raphael("raphContainer", 600, 600); //create the Raphael canvas
 
@@ -752,14 +754,15 @@ qpo.finishControlPanel = function(cp){
 }
 
 qpo.drawGUI = function(q,po){ //create the turn timer (pie), board, and control panel.
-  qpo.gui.push(c.rect(0,0,qpo.guiDimens.gpWidth,qpo.guiDimens.gpHeight).attr({"fill":qpo.COLOR_DICT['background']})); //background
+  qpo.gui.push(c.rect(0, 0, qpo.guiDimens.gpWidth, qpo.guiDimens.gpHeight) //background
+    .attr({"fill":qpo.COLOR_DICT['background']}));
   (function(){ //Turn timer (pie)
-    var t = qpo.guiCoords.turnTimer;
+    var t = qpo.guiCoords.turnTimer; //t.x, t.y, t.r are x center, y center, and radius of timer
     qpo.timer = {"value": qpo.activeGame.lastTurn};
     qpo.timer.pie = c.path().attr({segment: [t.x, t.y, t.r, -90, 269],"stroke":"none"});
     qpo.timer.text = c.text(t.x, t.y, qpo.activeGame.lastTurn).attr({qpoText:[30,qpo.COLOR_DICT['foreground']]});
     qpo.timer.all = c.set(qpo.timer.pie,qpo.timer.text)
-    qpo.timer.update = function(){
+    qpo.timer.update = function(){ //Count down the digits (called @ end of every turn)
       if(qpo.timer.value>0){
         qpo.timer.value--;
         qpo.timer.text.attr({"text":qpo.timer.value});
@@ -767,7 +770,7 @@ qpo.drawGUI = function(q,po){ //create the turn timer (pie), board, and control 
     }
     qpo.gui.push(qpo.timer.all);
   })();
-  qpo.drawBoard(q, q); // create the board
+  qpo.drawBoard(q, q); // draw the board (but not the units)
   controlPanel = new qpo.startControlPanel(po);
   qpo.finishControlPanel(controlPanel);
   qpo.board.goalLines.toFront();
@@ -1293,9 +1296,8 @@ $(window).keydown(function(event){
   switch(qpo.mode){ //do the right thing based on what type of screen the user is in (menu, game, tutorial, etc)
     case "menu":
       switch(event.keyCode){
-        case 8: //backspace/delete
-          if ( !(activeMenu=="main") ) {qpo.menus[activeMenu].up();}
-          // console.log("backspace pressed");
+        case 8: //backspace/delete: return to the previous menu
+          if (activeMenu != "main") {qpo.menus[activeMenu].up();}
           break;
         case 13: //enter
           try {activeButton.onclick();}
@@ -1405,7 +1407,7 @@ $(window).keydown(function(event){
           break;
         case 8: // backspace
           c.clear();
-          qpo.menus.main = new makeMainMenu();
+          qpo.menus.main = new qpo.makeMainMenu();
           break;
         default:
           break;
@@ -1419,7 +1421,7 @@ $(window).keydown(function(event){
 });
 
 //"SCREEN" FUNCTIONS
-qpo.countdownScreen = function(settings){ //settings are [q,po,multi,music,respawn]
+qpo.countdownScreen = function(settings){ //settings are [q, po, multi, music, respawn, turns]
   qpo.cdblackness = c.rect(0, 0, qpo.guiCoords.gamePanel.width, qpo.guiCoords.gamePanel.height);
   qpo.cdblackness.attr({"fill":"black"});
   var numbers = c.text(c.width/2,c.height/2,"3").attr({qpoText:[72]});
@@ -1439,7 +1441,7 @@ qpo.countdownScreen = function(settings){ //settings are [q,po,multi,music,respa
 }
 
 function startGame(settings){ //called when countdown reaches 0
-  //settings are [q,po,multi,music,respawn]
+  //settings are [q, po, multi, music, respawn, turns]
 
   // KILL MENU MUSIC:
   // qpo.menuSong.pause();
@@ -1471,18 +1473,23 @@ function endGame(result){
   clearInterval(qpo.clockUpdater);
   clearInterval(qpo.collisionDetector);
   clearInterval(qpo.turnStarter);
+  // var date1, date2
+  // date1 = new Date().getMilliseconds();
   qpo.gui.stop();
-  qpo.gui.animate({'opacity':0}, 2000, 'linear');
-  setTimeout(function(){ //clear the gui, reward the ai, and figure out what to do next
+  // date2 = new Date().getMilliseconds();
+  // console.log('Stopping the gui took' + date2 - date1 + ' ms.')
+  // console.log(date1);
+  qpo.gui.animate({'opacity':0}, 2000, 'linear', function(){
     qpo.gui.clear();
+    c.clear();
     qpo.shots = [];
     qpo.bombs = [];
     qpo.units = [];
     (result == "red") ? (qpo.ali.nn.backward(2)) : (qpo.ali.nn.backward(0)); //reward AI for winning, not losing
     (result == "tie") ? (qpo.ali.nn.backward(1)) : (qpo.ali.nn.backward(0)); //reward it a little for tying
-    try{qpo.activeSession.update(result);} //add to the proper tally
-    catch(e){;}
-    if(qpo.trainingMode){ //If in training mode, decide whether to stop or keep going.
+    try{qpo.activeSession.update(result);} //add to the proper tally. Will throw error in tut mode.
+    catch(e){;} //don't bother adding to the proper tally in tut mode.
+    if(qpo.trainingMode){ //If in training mode, decide whether to train another game.
       qpo.trainingCounter++;
       if (qpo.trainingCounter >= qpo.gamesToTrain){ // If game counter satisfied, check batch
         qpo.batchCounter++;
@@ -1492,25 +1499,21 @@ function endGame(result){
         console.log("we got here...");
         if (qpo.batchCounter >= qpo.batchesToTrain){ // If batch counter satisfied, exit trainingMode
           qpo.trainingMode = false;
-          qpo.menus["endG"] = new makeEndGameMenu(result); //generate the menus["endG"] GUI
+          qpo.menus["endG"] = new qpo.makeEndGameMenu(result); //generate the menus["endG"] GUI
           for (var i=0; i<qpo.batchesToTrain; i++){ // log each batch's data to console
             console.log(qpo.trainingData[i]);
           }
         }
-        else { // If batch counter not exceeded, train another batch
-          qpo.retrain();
-        }
+        else { qpo.retrain(); }// If batch counter not exceeded, train another batch
       }
-      else { // If game counter not exceeded, train another game
-        startGame([8,4]);
-      }
+      else { startGame([8,4]); }// If game counter not satisfied, train another game
     }
-    else if (qpo.activeGame.type == 'tut'){
+    else if (qpo.activeGame.type == 'tut'){ //set mode back to 'tut' and show the next tutorial scene
       qpo.mode = 'tut';
       qpo.tut.tutFuncs.enter();
-    } //in tut mode, resume tut
-    else{ qpo.menus["endG"] = new makeEndGameMenu(result); } //we're not in tutorial or training. Generate the menus["endG"] GUI
-  }, 2000);
+    }
+    else{ qpo.menus["endG"] = new qpo.makeEndGameMenu(result); } //we're not in tutorial or training. Generate the menus["endG"] GUI
+  });
 
   // qpo.activeGame.song.pause();
   // qpo.activeGame.song.currentTime=0;

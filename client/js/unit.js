@@ -226,7 +226,7 @@ function finishUnit(unit){
 
       //use for stop-style of play (units stop after each turn)
       var anim = Raphael.animation( {"x":unit.rect.attr('x') - 2*mtr },
-        3000*qpo.timeScale); //over the course of a turn, send the unit 2n squares to the left
+        3000*qpo.timeScale); //over the course of a turn, send the unit 2 squares to the left
       unit.rect.animate(anim);
       if (unit.x == 1){ unit.x = 0; } //update unit.x, accounting for proximity to wall
       else { unit.x -= 2; }
@@ -241,9 +241,7 @@ function finishUnit(unit){
         qpo.activeGame.record.redMoves.push(1);
         break;
       }
-      default: {
-        "this was unexpected";
-      }
+      default: { "this was unexpected"; }
     }
   }
   unit.moveUp = function(){
