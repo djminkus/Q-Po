@@ -11,15 +11,17 @@ function startBomb(su){ //su = source unit
   this.team = su.team;
   this.timer = 3;
   this.exploded = false;
+  var lw = qpo.guiCoords.gameBoard.leftWall;
+  var tw = qpo.guiCoords.gameBoard.topWall;
   switch(this.team){ //make the "this.phys" and put it in the right place
     case "blue":
-      this.phys = c.rect(su.rect.attr("x") + BOMB_MARGIN_X,
-                    su.rect.attr("y") + qpo.guiDimens.squareSize + BOMB_MARGIN_Y,
+      this.phys = c.rect(lw +su.tx() + BOMB_MARGIN_X,
+                    tw + su.ty() + qpo.guiDimens.squareSize + BOMB_MARGIN_Y,
                     INITIAL_BOMB_SIZE, INITIAL_BOMB_SIZE, SIDE_RADIUS);
       break;
     case "red":
-      this.phys = c.rect(su.rect.attr("x") + BOMB_MARGIN_X,
-                  su.rect.attr("y") - BOMB_MARGIN_Y - INITIAL_BOMB_SIZE,
+      this.phys = c.rect(lw+ su.tx() + BOMB_MARGIN_X,
+                  tw + su.ty() - BOMB_MARGIN_Y - INITIAL_BOMB_SIZE,
                   INITIAL_BOMB_SIZE, INITIAL_BOMB_SIZE, SIDE_RADIUS);
       break;
   }

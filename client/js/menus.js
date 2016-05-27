@@ -281,7 +281,6 @@ qpo.makeTitleScreen = function(){
       qpo.guiCoords.gameBoard.topWall = 75;
       // create the main menu
       qpo.menus.main = new qpo.makeMainMenu();
-      qpo.menus.main.animate(); //could be better designed but oh well
     });
   };
 
@@ -291,7 +290,7 @@ qpo.makeTitleScreen = function(){
 //CREATE TITLE SCREEN:
 qpo.titleScreen = new qpo.makeTitleScreen();
 
-qpo.makeMenu = function(which){
+qpo.makeMenu = function(which){ //not implemented yet.
   activeMenu = which;
   switch(which){
     case 'main':
@@ -337,66 +336,66 @@ qpo.makeMainMenu = function(letters){
 
   //2nd layer (animation)
   this.layer2 = c.set();
-  // qpo.activeGame = new qpo.Game(7,3,false,false,true); //just to define the unit size and all
-  this.unit = makeUnit("red",3,8,0);
-  this.otherUnit = makeUnit("blue",1,2,1);
-  this.animate = function(){
-    //order the layers properly:
-    qpo.menus.main.unit.phys.toBack();
-    qpo.menus.main.otherUnit.phys.toBack();
-    qpo.menus.main.blackness.toBack();
-
-    //make the red unit move right and the blue unit fire a bomb every three turns, starting this turn
-    qpo.menus.main.unit.moveRight();
-    qpo.menus.main.otherUnit.bomb();
-    qpo.menus.main.bombCounter = 1;
-    qpo.menus.main.all.push(qpo.bombs[(qpo.menus.main.bombCounter-1) % 2].phys);
-    // bombs[(qpo.menus.main.bombCounter-1) % 2].phys.toBack();
-    qpo.menus.main.mmrai = setInterval(
-      function(){
-        qpo.menus.main.unit.moveRight();
-        qpo.menus.main.otherUnit.bomb();
-        qpo.menus.main.bombCounter++;
-        qpo.menus.main.all.push(qpo.bombs[(qpo.menus.main.bombCounter-1) % 2].phys);
-        // console.log("main menu right anim!");
-      },
-    9000*qpo.timeScale); //mmrai = Main Menu Rightward Animation Interval
-
-    //make the red unit move left and blue move right every 3 "turns", starting in two turns
-    qpo.menus.main.turn2 = setTimeout(
-      function(){
-        qpo.menus.main.mmlai = setInterval( //leftward anim
-          function(){
-            qpo.menus.main.unit.moveLeft();
-            qpo.menus.main.otherUnit.moveRight();
-            // console.log("main menu left anim!")
-          }, 9000*qpo.timeScale);
-        qpo.menus.main.unit.moveLeft();
-        qpo.menus.main.otherUnit.moveRight();
-      },
-    6000*qpo.timeScale);
-
-    //make the red unit shoot and the blue unit move left every 3 "turns", starting in 1 turn
-    qpo.menus.main.turn1 = setTimeout(
-      function(){
-        qpo.menus.main.mmsai = setInterval(function(){
-          qpo.shots[qpo.menus.main.shotCounter-1].hide();
-          qpo.menus.main.unit.shoot();
-          qpo.menus.main.shotCounter++;
-          qpo.shots[qpo.menus.main.shotCounter-1].toBack();
-          qpo.menus.main.blackness.toBack();
-          qpo.menus.main.otherUnit.moveLeft();
-          // console.log("main menu shoot anim!");
-        }, 9000*qpo.timeScale);
-        qpo.menus.main.unit.shoot();
-        qpo.shots[0].toBack();
-        qpo.menus.main.shotCounter = 1;
-        qpo.menus.main.blackness.toBack();
-        qpo.menus.main.otherUnit.moveLeft();
-      },
-    3000*qpo.timeScale);
-  };
-  this.layer2.push(this.unit.phys, this.otherUnit.phys);
+  qpo.activeGame = new qpo.Game(7,3,false,false,true); //just to define the unit size and all
+  // this.unit = makeUnit("red",3,8,0);
+  // this.otherUnit = makeUnit("blue",1,2,1);
+  // this.animate = function(){
+  //   //order the layers properly:
+  //   qpo.menus.main.unit.phys.toBack();
+  //   qpo.menus.main.otherUnit.phys.toBack();
+  //   qpo.menus.main.blackness.toBack();
+  //
+  //   //make the red unit move right and the blue unit fire a bomb every three turns, starting this turn
+  //   qpo.menus.main.unit.moveRight();
+  //   qpo.menus.main.otherUnit.bomb();
+  //   qpo.menus.main.bombCounter = 1;
+  //   qpo.menus.main.all.push(qpo.bombs[(qpo.menus.main.bombCounter-1) % 2].phys);
+  //   // bombs[(qpo.menus.main.bombCounter-1) % 2].phys.toBack();
+  //   qpo.menus.main.mmrai = setInterval(
+  //     function(){
+  //       qpo.menus.main.unit.moveRight();
+  //       qpo.menus.main.otherUnit.bomb();
+  //       qpo.menus.main.bombCounter++;
+  //       qpo.menus.main.all.push(qpo.bombs[(qpo.menus.main.bombCounter-1) % 2].phys);
+  //       // console.log("main menu right anim!");
+  //     },
+  //   9000*qpo.timeScale); //mmrai = Main Menu Rightward Animation Interval
+  //
+  //   //make the red unit move left and blue move right every 3 "turns", starting in two turns
+  //   qpo.menus.main.turn2 = setTimeout(
+  //     function(){
+  //       qpo.menus.main.mmlai = setInterval( //leftward anim
+  //         function(){
+  //           qpo.menus.main.unit.moveLeft();
+  //           qpo.menus.main.otherUnit.moveRight();
+  //           // console.log("main menu left anim!")
+  //         }, 9000*qpo.timeScale);
+  //       qpo.menus.main.unit.moveLeft();
+  //       qpo.menus.main.otherUnit.moveRight();
+  //     },
+  //   6000*qpo.timeScale);
+  //
+  //   //make the red unit shoot and the blue unit move left every 3 "turns", starting in 1 turn
+  //   qpo.menus.main.turn1 = setTimeout(
+  //     function(){
+  //       qpo.menus.main.mmsai = setInterval(function(){
+  //         qpo.shots[qpo.menus.main.shotCounter-1].hide();
+  //         qpo.menus.main.unit.shoot();
+  //         qpo.menus.main.shotCounter++;
+  //         qpo.shots[qpo.menus.main.shotCounter-1].toBack();
+  //         qpo.menus.main.blackness.toBack();
+  //         qpo.menus.main.otherUnit.moveLeft();
+  //         // console.log("main menu shoot anim!");
+  //       }, 9000*qpo.timeScale);
+  //       qpo.menus.main.unit.shoot();
+  //       qpo.shots[0].toBack();
+  //       qpo.menus.main.shotCounter = 1;
+  //       qpo.menus.main.blackness.toBack();
+  //       qpo.menus.main.otherUnit.moveLeft();
+  //     },
+  //   3000*qpo.timeScale);
+  // };
+  // this.layer2.push(this.unit.phys, this.otherUnit.phys);
 
   //3rd layer (title, menu buttons)
   // this.title = c.text(300,100,"Q-Po").attr({qpoText:[120,'white']});
@@ -434,9 +433,10 @@ qpo.makeMainMenu = function(letters){
     this.blackness,
     this.singlePlayerButton.set,
     this.multiplayerButton.set,
-    this.tutorialButton.set,
+    this.tutorialButton.set
     // this.buttonList.raphs,
-    this.unit.phys, this.otherUnit.phys);
+    // this.unit.phys, this.otherUnit.phys
+  );
   if(letters){this.all.push(this.letters);}
   this.all.attr({'opacity':0});
   qpo.fadeIn(this.all);
@@ -451,8 +451,8 @@ qpo.makeMainMenu = function(letters){
       // for (var i = 0; i < qpo.bombs.length; i++){if (qpo.bombs[i]) {qpo.bombs[i].phys.remove();}} //remove bombs
       qpo.shots = new Array();
       qpo.bombs = new Array();
-      this.unit.instakill(); //remove unit
-      this.otherUnit.instakill(); //remove other unit
+      // this.unit.instakill(); //remove unit
+      // this.otherUnit.instakill(); //remove other unit
       this.all.remove();
       c.clear();
       switch(status){ //decide what to do depending on why menu was closed

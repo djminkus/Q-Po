@@ -12,6 +12,7 @@ qpo.Game = function(q, po, type, playMusic, respawn, turns){ //"Game" class. Ins
   qpo.guiDimens.squareSize = 350/q;   //aim to keep width of board at 7*50 (350). So, qpo.guiDimens.squareSize = 350/q.
   qpo.bombSize = 2 * qpo.guiDimens.squareSize;
   qpo.currentSettings = [q,po,type,playMusic,respawn,turns];
+  this.scaling = qpo.guiDimens.squareSize/50;
 
   this.q = (q || qpo.difficPairings[po-1]); //size of board. (q x q)
   this.type = type; //tutorial, single, multi
