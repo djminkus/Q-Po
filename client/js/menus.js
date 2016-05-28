@@ -194,8 +194,6 @@ qpo.makeTitleScreen = function(){
 
   qpo.makeMuteButton();
 
-  //2ND LAYER (foreground)
-  this.layer2 = c.set();
   qpo.activeGame = new qpo.Game(11,3,false,false,true); //just to define the unit size
   //Find unit size
   var UNIT_LENGTH = qpo.guiDimens.squareSize;
@@ -206,9 +204,12 @@ qpo.makeTitleScreen = function(){
   var y_start = 2;
   qpo.guiCoords.gameBoard.leftWall = x_adj + UNIT_LENGTH*x_start;
   qpo.guiCoords.gameBoard.topWall = y_adj + UNIT_LENGTH*y_start;
-  this.board = qpo.drawBoard(17,7); //note: board's Raphs now found in qpo.gui
-  qpo.gui.transform('t' + -(UNIT_LENGTH) + ',' + -(UNIT_LENGTH));
+  this.board = qpo.drawBoard(17,7); //note: board's Raphs now found in qpo.gui and this.board
+  // qpo.gui.transform('t' + -(UNIT_LENGTH) + ',' + -(UNIT_LENGTH));
+  this.board.transform('t' + -(UNIT_LENGTH) + ',' + -(UNIT_LENGTH));
 
+  //2ND LAYER (foreground)
+  this.layer2 = c.set();
   //Spawn units in the shape of the letters "Q-Po".
   this.qUnits = new Array();
   this.qRaphs = c.set();
@@ -258,7 +259,7 @@ qpo.makeTitleScreen = function(){
   for(var i=0; i<this.oUnits.length; i++){ this.oRaphs.push(this.oUnits[i].phys); }
 
   this.title = c.set(this.qRaphs, this.dash, this.pRaphs, this.oRaphs);
-  this.layer2.push(this.title);
+  this.layer2.push(this.title, this.board);
 
   //3rd layer (prompt)
   this.promptt = c.text(qpo.guiDimens.gpWidth/2, qpo.guiDimens.gpHeight/2, "Press enter to start")
@@ -272,6 +273,7 @@ qpo.makeTitleScreen = function(){
   this.close = function(){ //clear screen and make main menu
     // for (var i = 0; i < qpo.shots.length; i++){if (qpo.shots[i]) {qpo.shots[i].remove();}} //remove shots
     // for (var i = 0; i < qpo.bombs.length; i++){if (qpo.bombs[i]) {qpo.bombs[i].phys.remove();}} //remove bombs
+    qpo.fadeOut(this.promptt, function(){}, 200);
     qpo.fadeOut(this.all, function(){
       c.clear();
       qpo.shots = [];
@@ -281,7 +283,7 @@ qpo.makeTitleScreen = function(){
       qpo.guiCoords.gameBoard.topWall = 75;
       // create the main menu
       qpo.menus.main = new qpo.makeMainMenu();
-    });
+    }, 400);
   };
 
   return this;
@@ -318,7 +320,8 @@ qpo.makeMainMenu = function(letters){
 
   //1st layer (blackness and letters)
   this.blackness = c.rect(0,0,c.width,c.height).attr({"fill":"black"});
-  this.layer1 = c.set().push(this.blackness);
+  this.title = c.text(300,100,"Main Menu").attr({qpoText:[50]});
+  this.layer1 = c.set().push(this.blackness, this.title);
   if(letters){ //make letters and add to layer1
     this.letters = c.set().push(
       c.text(500,500,"q"),
@@ -429,7 +432,7 @@ qpo.makeMainMenu = function(letters){
 
   this.all = c.set();
   this.all.push(
-    // this.title,
+    this.title,
     this.blackness,
     this.singlePlayerButton.set,
     this.multiplayerButton.set,
@@ -553,6 +556,9 @@ qpo.makeGameSetupMenu = function(){
     this.close();
     qpo.menus.main = new qpo.makeMainMenu();
   }
+
+  this.all.hide();
+  qpo.fadeIn(this.all);
   return this;
 }
 

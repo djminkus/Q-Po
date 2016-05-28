@@ -185,6 +185,12 @@ qpo.setup = function(){ // set up global vars and stuff
   };
   qpo.moves = ["moveUp","moveDown","moveLeft","moveRight","shoot","bomb","stay"];
   qpo.difficPairings = [4, 6, 8, 10, 13, 16, 20]; //array index is po-1. Value at index is recommended q for said po.
+  qpo.dirMap = {
+    37: 'left',
+    38: 'up',
+    39: 'right',
+    40: 'down'
+  };
 
   // NEURAL STUFF:
   (qpo.trainingMode) ? (qpo.timeScale=0.05) : (qpo.timeScale=0.5) ;
@@ -295,9 +301,9 @@ qpo.setup = function(){ // set up global vars and stuff
     var anim2 = Raphael.animation({'opacity':1}, (time || 1000), '>', function(){raph.animate(anim1)});
     raph.animate(anim1);
   }
-  qpo.fadeOut = function(set, extra){ //fade out a Raph set and do an extra function after it fades
-    var TIME = 300; //ms
-    var anim = Raphael.animation({'opacity':0},TIME);
+  qpo.fadeOut = function(set, extra, time){ //fade out a Raph set and do an extra function after it fades
+    var TIME = time || 300; //ms
+    var anim = Raphael.animation({'opacity':0}, TIME);
     set.animate(anim);
     setTimeout(function(){ //after delay, remove set and do extra()
       set.remove();
@@ -306,6 +312,8 @@ qpo.setup = function(){ // set up global vars and stuff
   };
   qpo.fadeIn = function(set, time){ //fade in a Raph set
     var TIME = time || 500; //ms
+    set.attr({'opacity':0});
+    set.show();
     var anim = Raphael.animation({'opacity':1}, TIME);
     set.animate(anim);
   };
@@ -415,7 +423,7 @@ qpo.findSpawn = function(color){
   return foundSpawn;
 }
 
-//GUI ELEMEaNTS
+//GUI ELEMENTS
 qpo.makeScoreboard = function(){ //draw the scoreBoard and push to gui
   this.redScore = 0;
   this.blueScore = 0;
@@ -440,7 +448,9 @@ qpo.makeScoreboard = function(){ //draw the scoreBoard and push to gui
   qpo.gui.push(this.all);
   return this;
 };
-qpo.drawBoard = function(cols, rows){ //draw the walls and grid and push to gui
+qpo.drawBoard = function(cols, rows){ //return the Raph set of all the static game board els
+  this.all = c.set();
+
   qpo.guiDimens.columns = cols;
   qpo.guiDimens.rows = rows;
   qpo.guiCoords.gameBoard.width = qpo.guiDimens.squareSize * qpo.guiDimens.columns;
@@ -455,11 +465,7 @@ qpo.drawBoard = function(cols, rows){ //draw the walls and grid and push to gui
       'L'+qpo.guiCoords.gameBoard.rightWall+','+qpo.guiCoords.gameBoard.bottomWall)
       .attr({'stroke-width':3, 'stroke':qpo.COLOR_DICT['foreground'], 'opacity':1})
   );
-
-  // var outline = c.rect(qpo.guiCoords.gameBoard.leftWall, qpo.guiCoords.gameBoard.topWall,
-  //                      qpo.guiCoords.gameBoard.width, qpo.guiCoords.gameBoard.height).attr({
-  //                      "stroke-width": 3, 'stroke':qpo.COLOR_DICT['foreground'] });
-  qpo.gui.push(sideWalls);
+  this.all.push(sideWalls);
 
   qpo.board.goalLines = c.set().push(
     c.path('M'+qpo.guiCoords.gameBoard.leftWall+','+qpo.guiCoords.gameBoard.topWall +
@@ -469,7 +475,7 @@ qpo.drawBoard = function(cols, rows){ //draw the walls and grid and push to gui
       'L'+qpo.guiCoords.gameBoard.rightWall+','+qpo.guiCoords.gameBoard.bottomWall)
       .attr({'stroke-width':3, 'stroke':qpo.COLOR_DICT['blue'], 'opacity':1})
   );
-  qpo.gui.push(qpo.board.goalLines);
+  this.all.push(qpo.board.goalLines);
 
   var crossSize = qpo.guiDimens.CROSS_SIZE;
   var hcs = crossSize/2 //Half Cross Size
@@ -483,7 +489,6 @@ qpo.drawBoard = function(cols, rows){ //draw the walls and grid and push to gui
       var newString = ("M" + xCoord + "," + yCoord1 + "L" + xCoord + "," + yCoord2);
       var newMark = c.path(newString);
       qpo.board.verts.push(newMark);
-      qpo.gui.push(newMark);
     }
   }
 
@@ -496,11 +501,14 @@ qpo.drawBoard = function(cols, rows){ //draw the walls and grid and push to gui
       var newString = ("M" + xCoord1 + "," + yCoord + "L" + xCoord2 + "," + yCoord);
       var newMark = c.path(newString);
       qpo.board.verts.push(newMark);
-      qpo.gui.push(newMark);
     }
   }
 
-  qpo.board.crosses = c.set().push(qpo.board.hors, qpo.board.verts).attr({'stroke':qpo.COLOR_DICT['foreground']})
+  qpo.board.crosses = c.set().push(qpo.board.hors, qpo.board.verts).attr({'stroke':qpo.COLOR_DICT['foreground']});
+  this.all.push(qpo.board.crosses);
+
+  qpo.gui.push(this.all);
+  return this.all; //return the Raph set
 }
 
 qpo.placeUnits = function(){ //called from startGame()
@@ -931,16 +939,16 @@ qpo.newTurn = function(){ // called every time game clock is divisible by 3
     if (qpo.redUnits[i].alive){
       switch(qpo.redMovesQueue[i]) {
         case "moveLeft" :
-          qpo.redUnits[i].moveLeft();
+          qpo.redUnits[i].move('left');
           break;
         case "moveUp" :
-          qpo.redUnits[i].moveUp();
+          qpo.redUnits[i].move('up');
           break;
         case "moveRight" :
-          qpo.redUnits[i].moveRight();
+          qpo.redUnits[i].move('right');
           break;
         case "moveDown" :
-          qpo.redUnits[i].moveDown();
+          qpo.redUnits[i].move('down');
           break;
         case "shoot" :
           qpo.redUnits[i].shoot();
@@ -954,24 +962,20 @@ qpo.newTurn = function(){ // called every time game clock is divisible by 3
       }
     }
 
-    // This scripting is unfair to blue -- red's moves get executed first.
-    // But not THAT unfair -- red's moves are only as far ahead as the time
-    //  it takes to execute one move, because they are woven, red-blue-red-blue-...
-
     //execute blue's moves:
     if (qpo.blueUnits[i].alive){
       switch(qpo.blueMovesQueue[i]) {
         case "moveLeft" :
-          qpo.blueUnits[i].moveLeft();
+          qpo.blueUnits[i].move('left');
           break;
         case "moveUp" :
-          qpo.blueUnits[i].moveUp();
+          qpo.blueUnits[i].move('up');
           break;
         case "moveRight" :
-          qpo.blueUnits[i].moveRight();
+          qpo.blueUnits[i].move('right');
           break;
         case "moveDown" :
-          qpo.blueUnits[i].moveDown();
+          qpo.blueUnits[i].move('down');
           break;
         case "shoot" :
           qpo.blueUnits[i].shoot();
@@ -1130,11 +1134,11 @@ qpo.detectCollisions = function(ts){ //ts is teamSize, aka po
           //console.log("bomb " + i +" hit a wall");
         }
         for (var j=0; j<qpo.units.length; j++) { //iterate over units within bombs
-          /*
-          When a bomb and a unit collide, kill the unit
-          and check if the bomb is exploded. If the bomb
-          is not exploded, explode it.
-          */
+
+          // When a bomb and a unit collide, kill the unit
+          //   and check if the bomb is exploded. If the bomb
+          //   is not exploded, explode it.
+
 
           var nBOU = qpo.units[j].rect.getBBox().y;
           var wBOU = qpo.units[j].rect.getBBox().x;
@@ -1203,9 +1207,19 @@ qpo.detectCollisions = function(ts){ //ts is teamSize, aka po
           sBOU > qpo.guiCoords.gameBoard.bottomWall ||
           eBOU > qpo.guiCoords.gameBoard.rightWall
         ){
-        qpo.blueUnits[i].phys.stop();
-        qpo.blueUnits[i].snap();
-        if (sBOU > qpo.guiCoords.gameBoard.bottomWall){ qpo.blueUnits[i].score(); }//stop and score
+        if (sBOU > qpo.guiCoords.gameBoard.bottomWall){ //South wall. Score.
+          // var testC = c.circle(300, qpo.guiCoords.gameBoard.bottomWall ,20).attr({'stroke':'white'});
+          // var testC2 = c.circle(200, sBOU, 20).attr({'stroke':'purple'});
+          // var testC3 = c.circle(100, qpo.blueUnits[i].rect.getBBox().y + qpo.guiDimens.squareSize -1, 20).attr({'stroke':'pink'}) ;
+          // setTimeout(function(){
+          //   testC.remove()
+          // }, 500);
+          qpo.blueUnits[i].score('collision');
+        }
+        else{ //Other wall. Stop and snap
+          qpo.blueUnits[i].phys.stop();
+          qpo.blueUnits[i].snap();
+        }
       }
 
       if(qpo.redUnits[i].alive){ //wall detection red
@@ -1357,12 +1371,8 @@ $(window).keydown(function(event){
         }
         case 37: {  //left arrow
           if (activeMenu=="customG"){
-            try {
-              qpo.menus["customG"].active.minus();
-            }
-            catch(err) {
-              ;
-            }
+            try { qpo.menus["customG"].active.minus(); }
+            catch(err) { ; }
           }
           break;
         }
@@ -1373,12 +1383,8 @@ $(window).keydown(function(event){
         }
         case 39: { //right arrow
           if (activeMenu=="customG"){
-            try {
-              qpo.menus["customG"].active.plus();
-            }
-            catch(err) {
-              ;
-            }
+            try { qpo.menus["customG"].active.plus(); }
+            catch(err) { ; }
           }
           break;
         }
@@ -1397,7 +1403,7 @@ $(window).keydown(function(event){
           event.preventDefault();
           qpo.updateBlueAU(qpo.activeGame.po, "dead");
         }
-        else { //Otherwise, respond to the keypress by updating the control panel
+        else { //Otherwise, respond to the keypress
           switch(event.keyCode){
             case 81:
             case 69:
@@ -1405,14 +1411,27 @@ $(window).keydown(function(event){
             case 87:
             case 68:
             case 83:
-            case 88: //qweasdx detected (valid)
+            case 88: //qweasdx detected (order)
               var moveStr = qpo.keyCodes[event.keyCode];
               // console.log('keypress detected: ' + event.keyCode + ', leading to moveStr' + qpo.keyCodes[event.keyCode]);
               qpo.blueUnits[qpo.blueActiveUnit].order(moveStr);
               qpo.updateBlueAU(qpo.activeGame.po, "move"); //activate the new AU and board
               // controlPanel.accept(event);
               break;
+            case 37:
+            case 38:
+            case 39:
+            case 40: //up/left/right/down arrows (move highlight)
+              // console.log('arrow key detected: ' + qpo.dirMap[event.keyCode]);
+              if(!qpo.gameEnding){ qpo.blueUnits[qpo.blueActiveUnit].search(qpo.dirMap[event.keyCode]); }
+              break;
             default: //some other key detected (invalid)
+              //left = 37
+              // up = 38
+              // right = 39
+              // down = 40
+              "some other key";
+              // tab = 9
               break;
           }
         }
@@ -1489,7 +1508,8 @@ function startGame(settings){ //called when countdown reaches 0
   qpo.turnStarter = setInterval(qpo.newTurn,3000*qpo.timeScale);
   qpo.timer.pie.animate({segment: [qpo.guiCoords.turnTimer.x, qpo.guiCoords.turnTimer.y, qpo.guiCoords.turnTimer.r, -90, -90]}, 3000*qpo.timeScale);
 
-  qpo.collisionDetector = setInterval(function(){qpo.detectCollisions(qpo.activeGame.po)},10);
+  qpo.collisionDetector = setInterval(function(){qpo.detectCollisions(qpo.activeGame.po)},100);
+
   qpo.mode = "game";
   console.log('NEW GAME');
 }
@@ -1545,7 +1565,7 @@ function endGame(result){
   // qpo.menuMusic();
 }
 function newRound(){
-  qpo.menus["main"].blackness.attr({"opacity":1}).show();
+  // qpo.menus["main"].blackness.attr({"opacity":1}).show();
   qpo.menus["endG"].all.remove();
   return qpo.countdownScreen(qpo.currentSettings);
 }

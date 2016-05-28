@@ -26,6 +26,129 @@ function startUnit(color, gx, gy, num){
   this.ty = function(){ //raphael transform, y value
     return (mtr*this.y)
   }.bind(this)
+  this.trans = function(){return ('t'+this.tx()+','+this.ty())};
+  //add .bind(this) if glitchy
+  this.search = function(dir){
+    // console.log('search begun at ind ' + this.num);
+    var ind = this.num; //index (num) of found unit
+    var row = this.y; //row being searched
+    var col = this.x; //column being searched
+    var colSep = 0; //column separation
+    var rowSep = 0; //row separation
+    var tries = 0;
+    var looking = true;
+    switch(dir){
+      case 'left':
+        while(looking){
+          col -= 1; //move on to the next leftmost column
+          if (col == -2){col=qpo.activeGame.q-1} //if off board, roll over to right end
+          row = this.y; //reset row
+          rowSep = 0; // and rowSep
+          // console.log('looking at column ' + col);
+          for(var i=0; i<qpo.activeGame.q; i++){ //iterate thru rows
+            if(Math.pow(-1,i) == -1){rowSep++;} // if i is odd, look further away, columnwise
+            row = this.y + rowSep*Math.pow(-1,i); //select a row to look in
+            if (row < -1 || row > qpo.activeGame.q) {row = this.y + rowSep*Math.pow(-1, i+1)} //don't allow non-rows
+            for(var j=0; j<qpo.activeGame.po; j++){
+              if (((qpo.blueUnits[j].x == col && qpo.blueUnits[j].y == row) ||
+                  (col == qpo.blueUnits[j].x == -1) )
+                  && qpo.blueUnits[j].spawnTimer < 1) {
+                ind = qpo.blueUnits[j].num;
+                looking=false;
+              } //found it!
+            }
+          }
+          tries++;
+          if(tries == qpo.activeGame.q){looking=false;} //no other active unit available. Stop looking.
+        }
+        break;
+      case 'up':
+        while(looking){ //iterate through rows
+          row -= 1; //move on to the next upmost row
+          if (row == -2){row=qpo.activeGame.q-1} //if off board, roll over to bottom
+          col = this.x; //reset col
+          colSep = 0; // and colSep
+          // console.log('looking at row ' + row);
+          for(var i=0; i<qpo.activeGame.q; i++){ //iterate thru cols
+            if(Math.pow(-1,i) == -1){colSep++;} // if i is odd, look further away, columnwise
+            col = this.x + colSep*Math.pow(-1,i); //select a col to look in
+            if (col < -1 || col > qpo.activeGame.q) {col = this.x + colSep*Math.pow(-1, i+1)} //don't allow non-cols
+            for(var j=0; j<qpo.activeGame.po; j++){
+              if (((qpo.blueUnits[j].x == col && qpo.blueUnits[j].y == row) ||
+                  (row == qpo.blueUnits[j].x == -1) )
+                  && qpo.blueUnits[j].spawnTimer < 1) {
+                ind = qpo.blueUnits[j].num;
+                looking=false;
+              } //found it!
+            }
+          }
+          tries++;
+          if(tries == qpo.activeGame.q){looking=false;} //no other active unit available. Stop looking.
+        }
+        break;
+      case 'right':
+        while(looking){
+          col += 1; //move on to the next leftmost column
+          if (col == qpo.activeGame.q){col = -1} //if off board, roll over to left end (spawners)
+          row = this.y; //reset row
+          rowSep = 0; // and rowSep
+          // console.log('looking at column ' + col);
+          for(var i=0; i<qpo.activeGame.q; i++){ //iterate thru rows
+            if(Math.pow(-1,i) == -1){rowSep++;} // if i is odd, look further away, columnwise
+            row = this.y + rowSep*Math.pow(-1,i); //select a row to look in
+            if (row < -1 || row > qpo.activeGame.q) {row = this.y + rowSep*Math.pow(-1, i+1)} //don't allow non-rows
+            for(var j=0; j<qpo.activeGame.po; j++){
+              if (((qpo.blueUnits[j].x == col && qpo.blueUnits[j].y == row) ||
+                  (col == qpo.blueUnits[j].x == -1) )
+                  && qpo.blueUnits[j].spawnTimer < 1) {
+                ind = qpo.blueUnits[j].num;
+                looking=false;
+              } //found it!
+            }
+          }
+          tries++;
+          if(tries == qpo.activeGame.q){looking=false;} //no other active unit available. Stop looking.
+        }
+        break;
+      case 'down':
+        while(looking){ //iterate through rows
+          row += 1; //move on to the next downmost row
+          if (row == qpo.activeGame.q){row = -1} //if off board, roll over to bottom
+          col = this.x; //reset col
+          colSep = 0; // and colSep
+          // console.log('looking at row ' + row);
+          for(var i=0; i<qpo.activeGame.q; i++){ //iterate thru cols
+            if(Math.pow(-1,i) == -1){colSep++;} // if i is odd, look further away, columnwise
+            col = this.x + colSep*Math.pow(-1,i); //select a col to look in
+            if (col < -1 || col > qpo.activeGame.q) {col = this.x + colSep*Math.pow(-1, i+1)} //don't allow non-cols
+            for(var j=0; j<qpo.activeGame.po; j++){
+              if (((qpo.blueUnits[j].x == col && qpo.blueUnits[j].y == row) ||
+                  (row == qpo.blueUnits[j].x == -1) )
+                  && qpo.blueUnits[j].spawnTimer < 1) {
+                ind = qpo.blueUnits[j].num;
+                looking=false;
+              } //found it!
+            }
+          }
+          tries++;
+          if(tries == qpo.activeGame.q){looking=false;} //no other active unit available. Stop looking.
+        }
+        break;
+      default:
+        console.log('HELLO FROM THE OTHER SIIIIIIIIDE');
+    }
+    this.deactivate();
+    qpo.blueUnits[ind].activate();
+    // console.log('search complete, found index ' + ind)
+  }
+
+  this.nx = null; //next x
+  this.ny = null; //nexy y
+  this.ntx = function(){return mtr*this.nx}; //next transform x
+  this.nty = function(){return mtr*this.ny}; //next transform x
+  this.ntrans = function(){return ('t'+this.ntx()+','+this.nty())};
+  //add .bind(this) if glitchy
+
   this.rect = c.rect(lw,tw,mtr,mtr).attr({
       // "fill":qpo.COLOR_DICT['color'],
       "opacity":1,
@@ -37,7 +160,7 @@ function startUnit(color, gx, gy, num){
     'stroke-width':2
   });
   this.phys = c.set(this.rect, this.icon);
-  this.snap = function(){this.phys.attr({'transform':'t'+this.tx()+','+this.ty()});}
+  this.snap = function(){this.phys.attr({'transform':this.trans()});} //.bind(this if glitchy)
 
   this.num = num; //which unit is it? (# on team)
   this.alive = true;
@@ -58,12 +181,14 @@ function startUnit(color, gx, gy, num){
     });
     this.spawnText = c.text(six, siy, 0).attr({qpoText:[10]});
     this.spawnIconSet = c.set().push(this.spawnIcon, this.spawnText).hide();
+    this.rects = c.set().push(this.rect, this.spawnIcon);
   }
-  this.doSpawnIcon = function(){
+  this.showSpawnIcon = function(){
     this.spawnText.attr({'text':this.spawnTimer});
     this.spawnIconSet.show();
     qpo.fadeIn(this.spawnIconSet, 2000*qpo.timeScale);
   }
+  this.rects = c.set(this.rect, this.spawnIcon);
 
   this.snap();
   switch(color){ //record the unit's initial spawn to the game record, loading blue coords in first
@@ -90,7 +215,7 @@ function finishUnit(unit){
   var mtr = qpo.guiDimens.squareSize;
   var lw = qpo.guiCoords.gameBoard.leftWall;
   var tw = qpo.guiCoords.gameBoard.topWall;
-  var easingType = 'linear';
+  var easingType = '>';
   unit.order = function(order){ // Set the unit's icon, and deactivate the unit.
     unit.phys.exclude(unit.icon);
     unit.icon.remove(); //remove the old icon from the paper
@@ -152,13 +277,15 @@ function finishUnit(unit){
     }
   }
   unit.activate = function(){
-    unit.rect.attr({"stroke":qpo.COLOR_DICT["orange"]});
-    if(!unit.alive){unit.phys.hide()};
+    unit.rects.attr({"stroke":qpo.COLOR_DICT["orange"]});
+    if(!unit.alive){ unit.phys.hide(); };
     unit.phys.toFront();
     unit.active = true;
+    qpo.blueActiveUnit = unit.num;
   }
   unit.deactivate = function(){
-    unit.rect.attr({inactiveUnit:unit.team});
+    if(unit.team == qpo.playerTeam){ unit.rects.attr({inactiveUnit:unit.team}); }
+    else { unit.rect.attr({inactiveUnit:unit.team}); }
     unit.active = false;
   }
   unit.reloadBomb = function(){ // not in use
@@ -167,18 +294,21 @@ function finishUnit(unit){
   unit.reloadShot = function(){ // not in use
     unit.shotReady =true;
   }
-  unit.score = function(){
+  unit.score = function(why){
+    console.log('scored via ' + why + ' on turn ' + qpo.activeGame.turnNumber);
     unit.alive = false;
     unit.willScore = false;
     unit.deactivate();
     unit.spawnTimer = qpo.spawnTimers[qpo.activeGame.po];
-    if (unit.team==qpo.playerTeam){unit.doSpawnIcon()}
-    unit.phys.stop();
-    unit.phys.animate({"opacity":0},2000*qpo.timeScale);
-    console.log('unit '+unit.num +' scored');
-    setTimeout(function(){ //hide the visage and reset its position
+    if (unit.team==qpo.playerTeam){unit.showSpawnIcon()}
+    // unit.phys.stop();
+    unit.phys.animate({"opacity":0}, 2000*qpo.timeScale);
+    // console.log('unit '+unit.num +' scored');
+    setTimeout(function(){ //hide the visage and move it "off the board"
       unit.phys.hide();
-      unit.phys.attr({'opacity':1, 'transform':''});
+      unit.x = -1;
+      unit.y = -1;
+      unit.phys.attr({'opacity':1, 'transform':unit.trans()});
     }, 2000*qpo.timeScale)
     if(qpo.mode == "game"){ //deal with scoreboard, AI, spawn, control panel, and ending game
       switch(unit.team){ // update scoreboard, prep to reward AI
@@ -228,12 +358,14 @@ function finishUnit(unit){
     unit.willScore = false;
     unit.deactivate();
     unit.spawnTimer = qpo.spawnTimers[qpo.activeGame.po];
-    if(unit.team==qpo.playerTeam){ unit.doSpawnIcon(); }
+    if(unit.team==qpo.playerTeam){ unit.showSpawnIcon(); }
     unit.phys.stop();
-    unit.phys.animate({"opacity":0},2000*qpo.timeScale);
-    setTimeout(function(){ //hide the visage and reset its position
+    unit.phys.animate({"opacity":0}, 2000*qpo.timeScale);
+    setTimeout(function(){ //hide the visage and move it "off the board"
       unit.phys.hide();
-      unit.phys.attr({'opacity':1, 'transform':''});
+      unit.x = -1;
+      unit.y = -1;
+      unit.phys.attr({'opacity':1, 'transform':unit.trans()});
     }, 2000);
     if(qpo.mode == "game"){ //deal with scoreboard, AI, spawn, control panel, and ending game
       switch(unit.team){ // update scoreboard, prep to reward AI
@@ -308,10 +440,59 @@ function finishUnit(unit){
     unit.alive = false;
     unit.rect.remove();
   }
+  unit.recordMove = function(move){
+    switch(unit.team){ //record the move (in qpo.activeGame.record)
+      case "blue": {
+        qpo.activeGame.record.blueMoves.push(move);
+        break;
+      }
+      case "red": {
+        qpo.activeGame.record.redMoves.push(move);
+        break;
+      }
+      default: { "this was unexpected"; }
+    }
+  }
+  unit.move = function(dir){
+    switch(dir){
+      case 'up':
+        if (unit.y == 0){ //check if unit is red, if so, score.
+          if (unit.team == 'red'){
+            unit.y = -1 ;
+            unit.score();
+          }
+        }
+        else { unit.y -= 1 ;}
+        break;
+      case 'right':
+        if (unit.x != qpo.activeGame.q-1){ unit.x += 1; }
+        break;
+      case 'down':
+        if (unit.y == qpo.activeGame.q-1){ //bottom wall: score blue.
+          if (unit.team == 'blue'){ //score
+            unit.y = qpo.activeGame.q;
+            unit.score();
+          }
+        }
+        else { unit.y += 1 ; }
+        break;
+      case 'left':
+        if (unit.x != 0) { unit.x -= 1; }
+        // unit.moveLeft();
+        break;
+      default:
+        console.log('idiots say what?');
+    }
+    unit.phys.animate({'transform':unit.trans()}, 3000*qpo.timeScale, easingType); //move that son of a gun
+    if ((dir == 'up' && unit.team == 'red') || (dir=='down' && unit.team =='blue')) {unit.movingForward = true;}
+    else {unit.movingForward = false;}
+    unit.recordMove(dir);
+  }
   unit.moveLeft = function(){ //animate the unit, update unit.x, record move
     unit.movingForward = false;
     if (unit.x > 0) {
       if (unit.x == 1){ //unit will hit wall, do a half-animation
+        // unit.nx = 0;
         unit.x = 0;
         var animLength = 1500*qpo.timeScale;
       }
@@ -320,19 +501,29 @@ function finishUnit(unit){
         var animLength = 3000*qpo.timeScale;
       }
       var anim = Raphael.animation({'transform':('t' + unit.tx() +',' +unit.ty())}, animLength, easingType);
+      setTimeout(function(){ //test BBox
+        if (unit.team=='blue'){
+          // var box = unit.rect.getBBox();
+          // var tester = c.rect(box.x, box.y, box.width, box.height).attr({'stroke':'white'});
+          // console.log(unit.rect.getBBox().x, unit.rect.getBBox().y,unit.rect.width,unit.rect.height);
+          // qpo.tester2 = c.rect(unit.rect.getBBox().x, unit.rect.getBBox().y, unit.rect.attr('width'), unit.rect.attr('height'))
+          //   .attr({'stroke':'white','stroke-width':2});
+          // qpo.tester2.toFront();
+          // qpo.tester2.show();
+          // console.log(qpo.tester2.attr('x'));
+          // console.log(qpo.tester2.attr('y'));
+          // console.log(qpo.tester2);
+          // console.log(box.x);
+          // console.log(unit.rect.getBBox().x);
+          // console.log(box.x == unit.rect.getBBox().x)
+          // setTimeout(function(){
+          //   // tester.remove();
+          //   qpo.tester2.remove();
+          // }, 500);
+        }
+      }, 500);
       unit.phys.animate(anim);
       unit.movingForward = false;
-    }
-    switch(unit.team){ //record the move (in qpo.activeGame.record)
-      case "blue": {
-        qpo.activeGame.record.blueMoves.push(1);
-        break;
-      }
-      case "red": {
-        qpo.activeGame.record.redMoves.push(1);
-        break;
-      }
-      default: { "this was unexpected"; }
     }
   }
   unit.moveUp = function(){
@@ -349,19 +540,6 @@ function finishUnit(unit){
       if (unit.team == "red"){ unit.movingForward = true; }
       else { unit.movingForward = false; }
     }
-    switch(unit.team){ //record the move (in qpo.activeGame.record)
-      case "blue": {
-        qpo.activeGame.record.blueMoves.push(2);
-        break;
-      }
-      case "red": {
-        qpo.activeGame.record.redMoves.push(2);
-        break;
-      }
-      default: {
-        "this was unexpected";
-      }
-    }
   }
   unit.moveRight = function(){
     if (unit.x < qpo.activeGame.q-1) {
@@ -377,47 +555,29 @@ function finishUnit(unit){
       unit.phys.animate(anim);
       unit.movingForward = false;
     }
-    switch(unit.team){ //record the move (in qpo.activeGame.record)
-      case "blue": {
-        qpo.activeGame.record.blueMoves.push(3);
-        break;
-      }
-      case "red": {
-        qpo.activeGame.record.redMoves.push(3);
-        break;
-      }
-      default: {
-        "this was unexpected";
-      }
-    }
   }
   unit.moveDown = function(){
     if (unit.y == (qpo.activeGame.q-1) && unit.team == "blue") {unit.score()} //score for blue
     if (unit.y < qpo.activeGame.q-1 ) { // if unit not on bottom wall, move it
       unit.movingForward = false;
       unit.y += 2;
-      if (unit.y == qpo.activeGame.q){
+      if (unit.y > qpo.activeGame.q-1 ){
         if(unit.team=='blue'){unit.willScore = true;}
-        else{ unit.y--} // wall hit. Half-anim.
+        else{unit.y--} //don't try to move a red unit beyond the bottom wall.
       }
       var anim = Raphael.animation({'transform':('t' + unit.tx() + ','+ unit.ty())}, 3000*qpo.timeScale, easingType);
       unit.phys.animate(anim);
+      setTimeout(function(){ //test BBox
+        var box = unit.rect.getBBox();
+        var tester = c.rect(box.x, box.y, box.width, box.height).attr({'stroke':'white'})
+        setTimeout(function(){
+          tester.remove();
+        }, 500)
+      }, 500);
       if (unit.team == "blue"){ unit.movingForward = true; }
       else { unit.movingForward = false; }
     }
-    switch(unit.team){ //record the move (in qpo.activeGame.record)
-      case "blue": {
-        qpo.activeGame.record.blueMoves.push(4);
-        break;
-      }
-      case "red": {
-        qpo.activeGame.record.redMoves.push(4);
-        break;
-      }
-      default: {
-        "this was unexpected";
-      }
-    }
+
   }
   unit.bomb = function(){
     unit.movingForward = false;

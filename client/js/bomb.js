@@ -1,3 +1,5 @@
+qpo.bombEasing = 'linear';
+
 //CREATE BOMB TYPE/CLASS -- not implemented (see "explode()")
 function startBomb(su){ //su = source unit
   var UNIT = qpo.guiDimens.squareSize;
@@ -73,7 +75,8 @@ function finishBomb(bomb){ //send it on its way
       var bombAnim;
       switch(bomb.team){
         case "blue":
-          bombAnim = Raphael.animation({"y":bomb.phys.attr('y') + 0.98 * qpo.guiDimens.squareSize}, 3000*qpo.timeScale, function(){bomb.next()} );
+          bombAnim = Raphael.animation({"y":bomb.phys.attr('y') + 0.98 * qpo.guiDimens.squareSize},
+            3000*qpo.timeScale, qpo.bombEasing, function(){bomb.next()} );
           bomb.phys.animate(bombAnim);
           break;
         case "red":
