@@ -156,7 +156,7 @@ qpo.setup = function(){ // set up global vars and stuff
   qpo.trainingMode = false;
   qpo.waitTime = 100; //ms between moves
   qpo.gameLength = 40;
-  qpo.unitStroke = 4;
+  qpo.unitStroke = 10;
   qpo.bombStroke = 3;
   qpo.SHOT_LENGTH = 0.5; //ratio of shot length to unit length
   qpo.SHOT_WIDTH = 0.1; //ratio of shot width to unit length
@@ -256,8 +256,6 @@ qpo.setup = function(){ // set up global vars and stuff
     }
     qpo.guiCoords.gameBoard.width = qpo.guiDimens.columns * qpo.guiDimens.squareSize,
     qpo.guiCoords.gameBoard.height = qpo.guiDimens.rows * qpo.guiDimens.squareSize;
-    qpo.guiCoords.gameBoard.rightWall = qpo.guiCoords.gameBoard.leftWall + qpo.guiCoords.gameBoard.width;
-    qpo.guiCoords.gameBoard.bottomWall = qpo.guiCoords.gameBoard.topWall + qpo.guiCoords.gameBoard.height;
   })();
 
   qpo.bombSize = 2*qpo.guiDimens.squareSize;
@@ -448,13 +446,27 @@ qpo.makeScoreboard = function(){ //draw the scoreBoard and push to gui
   qpo.gui.push(this.all);
   return this;
 };
-qpo.drawBoard = function(cols, rows){ //return the Raph set of all the static game board els
+qpo.Board = function(cols, rows, x, y, m){ //return the Raph set of all the static game board els
   this.all = c.set();
+
+  this.mtr = m || qpo.guiDimens.squareSize; //mtr for meter, or unit size, the quantum of q-po.
+
+  this.rows = rows;
+  this.cols = cols;
+
+  this.width = cols * qpo.guiDimens.squareSize;
+  this.height = rows * qpo.guiDimens.squareSize;
+
+  this.lw = x || qpo.guiCoords.gameBoard.leftWall;
+  this.tw = y || qpo.guiCoords.gameBoard.topWall;
+  this.rw = this.lw + this.width;
+  this.bw = this.tw + this.height;
 
   qpo.guiDimens.columns = cols;
   qpo.guiDimens.rows = rows;
   qpo.guiCoords.gameBoard.width = qpo.guiDimens.squareSize * qpo.guiDimens.columns;
   qpo.guiCoords.gameBoard.height = qpo.guiDimens.squareSize * qpo.guiDimens.rows;
+
   qpo.guiCoords.gameBoard.rightWall = qpo.guiCoords.gameBoard.leftWall + qpo.guiCoords.gameBoard.width;
   qpo.guiCoords.gameBoard.bottomWall = qpo.guiCoords.gameBoard.topWall + qpo.guiCoords.gameBoard.height;
   var sideWalls = c.set(
@@ -834,10 +846,10 @@ qpo.drawGUI = function(q,po){ //create the turn timer (pie), board, and control 
     }
     qpo.gui.push(qpo.timer.all);
   })();
-  qpo.drawBoard(q, q); // draw the board (but not the units)
+  qpo.activeGame.board = new qpo.Board(q, q); // draw the board (but not the units)
   // controlPanel = new qpo.startControlPanel(po);
   // qpo.finishControlPanel(controlPanel);
-  qpo.board.goalLines.toFront();
+  qpo.activeGame.board.goalLines.toFront();
   qpo.scoreBoard = qpo.makeScoreboard();
 }
 

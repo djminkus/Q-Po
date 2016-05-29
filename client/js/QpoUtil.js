@@ -13,13 +13,9 @@ var QpoUtil = QpoUtil || { REVISION: 'ALPHA' };
 */
 
 var QpoUtil = (function(){
-  this.CursorList = function(list, initialCursor){
+  this.CursorList = function(list, initialCursorPosition){
     this.list = list;
-    this.cursor = (initialCursor || 0);
-    this.activeItem = function(){
-      if !(this == window){ return this.list[this.cursor];}
-      return (console.log ("the cursorList class is misbehaving"));
-    }
+    this.selectedItem = this.list[initialCursorPosition];
     return this;
   }
   return this;
@@ -28,7 +24,7 @@ var QpoUtil = (function(){
 (function(lib) {
   "use strict";
   if (typeof module === "undefined" || typeof module.exports === "undefined") {
-    window.QpoUtil = lib; // in ordinary browser attach library to window
+    window.QpoUtil = lib; // in ordinary browser, attach library to window
   } else {
     module.exports = lib; // in nodejs
   }

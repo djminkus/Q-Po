@@ -204,9 +204,9 @@ qpo.makeTitleScreen = function(){
   var y_start = 2;
   qpo.guiCoords.gameBoard.leftWall = x_adj + UNIT_LENGTH*x_start;
   qpo.guiCoords.gameBoard.topWall = y_adj + UNIT_LENGTH*y_start;
-  this.board = qpo.drawBoard(17,7); //note: board's Raphs now found in qpo.gui and this.board
+  this.board = new qpo.Board(17,7); //note: board's Raphs now found in qpo.gui and this.board
   // qpo.gui.transform('t' + -(UNIT_LENGTH) + ',' + -(UNIT_LENGTH));
-  this.board.transform('t' + -(UNIT_LENGTH) + ',' + -(UNIT_LENGTH));
+  this.board.all.transform('t' + -(UNIT_LENGTH) + ',' + -(UNIT_LENGTH));
 
   //2ND LAYER (foreground)
   this.layer2 = c.set();

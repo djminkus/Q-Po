@@ -20,12 +20,8 @@ function startUnit(color, gx, gy, num){
   this.team = color; //"red" or "blue"
   this.x = gx; // grid position. (column number, 0 to q-1)
   this.y = gy; // grid position (row number, 0 to q-1)
-  this.tx = function(){ //raphael transform, x value
-    return (mtr*this.x);
-  }.bind(this)
-  this.ty = function(){ //raphael transform, y value
-    return (mtr*this.y)
-  }.bind(this)
+  this.tx = function(){return (mtr*this.x);}.bind(this); //raphael transform, x value
+  this.ty = function(){return (mtr*this.y);}.bind(this); //raphael transform, y value
   this.trans = function(){return ('t'+this.tx()+','+this.ty())};
   //add .bind(this) if glitchy
   this.search = function(dir){
