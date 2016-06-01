@@ -6,16 +6,31 @@ c.customAttributes.inactiveUnit = function(teamColor){
   }
 }
 
-//CREATE UNIT TYPE/CLASS
-function startUnit(color, gx, gy, num){
+qpo.circleAtts = function(color){ //attributes for the neutral/stay icon
+  return {
+    'stroke':qpo.COLOR_DICT[color],
+    'stroke-width':qpo.iconStroke,
+    'fill':qpo.COLOR_DICT[color],
+    'r':qpo.guiDimens.squareSize/9
+  }
+}
+qpo.shotAtts = {
+  "fill":qpo.COLOR_DICT["green"],
+  "opacity":1,
+  'stroke': qpo.COLOR_DICT["green"]
+}
+
+qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
   // color is 'blue' or 'red' -- "Which team is the unit on?"
   // gx and gy are the initial grid values (the "spawn point, per se)
   // num is this unit's number (within its team)
   //   (For now, only blue units are numbered (6-20-15) )
 
   var mtr = qpo.guiDimens.squareSize; //mtr for meter, like, a unit of length
-  var lw = qpo.guiCoords.gameBoard.leftWall; //left wall
-  var tw = qpo.guiCoords.gameBoard.topWall; //top wall
+  // console.log('' + qpo.testttt +' ' +mtr);
+  // qpo.testttt ++;
+  var lw = qpo.board.lw; //left wall
+  var tw = qpo.board.tw; //top wall
 
   this.team = color; //"red" or "blue"
   this.x = gx; // grid position. (column number, 0 to q-1)
@@ -23,7 +38,6 @@ function startUnit(color, gx, gy, num){
   this.tx = function(){return (mtr*this.x);}.bind(this); //raphael transform, x value
   this.ty = function(){return (mtr*this.y);}.bind(this); //raphael transform, y value
   this.trans = function(){return ('t'+this.tx()+','+this.ty())};
-  //add .bind(this) if glitchy
   this.search = function(dir){
     // console.log('search begun at ind ' + this.num);
     var ind = this.num; //index (num) of found unit
@@ -143,22 +157,18 @@ function startUnit(color, gx, gy, num){
   this.ntx = function(){return mtr*this.nx}; //next transform x
   this.nty = function(){return mtr*this.ny}; //next transform x
   this.ntrans = function(){return ('t'+this.ntx()+','+this.nty())};
-  //add .bind(this) if glitchy
 
   this.rect = c.rect(lw,tw,mtr,mtr).attr({
       // "fill":qpo.COLOR_DICT['color'],
       "opacity":1,
       'stroke':qpo.COLOR_DICT[color],
-      'stroke-width':qpo.unitStroke
+      'stroke-width': qpo.unitStroke
     });
-  this.icon = c.circle(lw + mtr/2, tw + mtr/2, mtr/10).attr({
-    'stroke':qpo.COLOR_DICT[color],
-    'stroke-width':2
-  });
+  this.icon = c.circle(lw + mtr/2, tw + mtr/2, mtr/7).attr(qpo.circleAtts(color));
   this.phys = c.set(this.rect, this.icon);
   this.snap = function(){this.phys.attr({'transform':this.trans()});} //.bind(this if glitchy)
 
-  this.num = num; //which unit is it? (# on team)
+  this.num = num || 0; //which unit is it? (# on team)
   this.alive = true;
   this.active = false; //is it highlighted?
   this.shotReady = true; //not in use
@@ -173,7 +183,8 @@ function startUnit(color, gx, gy, num){
     this.spawnIcon = c.rect(six - mtr/4, siy - mtr/4, mtr/2, mtr/2).attr({
       'opacity':1,
       'stroke':qpo.COLOR_DICT[color],
-      'stroke-width':qpo.unitStroke*mtr/50
+      'stroke-width':qpo.unitStroke*mtr/50,
+      'fill':qpo.COLOR_DICT[color]
     });
     this.spawnText = c.text(six, siy, 0).attr({qpoText:[10]});
     this.spawnIconSet = c.set().push(this.spawnIcon, this.spawnText).hide();
@@ -187,36 +198,33 @@ function startUnit(color, gx, gy, num){
   this.rects = c.set(this.rect, this.spawnIcon);
 
   this.snap();
-  switch(color){ //record the unit's initial spawn to the game record, loading blue coords in first
-    case "blue": {
-      qpo.activeGame.record.unitSpawns[num] = [gx,gy];
-      break;
-    }
-    case "red": {
-      qpo.activeGame.record.unitSpawns[qpo.activeGame.po + num] = [gx,gy];
-      break;
-    }
-    default: {
-      console.log("this was unexpected");
-      break;
+  try{ //record the unit's initial spawn to the game record, loading blue coords in first
+    switch(color){
+      case "blue": {
+        qpo.activeGame.record.unitSpawns[num] = [gx,gy];
+        break;
+      }
+      case "red": {
+        qpo.activeGame.record.unitSpawns[qpo.activeGame.po + num] = [gx,gy];
+        break;
+      }
+      default: {
+        console.log("this was unexpected");
+        break;
+      }
     }
   }
-  return this;
-}
-function improveUnit(unit){ //add the unit.rect to the unit.phys, and the unit.phys to the qpo.gui
-  // unit.phys.push(unit.rect);
-  qpo.gui.push(unit.phys);
-}
-function finishUnit(unit){
-  var mtr = qpo.guiDimens.squareSize;
-  var lw = qpo.guiCoords.gameBoard.leftWall;
-  var tw = qpo.guiCoords.gameBoard.topWall;
+  catch(err){;} //in menu; no active game defined, so catch the error that generates and do nothing.
+
+  qpo.gui.push(this.phys);
+
+  //METHODS
   var easingType = '>';
-  unit.order = function(order){ // Set the unit's icon, and deactivate the unit.
-    unit.phys.exclude(unit.icon);
-    unit.icon.remove(); //remove the old icon from the paper
+  this.order = function(order){ // Set the unit's icon, and deactivate the unit.
+    this.phys.exclude(this.icon);
+    this.icon.remove(); //remove the old icon from the paper
     var newIcon;
-    var color = qpo.COLOR_DICT[unit.team];
+    var color = qpo.COLOR_DICT[this.team];
     // var args = [lw+mtr/2, tw+mtr/2, color, null];
     switch(order){ //add the new icon
       case 'moveUp':
@@ -233,81 +241,75 @@ function finishUnit(unit){
         newIcon = qpo.arrow(lw+mtr/2, tw+mtr/2, color, 'right');
         break;
       case 'shoot':
-        newIcon = c.rect(lw+mtr/2 -5, tw+mtr/2 -5, 10,10).attr({"fill":qpo.COLOR_DICT['green']});
+        newIcon = c.rect(lw+mtr/2 -5, tw+mtr/2 -5, 10,10).attr({
+          "fill":qpo.COLOR_DICT['green'],
+          'stroke':qpo.COLOR_DICT['green']
+        });
         break;
       case 'bomb':
-        newIcon = c.rect(lw+mtr/2 -5, tw+mtr/2 -5, 10,10).attr({"fill":qpo.COLOR_DICT['purple']});
+        newIcon = c.rect(lw+mtr/2 -5, tw+mtr/2 -5, 10,10).attr({
+          "fill":qpo.COLOR_DICT['purple'],
+          'stroke':qpo.COLOR_DICT['purple'],
+        });
         break;
       case 'stay':
-        newIcon = c.circle(lw + mtr/2, tw + mtr/2, mtr/10).attr({
-          'stroke':qpo.COLOR_DICT[color],
-          'stroke-width':2,
-          'fill':qpo.COLOR_DICT[color]
-        });
+        newIcon = c.circle(lw + mtr/2, tw + mtr/2, mtr/10).attr(qpo.circleAtts(color));
         break;
       default:
         console.log('this was unexpected');
     }
-    newIcon.attr({'transform':'t'+unit.tx()+','+unit.ty()});
-    unit.phys.push(newIcon);
-    unit.icon = newIcon;
-    unit.deactivate();
+    newIcon.attr({'transform':'t'+this.tx()+','+this.ty()});
+    this.phys.push(newIcon);
+    this.icon = newIcon;
+    this.deactivate();
     qpo.blueMovesQueue[qpo.blueActiveUnit] = order;
-    if (!unit.alive || unit.willScore){ unit.icon.hide();}
-  }.bind(unit);
-  unit.resetIcon = function(){
-    unit.phys.exclude(unit.icon);
-    unit.icon.remove();
-    unit.icon = c.circle(lw + mtr/2, tw + mtr/2, mtr/10*qpo.activeGame.scaling).attr({
-      'stroke':qpo.COLOR_DICT[unit.team],
-      'stroke-width':2
-    });
-    unit.phys.push(unit.icon);
-    unit.snap();
-    if(!unit.alive){
-      unit.icon.hide();
-      if (unit.team == qpo.playerTeam){unit.spawnText.attr({'text':unit.spawnTimer});}
-      if (unit.spawnTimer == 0){ //let the player queue a move in the spawn icon
-        // unit.spawnText.hide();
+    if (!this.alive || this.willScore){ this.icon.hide();}
+  }
+  this.resetIcon = function(){
+    this.phys.exclude(this.icon);
+    this.icon.remove();
+    this.icon = c.circle(lw + mtr/2, tw + mtr/2, mtr/7).attr(qpo.circleAtts(color));
+    this.phys.push(this.icon);
+    this.snap();
+    if(!this.alive){
+      this.icon.hide();
+      if (this.team == qpo.playerTeam){this.spawnText.attr({'text':this.spawnTimer});}
+      if (this.spawnTimer == 0){ //let the player queue a move in the spawn icon
+        // this.spawnText.hide();
       }
     }
   }
-  unit.activate = function(){
-    unit.rects.attr({"stroke":qpo.COLOR_DICT["orange"]});
-    if(!unit.alive){ unit.phys.hide(); };
-    unit.phys.toFront();
-    unit.active = true;
-    qpo.blueActiveUnit = unit.num;
+  this.activate = function(){
+    this.rects.attr({"stroke":qpo.COLOR_DICT["orange"]});
+    if(!this.alive){ this.phys.hide(); };
+    this.phys.toFront();
+    this.active = true;
+    qpo.blueActiveUnit = this.num;
   }
-  unit.deactivate = function(){
-    if(unit.team == qpo.playerTeam){ unit.rects.attr({inactiveUnit:unit.team}); }
-    else { unit.rect.attr({inactiveUnit:unit.team}); }
-    unit.active = false;
+  this.deactivate = function(){
+    if(this.team == qpo.playerTeam){ this.rects.attr({inactiveUnit:this.team}); }
+    else { this.rect.attr({inactiveUnit:this.team}); }
+    this.active = false;
   }
-  unit.reloadBomb = function(){ // not in use
-    unit.bombReady = true;
-  }
-  unit.reloadShot = function(){ // not in use
-    unit.shotReady =true;
-  }
-  unit.score = function(why){
-    console.log('scored via ' + why + ' on turn ' + qpo.activeGame.turnNumber);
-    unit.alive = false;
-    unit.willScore = false;
-    unit.deactivate();
-    unit.spawnTimer = qpo.spawnTimers[qpo.activeGame.po];
-    if (unit.team==qpo.playerTeam){unit.showSpawnIcon()}
-    // unit.phys.stop();
-    unit.phys.animate({"opacity":0}, 2000*qpo.timeScale);
-    // console.log('unit '+unit.num +' scored');
+
+  this.score = function(why){
+    // console.log('scored via ' + why + ' on turn ' + qpo.activeGame.turnNumber);
+    this.alive = false;
+    this.willScore = false;
+    this.deactivate();
+    this.spawnTimer = qpo.spawnTimers[qpo.activeGame.po];
+    if (this.team==qpo.playerTeam){this.showSpawnIcon()}
+    // this.phys.stop();
+    this.phys.animate({"opacity":0}, 2000*qpo.timeScale);
+    // console.log('this '+this.num +' scored');
     setTimeout(function(){ //hide the visage and move it "off the board"
-      unit.phys.hide();
-      unit.x = -1;
-      unit.y = -1;
-      unit.phys.attr({'opacity':1, 'transform':unit.trans()});
-    }, 2000*qpo.timeScale)
+      this.phys.hide();
+      this.x = -1;
+      this.y = -1;
+      this.phys.attr({'opacity':1, 'transform':this.trans()});
+    }.bind(this), 2000*qpo.timeScale)
     if(qpo.mode == "game"){ //deal with scoreboard, AI, spawn, control panel, and ending game
-      switch(unit.team){ // update scoreboard, prep to reward AI
+      switch(this.team){ // update scoreboard, prep to reward AI
         case qpo.otherTeam: //enemy team ("red" until server implementation)
           qpo.redDead++;
           qpo.scoreBoard.addPoint("red");
@@ -325,10 +327,10 @@ function finishUnit(unit){
         qpo.activeGame.respawnEnabled = false;
       }
       if (qpo.activeGame.respawnEnabled) { //queue the spawn if respawn is on
-        // Get current turn number, add 5 to it, and spawn the unit then:
+        // Get current turn number, add 5 to it, and spawn the this then:
         var thisTurn = qpo.activeGame.turnNumber;
-        var spawnTurn = thisTurn + unit.spawnTimer + 1;
-        qpo.activeGame.upcomingSpawns.push([spawnTurn,unit.num,unit.team]); //add spawn to queue (checked from newTurn())
+        var spawnTurn = thisTurn + this.spawnTimer + 1;
+        qpo.activeGame.upcomingSpawns.push([spawnTurn,this.num,this.team]); //add spawn to queue (checked from newTurn())
       }
       else if (qpo.scoreBoard.redScore >= qpo.activeGame.scoreToWin // otherwise, end the game, if score limit reached.
         || qpo.scoreBoard.blueScore >= qpo.activeGame.scoreToWin && qpo.activeGame.isEnding == false){
@@ -349,22 +351,22 @@ function finishUnit(unit){
       }
     }
   }
-  unit.kill = function(){
-    unit.alive = false;
-    unit.willScore = false;
-    unit.deactivate();
-    unit.spawnTimer = qpo.spawnTimers[qpo.activeGame.po];
-    if(unit.team==qpo.playerTeam){ unit.showSpawnIcon(); }
-    unit.phys.stop();
-    unit.phys.animate({"opacity":0}, 2000*qpo.timeScale);
+  this.kill = function(){
+    this.alive = false;
+    this.willScore = false;
+    this.deactivate();
+    this.spawnTimer = qpo.spawnTimers[qpo.activeGame.po];
+    if(this.team==qpo.playerTeam){ this.showSpawnIcon(); }
+    this.phys.stop();
+    this.phys.animate({"opacity":0}, 2000*qpo.timeScale);
     setTimeout(function(){ //hide the visage and move it "off the board"
-      unit.phys.hide();
-      unit.x = -1;
-      unit.y = -1;
-      unit.phys.attr({'opacity':1, 'transform':unit.trans()});
-    }, 2000);
+      this.phys.hide();
+      this.x = -1;
+      this.y = -1;
+      this.phys.attr({'opacity':1, 'transform':this.trans()});
+    }.bind(this), 2000);
     if(qpo.mode == "game"){ //deal with scoreboard, AI, spawn, control panel, and ending game
-      switch(unit.team){ // update scoreboard, prep to reward AI
+      switch(this.team){ // update scoreboard, prep to reward AI
         case qpo.otherTeam: //enemy team ("red" until server implementation)
           qpo.redDead++;
           qpo.scoreBoard.addPoint("blue");
@@ -373,7 +375,7 @@ function finishUnit(unit){
         case qpo.playerTeam: //player team ("blue" until server implementation)
           qpo.blueDead++;
           qpo.scoreBoard.addPoint("red");
-          var number = unit.num;
+          var number = this.num;
           qpo.redRewardQueue.push(-1); //is this backwards?
           // controlPanel.actives[number].hide();
           // qpo.gui.push(controlPanel.actives[number]);
@@ -390,8 +392,8 @@ function finishUnit(unit){
       if (qpo.activeGame.respawnEnabled) { //queue the spawn if respawn is on
         // Get current turn number, add 5 to it, and spawn the unit then:
         var thisTurn = qpo.activeGame.turnNumber;
-        var spawnTurn = thisTurn + unit.spawnTimer + 1;
-        qpo.activeGame.upcomingSpawns.push([spawnTurn,unit.num,unit.team]); //add spawn to queue (checked from newTurn())
+        var spawnTurn = thisTurn + this.spawnTimer + 1;
+        qpo.activeGame.upcomingSpawns.push([spawnTurn,this.num,this.team]); //add spawn to queue (checked from newTurn())
       }
       else if (qpo.scoreBoard.redScore >= qpo.activeGame.scoreToWin // otherwise, end the game, if score limit reached.
         || qpo.scoreBoard.blueScore >= qpo.activeGame.scoreToWin && qpo.activeGame.isEnding == false){
@@ -412,8 +414,8 @@ function finishUnit(unit){
       }
     }
   }
-  unit.spawn = function(){ //call this at the moment you want a new unit to spawn
-    var spawnLoc = qpo.findSpawn(unit.team); //get the [row, column] for the spawn (loc is location)
+  this.spawn = function(){ //call this at the moment you want a new unit to spawn
+    var spawnLoc = qpo.findSpawn(this.team); //get the [row, column] for the spawn (loc is location)
     //put the unit at its spawn, show the unit, and set its "alive" property to "true":
     // if(typeof spawnSpot[1] != "number"){ //console.log some stuff
     //   console.log("NaN happening... chosen spawn was " + spawnLoc);
@@ -424,20 +426,17 @@ function finishUnit(unit){
     //   console.log(typeof spawnSpot[1]);
     // }
     // console.log(spawnSpot, spawnLoc);
-    unit.x = spawnLoc[1]; //update the grid positions, for qpo.snap
-    unit.y = spawnLoc[0]; //update the grid positions, for qpo.snap
-    unit.phys.attr({'transform': 't'+ unit.tx() + ',' +  unit.ty()}); //put the Raph element where it goes
-    unit.phys.show();
-    if(unit.spawnIconSet){unit.spawnIconSet.hide();}
-    unit.alive = true;
-    (unit.team == "red") ? (qpo.redDead -= 1) : (qpo.blueDead -= 1);
+    this.x = spawnLoc[1]; //update the grid positions, for qpo.snap
+    this.y = spawnLoc[0]; //update the grid positions, for qpo.snap
+    // this.phys.attr({'transform': 't'+ this.tx() + ',' +  this.ty()}); //put the Raph element where it goes
+    this.snap();
+    this.phys.show();
+    if(this.spawnIconSet){this.spawnIconSet.hide();}
+    this.alive = true;
+    (this.team == "red") ? (qpo.redDead -= 1) : (qpo.blueDead -= 1);
   };
-  unit.instakill = function(){ //for in-menu units
-    unit.alive = false;
-    unit.rect.remove();
-  }
-  unit.recordMove = function(move){
-    switch(unit.team){ //record the move (in qpo.activeGame.record)
+  this.recordMove = function(move){
+    switch(this.team){ //record the move (in qpo.activeGame.record)
       case "blue": {
         qpo.activeGame.record.blueMoves.push(move);
         break;
@@ -449,136 +448,46 @@ function finishUnit(unit){
       default: { "this was unexpected"; }
     }
   }
-  unit.move = function(dir){
+
+  this.move = function(dir){
     switch(dir){
       case 'up':
-        if (unit.y == 0){ //check if unit is red, if so, score.
-          if (unit.team == 'red'){
-            unit.y = -1 ;
-            unit.score();
+        if (this.y == 0){ //check if red, and if so, score.
+          if (this.team == 'red'){
+            this.y = -1 ;
+            this.score();
           }
         }
-        else { unit.y -= 1 ;}
+        else { this.y -= 1 ;}
         break;
       case 'right':
-        if (unit.x != qpo.activeGame.q-1){ unit.x += 1; }
+        if (this.x != qpo.activeGame.q-1){ this.x += 1; }
         break;
       case 'down':
-        if (unit.y == qpo.activeGame.q-1){ //bottom wall: score blue.
-          if (unit.team == 'blue'){ //score
-            unit.y = qpo.activeGame.q;
-            unit.score();
+        if (this.y == qpo.activeGame.q-1){ //bottom wall: score blue.
+          if (this.team == 'blue'){ //score
+            this.y = qpo.activeGame.q;
+            this.score();
           }
         }
-        else { unit.y += 1 ; }
+        else { this.y += 1 ; }
         break;
       case 'left':
-        if (unit.x != 0) { unit.x -= 1; }
-        // unit.moveLeft();
+        if (this.x != 0) { this.x -= 1; }
+        // this.moveLeft();
         break;
       default:
         console.log('idiots say what?');
     }
-    unit.phys.animate({'transform':unit.trans()}, 3000*qpo.timeScale, easingType); //move that son of a gun
-    if ((dir == 'up' && unit.team == 'red') || (dir=='down' && unit.team =='blue')) {unit.movingForward = true;}
-    else {unit.movingForward = false;}
-    unit.recordMove(dir);
+    this.phys.animate({'transform':this.trans()}, 3000*qpo.timeScale, easingType); //move that son of a gun
+    if ((dir == 'up' && this.team == 'red') || (dir=='down' && this.team =='blue')) {this.movingForward = true;}
+    else {this.movingForward = false;}
+    this.recordMove(dir);
   }
-  unit.moveLeft = function(){ //animate the unit, update unit.x, record move
-    unit.movingForward = false;
-    if (unit.x > 0) {
-      if (unit.x == 1){ //unit will hit wall, do a half-animation
-        // unit.nx = 0;
-        unit.x = 0;
-        var animLength = 1500*qpo.timeScale;
-      }
-      else { //unit is free to move two spaces
-        unit.x -= 2;
-        var animLength = 3000*qpo.timeScale;
-      }
-      var anim = Raphael.animation({'transform':('t' + unit.tx() +',' +unit.ty())}, animLength, easingType);
-      setTimeout(function(){ //test BBox
-        if (unit.team=='blue'){
-          // var box = unit.rect.getBBox();
-          // var tester = c.rect(box.x, box.y, box.width, box.height).attr({'stroke':'white'});
-          // console.log(unit.rect.getBBox().x, unit.rect.getBBox().y,unit.rect.width,unit.rect.height);
-          // qpo.tester2 = c.rect(unit.rect.getBBox().x, unit.rect.getBBox().y, unit.rect.attr('width'), unit.rect.attr('height'))
-          //   .attr({'stroke':'white','stroke-width':2});
-          // qpo.tester2.toFront();
-          // qpo.tester2.show();
-          // console.log(qpo.tester2.attr('x'));
-          // console.log(qpo.tester2.attr('y'));
-          // console.log(qpo.tester2);
-          // console.log(box.x);
-          // console.log(unit.rect.getBBox().x);
-          // console.log(box.x == unit.rect.getBBox().x)
-          // setTimeout(function(){
-          //   // tester.remove();
-          //   qpo.tester2.remove();
-          // }, 500);
-        }
-      }, 500);
-      unit.phys.animate(anim);
-      unit.movingForward = false;
-    }
-  }
-  unit.moveUp = function(){
-    unit.movingForward = false;
-    if (unit.y == 0 && unit.team == "red") {unit.score()} //score for red
-    if (unit.y > 0) { // move the unit
-      unit.y -= 2;
-      if (unit.y == -1){ // do a half-animation
-        if (unit.team=='red'){unit.willScore=true;}
-        else { unit.y = 0;}
-      }
-      var anim = Raphael.animation({'transform':('t' + unit.tx() + ','+ unit.ty())}, 3000*qpo.timeScale, easingType);
-      unit.phys.animate(anim);
-      if (unit.team == "red"){ unit.movingForward = true; }
-      else { unit.movingForward = false; }
-    }
-  }
-  unit.moveRight = function(){
-    if (unit.x < qpo.activeGame.q-1) {
-      if (unit.x == qpo.activeGame.q-2 ){ //half-anim, wall hit
-        unit.x = qpo.activeGame.q-1;
-        var animLength = 1500*qpo.timeScale;
-      }
-      else { //full anim
-        unit.x += 2;
-        var animLength = 3000*qpo.timeScale;
-      }
-      var anim = Raphael.animation({'transform':('t' + unit.tx() +',' + unit.ty())}, animLength, easingType);
-      unit.phys.animate(anim);
-      unit.movingForward = false;
-    }
-  }
-  unit.moveDown = function(){
-    if (unit.y == (qpo.activeGame.q-1) && unit.team == "blue") {unit.score()} //score for blue
-    if (unit.y < qpo.activeGame.q-1 ) { // if unit not on bottom wall, move it
-      unit.movingForward = false;
-      unit.y += 2;
-      if (unit.y > qpo.activeGame.q-1 ){
-        if(unit.team=='blue'){unit.willScore = true;}
-        else{unit.y--} //don't try to move a red unit beyond the bottom wall.
-      }
-      var anim = Raphael.animation({'transform':('t' + unit.tx() + ','+ unit.ty())}, 3000*qpo.timeScale, easingType);
-      unit.phys.animate(anim);
-      setTimeout(function(){ //test BBox
-        var box = unit.rect.getBBox();
-        var tester = c.rect(box.x, box.y, box.width, box.height).attr({'stroke':'white'})
-        setTimeout(function(){
-          tester.remove();
-        }, 500)
-      }, 500);
-      if (unit.team == "blue"){ unit.movingForward = true; }
-      else { unit.movingForward = false; }
-    }
-
-  }
-  unit.bomb = function(){
-    unit.movingForward = false;
+  this.bomb = function(){
+    this.movingForward = false;
     var bomb;
-    bomb = new startBomb(unit);
+    bomb = new startBomb(this);
     improveBomb(bomb);
     finishBomb(bomb);
     bomb.next();
@@ -589,7 +498,7 @@ function finishUnit(unit){
       try{qpo.menus.title.blackness.toBack();}
       catch(e){}
     }
-    switch(unit.team){ //record the move (in qpo.activeGame.record)
+    switch(this.team){ //record the move (in qpo.activeGame.record)
       case "blue": {
         qpo.activeGame.record.blueMoves.push(5);
         break;
@@ -603,54 +512,54 @@ function finishUnit(unit){
       }
     }
   }
-  unit.shoot = function(){
-    unit.movingForward = false;
-    var shot, anim;
+  this.shoot = function(){
+    this.movingForward = false;
+    var width = 5;
+    var height = 20;
+    var speed = 2.5; // in units per turn
     var lw = qpo.guiCoords.gameBoard.leftWall;
     var tw = qpo.guiCoords.gameBoard.topWall;
-    switch(unit.team){ //create the shot and the correct animation based on if the unit is moving forward
+    var shot, anim;
+    switch(this.team){ //create the shot and the correct animation based on if the unit is moving forward
       case "blue":
-        shot = c.rect(lw+unit.x*mtr + 22*mtr/50,
-                      tw+unit.y*mtr + unit.rect.attr('height') + 2*mtr/50,
-                      6*mtr/50, 2*mtr/50);
-        anim = Raphael.animation({"height":25*mtr/50}, 500*qpo.timeScale,
-          function(){ shot.animate({"y": shot.attr('y') + 2.5*mtr*qpo.activeGame.q},
+        shot = c.rect(lw+this.x*mtr + mtr*(25-width/2)/50,
+                      tw+this.y*mtr + this.rect.attr('height') + 2*mtr/50,
+                      mtr*width/50, mtr*2/50);
+        anim = Raphael.animation({"height":height*mtr/50}, 500*qpo.timeScale,
+          function(){ shot.animate({"y": shot.attr('y') + speed*mtr*qpo.activeGame.q},
             3000*qpo.activeGame.q*qpo.timeScale);
         });
-        if (unit.movingForward){
-          anim = Raphael.animation({"height":25*mtr/50, "y": shot.attr('y') + mtr/6 + 10*mtr/50}, 500*qpo.timeScale,
-            function(){ shot.animate({"y": shot.attr('y') + 2.5*mtr*qpo.activeGame.q},
+        if (this.movingForward){
+          anim = Raphael.animation({"height":height*mtr/50, "y": shot.attr('y') + mtr/6 + 10*mtr/50}, 500*qpo.timeScale,
+            function(){ shot.animate({"y": shot.attr('y') + speed*mtr*qpo.activeGame.q},
               3000*qpo.activeGame.q*qpo.timeScale); //make the shot move at 2.5 units per turn
           });
         }
         break;
       case "red":
-        shot = c.rect(lw+unit.x*mtr + 22*mtr/50,
-                      tw+unit.y*mtr - 4*mtr/50,
-                      6*mtr/50, 2*mtr/50);
-        anim = Raphael.animation({"height":0.5*mtr, "y": shot.attr('y') - 0.5*mtr}, 500*qpo.timeScale,
+        shot = c.rect(lw+this.x*mtr + mtr*(25-width/2)/50,
+                      tw+this.y*mtr - mtr*4/50,
+                      mtr*width/50, mtr*2/50);
+        anim = Raphael.animation({"height":height*mtr/50, "y": shot.attr('y') - 0.5*mtr}, 500*qpo.timeScale,
           function(){
-            shot.animate({"y": shot.attr('y') - 2.5*mtr*qpo.activeGame.q}, 3000*qpo.activeGame.q*qpo.timeScale);
+            shot.animate({"y": shot.attr('y') - speed*mtr*qpo.activeGame.q}, 3000*qpo.activeGame.q*qpo.timeScale);
           }
         );
-        if (unit.movingForward){
-          anim = Raphael.animation({"height":0.5*mtr, "y": shot.attr('y') - 0.5*mtr - mtr/6 - 10*mtr/50}, 500*qpo.timeScale,
+        if (this.movingForward){
+          anim = Raphael.animation({"height":height*mtr/50, "y": shot.attr('y') - height*mtr/50 - mtr/6 - 10*mtr/50}, 500*qpo.timeScale,
             function(){
-              shot.animate({"y": shot.attr('y') - 2.5*mtr*qpo.activeGame.q}, 3000*qpo.activeGame.q*qpo.timeScale);
+              shot.animate({"y": shot.attr('y') - speed*mtr*qpo.activeGame.q}, 3000*qpo.activeGame.q*qpo.timeScale);
             }
           );
         }
         break;
     }
-    shot.attr({ //color it and set its opacity
-      "fill":qpo.COLOR_DICT["green"],
-      "opacity":0.9
-    });
-    shot.data("team",unit.team); //make it remember which team fired it
+    shot.attr(qpo.shotAtts);
+    shot.data("team",this.team); //make it remember which team fired it
     shot.animate(anim);
     qpo.gui.push(shot);
     qpo.shots.push(shot);
-    switch(unit.team){ //record the move (in qpo.activeGame.record)
+    switch(this.team){ //record the move (in qpo.activeGame.record)
       case "blue": {
         qpo.activeGame.record.blueMoves.push(6);
         break;
@@ -664,9 +573,9 @@ function finishUnit(unit){
       }
     }
   }
-  unit.stay = function(){
-    unit.rect.stop();
-    switch(unit.team){ //record the move (in qpo.activeGame.record)
+  this.stay = function(){
+    this.rect.stop();
+    switch(this.team){ //record the move (in qpo.activeGame.record)
       case "blue": {
         qpo.activeGame.record.blueMoves.push(7);
         break;
@@ -680,12 +589,6 @@ function finishUnit(unit){
       }
     }
   }
-}
 
-function makeUnit(color,gx,gy,num){
-  var unit = new startUnit(color,gx,gy,num);
-  improveUnit(unit);
-  finishUnit(unit);
-
-  return unit;
+  return this;
 }

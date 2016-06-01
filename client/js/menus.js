@@ -180,7 +180,8 @@ qpo.makeMuteButton = function(){
         case 0: { qpo.menuSong.volume = 1; break; }
         default: {console.log("this was unexpected"); break;}
       }
-    });
+    }
+  );
 }
 
 qpo.makeTitleScreen = function(){
@@ -657,7 +658,7 @@ qpo.makeEndGameMenu = function(result){
     this.close();
     qpo.menus['main'] = new qpo.makeMainMenu();
   }.bind(this),0,false,"mainM");
-  this.selectDiff = new button("Select Difficulty",300,350+25,function(e){ //make the Select Diffuculty button
+  this.selectDiff = new button("Select Difficulty",300,350+25,function(e){ //make the Select Difficulty button
     this.close();
     qpo.menus['gameS'] = new qpo.makeGameSetupMenu();
   }.bind(this), 60,false,"gameS");

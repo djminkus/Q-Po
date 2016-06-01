@@ -117,8 +117,6 @@ qpo.Game = function(q, po, type, playMusic, respawn, turns){ //"Game" class. Ins
     arr[216] = Date.now();
     return arr;
   };
-  // Acquire initial state, but not if we're in menu:
-  if(qpo.mode == "game"){this.state = this.getState();}
 
   if(playMusic == true){ // stop menu song and play game song. (not used)
     try { qpo.activeGame.song.remove(); } //try removing the previously existing song
