@@ -1,10 +1,72 @@
 //Set up the menu objects and open the title screen.
 
+qpo.font = 'Orbitron';
+switch(qpo.font){
+  case 'Righteous':{
+    WebFontConfig = { google: { families: [ 'Righteous::latin' ] } };
+    break;
+  }
+  case 'Poppins':{
+    WebFontConfig = { google: { families: [ 'Poppins:400,300,500,600,700:latin' ] } };
+    break;
+  }
+  case 'Oxygen':{
+    WebFontConfig = { google: { families: [ 'Oxygen:300,400,700:latin' ] } };
+    break;
+  }
+  case 'Varela':{
+    WebFontConfig = { google: { families: [ 'Varela+Round::latin' ] } };
+    break;
+  }
+  case 'Questrial':{
+    WebFontConfig = { google: { families: [ 'Questrial::latin' ] } };
+    break;
+  }
+  case 'Orbitron':{
+    WebFontConfig = { google: { families: [ 'Orbitron:400,500,700,900:latin' ] } };
+    break;
+  }
+  case 'Open Sans':{
+    WebFontConfig = { google: { families: [ 'Open+Sans:300,400:latin' ] } };
+    break;
+  }
+}
+(function() { //inject the Google webfont script
+  var wf = document.createElement('script');
+  wf.src = 'https://ajax.googleapis.com/ajax/libs/webfont/1/webfont.js';
+  wf.type = 'text/javascript';
+  wf.async = 'true';
+  var s = document.getElementsByTagName('script')[0];
+  s.parentNode.insertBefore(wf, s);
+})();
+
+qpo.upr = 5; //upper panel corner radius
+qpo.upperPanel = function(titleEl){ //return the top white panel Raph
+  var box = titleEl.getBBox();
+  var margin = 20;
+  var topMargin = 60;
+  var panelWidth = box.width + 2 * margin;
+  var panelHeight = box.height + margin + topMargin;
+  var panel = c.rect(box.x - margin, box.y - topMargin, panelWidth, panelHeight, qpo.upr)
+    .insertBefore(titleEl)
+    .attr({'fill':qpo.COLOR_DICT['foreground'],'stroke':'none'});
+  titleEl.attr({'fill': qpo.COLOR_DICT['background']})
+  // qpo.glows.push(panel.glow({'color':qpo.COLOR_DICT['foreground']}))
+  return panel;
+}
+
 c.customAttributes.qpoText = function(size, fill){ //style text white with Open Sans family and "size" font-size.
   return {
     "font-size": size,
     "fill": (fill || "white"),
-    "font-family":"'Orbitron',sans-serif"
+    "font-family":" '" + qpo.font + "',sans-serif"
+    // "font-family":"'Poppins',sans-serif"
+    // "font-family":"'Oxygen',sans-serif"
+    // "font-family":"'Varela Round',sans-serif"
+    // "font-family":"'Questrial',sans-serif"
+    // "font-family":"'Orbitron',sans-serif"
+    // "font-family":"'Open Sans',sans-serif"
+    // "font-family":"sans-serif"
   };
 }
 
@@ -34,12 +96,13 @@ qpo.Menu = function(titleStr, itemList, parent, placeholder){ // A Menu contains
       qpo.activeMenu = this.titleStr;
 
       this.background = c.rect(0,0, c.width, c.height).attr({'fill':qpo.COLOR_DICT['background']});
-      this.title = c.text(c.width/2, 60, this.titleStr).attr({qpoText:[this.TITLE_SIZE]});
-      this.layer1 = c.set().push(this.background, this.title);
+      this.title = c.text(c.width/2, 60, this.titleStr).attr({qpoText:[this.TITLE_SIZE, qpo.COLOR_DICT['background']]});
+      this.upperPanel = qpo.upperPanel(this.title);
+      this.layer1 = c.set().push(this.background, this.title, this.upperPanel);
 
       this.board = new qpo.Board(1, 7, 200, 120, 40);
       qpo.board = this.board;
-      this.layer2 = c.set().push(this.board.all)
+      this.layer2 = c.set().push(this.board.all);
 
       this.cl.render();
 
@@ -49,6 +112,7 @@ qpo.Menu = function(titleStr, itemList, parent, placeholder){ // A Menu contains
       this.all = c.set().push(this.layer1, this.layer2);
       for(var i=0; i < this.cl.length; i++){ this.all.push(this.cl.list[i].raphs); }
       qpo.fadeIn(this.all);
+      qpo.fadeInGlow(qpo.glows);
     }.bind(this);
   }
   else { // make a placeholder menu
@@ -61,15 +125,16 @@ qpo.Menu = function(titleStr, itemList, parent, placeholder){ // A Menu contains
       this.all = c.set().push(this.background, this.comingSoon);
       qpo.fadeIn(this.all);
 
-      this.next = function(){console.log('why u do taht?')};
-      this.previous = function(){console.log('whyyyyyyyy')};
+      // this.next = function(){console.log('why u do taht?')};
+      // this.previous = function(){console.log('whyyyyyyyy')};
     }.bind(this);
   }
 
   this.parent = qpo.menus[parent] || 'title';
   this.up = function(){ this.close('parent'); }
 
-  this.close = function(status){ //clear the canvas
+  this.close = function(status, time){ //clear the canvas and open the next screen
+    qpo.fadeOutGlow(qpo.glows, function(){}, time);
     qpo.fadeOut(this.all, function(){
       c.clear();
       this.all = null; //remove reference to raphs too
@@ -96,7 +161,7 @@ qpo.Menu = function(titleStr, itemList, parent, placeholder){ // A Menu contains
         }
         default : { qpo.menus[status].open(); }
       }
-    }.bind(this));
+    }.bind(this), time);
   }.bind(this);
 
   return this;
@@ -190,9 +255,10 @@ qpo.makeMenus = function(){
 
   qpo.menus = {};
 
+  //make all the menus:
   qpo.menus['Main Menu'] = new qpo.Menu('Main Menu', [
     new qpo.MenuOption(0,1,'Play', function(){}, 'Main Menu', true),
-    new qpo.MenuOption(0,3,'Controls', function(){}, 'Main Menu'),
+    new qpo.MenuOption(0,3,'How To Play', function(){}, 'Main Menu'),
     new qpo.MenuOption(0,5,'Compete', function(){}, 'Main Menu')
   ], 'title');
   qpo.menus['Main Menu'].up = function(){qpo.menus['Main Menu'].close('title')};
@@ -202,21 +268,88 @@ qpo.makeMenus = function(){
     new qpo.MenuOption(0,3,'4v4', function(){}, 'Game Setup', false),
     new qpo.MenuOption(0,5,'6v6', function(){}, 'Game Setup', false)
   ], 'Main Menu');
-  qpo.menus['Controls'] = new qpo.Menu('Controls', null, 'Main Menu', true);
+  qpo.menus['How To Play'] = new qpo.Menu('How To Play', null, 'Main Menu', true);
   qpo.menus['Compete'] = new qpo.Menu('Compete', null, 'Main Menu', true);
 
   qpo.menus['Match Complete'] = new qpo.Menu('Match Complete',[
     new qpo.MenuOption(0,1, 'Main Menu', function(){}, 'Match Complete', true)
   ], 'Main Menu');
 
+  //customize the "How To Play" menu:
+  qpo.menus['How To Play'].open = (function(){
+    var original = qpo.menus['How To Play'].open;
+    return function() {
+        var result = original.apply(this, arguments); // use .apply() to call the baseline "open" function within this scope
+        var menu = qpo.menus['How To Play'];
+        menu.comingSoon.remove();
+
+        var texts = [
+          'Q-Po is turn-based.', //0
+          'To score, reach their end zone or destroy their units.', //1
+          ' CONTROLS ', //2
+          'KEY', //3
+          'q',
+          'e',
+          'w/a/s/d',
+          'x',
+          'arrow keys',
+          'ACTION', //9
+          'bomb',
+          'shoot',
+          'move left/up/right/down',
+          'stay',
+          'change active unit', //4
+        ]
+        var set = c.set(); //set for texts, title, and upperPanel
+        for(ind in texts){ //Create raph els from the texts array
+          ind = parseInt(ind);
+          var y = 140+ ind*40;
+          switch(ind){
+            case 0:
+            case 1: {
+              y = y - 20
+            }
+            case 2: {
+              set.push(c.text(c.width/2, y, texts[ind]).attr({qpoText:[20]}))
+              break;
+            }
+            case 9:
+            case 10:
+            case 11:
+            case 12:
+            case 13:
+            case 14: {
+              y = 140 + (ind-6)*40;
+              set.push(qpo.xtext(310, y, texts[ind], 20))
+              break;
+            }
+            default: {
+              set.push(qpo.xtext(150, y, texts[ind], 20))
+              break;
+            }
+          }
+        }
+
+        var upperPanel, title;
+        // menu.upperPanel = c.rect(c.width/4,-10, c.width/2, 100, qpo.upr).attr({'fill':qpo.COLOR_DICT['foreground']});
+        menu.title = title = c.text(c.width/2, 60, 'How To Play').attr({qpoText:[qpo.menus['How To Play'].TITLE_SIZE, qpo.COLOR_DICT['background']]});
+        menu.upperPanel = upperPanel = qpo.upperPanel(menu.title);
+
+        menu.all.push(set, upperPanel, title);
+        qpo.fadeIn(menu.all);
+
+        return result;
+    };
+  })();
+
+  //make menu options do what they're supposed to:
   qpo.menus['Main Menu'].cl.list[0].action = function(){ qpo.menus['Main Menu'].close('Game Setup'); }
-  qpo.menus['Main Menu'].cl.list[1].action = function(){ qpo.menus['Main Menu'].close('Controls'); }
+  qpo.menus['Main Menu'].cl.list[1].action = function(){ qpo.menus['Main Menu'].close('How To Play'); }
   qpo.menus['Main Menu'].cl.list[2].action = function(){ qpo.menus['Main Menu'].close('Compete'); }
 
-  qpo.menus['Game Setup'].cl.list[0].action = function(){ qpo.menus['Game Setup'].close('2v2'); }
-  qpo.menus['Game Setup'].cl.list[1].action = function(){ qpo.menus['Game Setup'].close('4v4'); }
-  qpo.menus['Game Setup'].cl.list[2].action = function(){ qpo.menus['Game Setup'].close('6v6'); }
-
+  qpo.menus['Game Setup'].cl.list[0].action = function(){ qpo.menus['Game Setup'].close('2v2', 1000); }
+  qpo.menus['Game Setup'].cl.list[1].action = function(){ qpo.menus['Game Setup'].close('4v4', 1000); }
+  qpo.menus['Game Setup'].cl.list[2].action = function(){ qpo.menus['Game Setup'].close('6v6', 1000); }
 
   qpo.menus['Match Complete'].cl.list[0].action = function(){ qpo.menus['Match Complete'].close('parent'); }
 
@@ -248,6 +381,7 @@ qpo.displayTitleScreen = function(){ //Called whenever title screen is displayed
   this.board = new qpo.Board(17,7, qpo.guiCoords.gameBoard.leftWall, qpo.guiCoords.gameBoard.rightWall);
   qpo.board = this.board;
   this.board.all.transform('t' + -(UNIT_LENGTH) + ',' + -(UNIT_LENGTH));
+  qpo.glows.transform('t' + -(UNIT_LENGTH) + ',' + -(UNIT_LENGTH));
   this.layer2 = c.set().push(this.board.all);
   //Spawn units in the shape of the letters "Q-Po".
   this.qUnits = new Array();
@@ -300,7 +434,6 @@ qpo.displayTitleScreen = function(){ //Called whenever title screen is displayed
   this.title = c.set(this.qRaphs, this.dash, this.pRaphs, this.oRaphs);
   this.layer2.push(this.title, this.board);
 
-
   //3rd layer (prompt)
   this.promptt = c.text(qpo.guiDimens.gpWidth/2, qpo.guiDimens.gpHeight/2, "Press enter to start")
     .attr({qpoText:[32,qpo.COLOR_DICT["red"]], "opacity":1});
@@ -315,16 +448,15 @@ qpo.displayTitleScreen = function(){ //Called whenever title screen is displayed
   this.close = function(){ //clear screen and make main menu
     // for (var i = 0; i < qpo.shots.length; i++){if (qpo.shots[i]) {qpo.shots[i].remove();}} //remove shots
     // for (var i = 0; i < qpo.bombs.length; i++){if (qpo.bombs[i]) {qpo.bombs[i].phys.remove();}} //remove bombs
+    qpo.fadeOutGlow(qpo.glows);
     this.promptt.stop();
     qpo.fadeOut(this.promptt, function(){}, 200);
     qpo.fadeOut(this.all, function(){
       c.clear();
-      qpo.shots = [];
-      qpo.bombs = [];
-
+      // qpo.shots = [];
+      // qpo.bombs = [];
       qpo.guiCoords.gameBoard.leftWall = 25;
       qpo.guiCoords.gameBoard.topWall = 75;
-
       qpo.menus['Main Menu'].open();
     }, 400);
   };

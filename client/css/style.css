@@ -1,9 +1,10 @@
 body{
+  /*padding-top: 20px;*/
   overflow:hidden;
 }
 
 /*failed color ribbon*/
-body::before {
+/*body::before {
   content: '';
   position: absolute;
   top: 0;
@@ -34,7 +35,7 @@ body::before {
       rgba(255, 187, 102, 1) 100%);
   background-size: 25% 100%;
   background-repeat: repeat-X;
-}
+}*/
 
 /*p {
   font-family:"Open Sans",sans-serif;
@@ -55,7 +56,8 @@ body::before {
 
 #mainPane {
   margin:0px;
-  padding:5px;
+  /*padding:5px;*/
+  padding:00px;
   height:100vw;
   background-color: black;
 }

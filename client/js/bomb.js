@@ -3,11 +3,11 @@ qpo.bombEasing = 'linear';
 //CREATE BOMB TYPE/CLASS -- not implemented (see "explode()")
 function startBomb(su){ //su = source unit
   var UNIT = qpo.guiDimens.squareSize;
-  var INITIAL_BOMB_SIZE = 14*qpo.guiDimens.squareSize/50;
-  var BOMB_MARGIN_Y = 19*qpo.guiDimens.squareSize/50;
-  var BOMB_MARGIN_X = 18*qpo.guiDimens.squareSize/50;
-  var INITIAL_RADIUS = 14/50; //multiply by unit to get actual
-  var MAX_RADIUS = 2; //unused. # of square lengths the explosion takes up
+  var INITIAL_BOMB_SIZE = 10*qpo.guiDimens.squareSize/50;
+  var BOMB_MARGIN_Y = 20*qpo.guiDimens.squareSize/50;
+  var BOMB_MARGIN_X = 20*qpo.guiDimens.squareSize/50;
+  // var INITIAL_RADIUS = 14/50; //multiply by unit to get actual
+  // var MAX_RADIUS = 2; //unused. # of square lengths the explosion takes up
   var SIDE_RADIUS = 2; //pixels of rounding at the corners
 
   this.team = su.team;
@@ -39,7 +39,7 @@ function startBomb(su){ //su = source unit
 function improveBomb(bomb){ //color it and make it explodable
   bomb.phys.attr({
     // "fill":qpo.COLOR_DICT["purple"],
-    "opacity": 0.8,
+    "opacity": 0.9,
     "stroke":qpo.COLOR_DICT["purple"],
     'stroke-width':qpo.bombStroke
   });
@@ -55,13 +55,18 @@ function improveBomb(bomb){ //color it and make it explodable
         "y": cy - (qpo.bombSize/2 - 7*qpo.guiDimens.squareSize/50),
         "x": cx - (qpo.bombSize/2 - 7*qpo.guiDimens.squareSize/50),
         "width": qpo.bombSize,
-        "height": qpo.bombSize
+        "height": qpo.bombSize,
+        'opacity':1,
+        'stroke-width':8
+
       },
       "100%": {
         "y":cy+7*qpo.guiDimens.squareSize/50,
         "x":cx+7*qpo.guiDimens.squareSize/50,
         "width":0,
-        "height":0
+        "height":0,
+        'opacity':0,
+        'stroke-width':0
       }
     }, 3000*qpo.timeScale, function(){ qpo.bombs[bomb.index] = false; });
     bomb.phys.animate(anim);

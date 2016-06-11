@@ -11,14 +11,16 @@ qpo.circleAtts = function(color){ //attributes for the neutral/stay icon
     'stroke':qpo.COLOR_DICT[color],
     'stroke-width':qpo.iconStroke,
     'fill':qpo.COLOR_DICT[color],
-    'r':qpo.guiDimens.squareSize/9
+    'r':qpo.guiDimens.squareSize/12
   }
 }
 qpo.shotAtts = {
-  "fill":qpo.COLOR_DICT["green"],
+  // "fill":qpo.COLOR_DICT["green"],
   "opacity":1,
-  'stroke': qpo.COLOR_DICT["green"]
+  'stroke': qpo.COLOR_DICT["green"],
+  'stroke-width':2
 }
+qpo.scr = 2 //shot corner radius
 
 qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
   // color is 'blue' or 'red' -- "Which team is the unit on?"
@@ -164,7 +166,7 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
       'stroke':qpo.COLOR_DICT[color],
       'stroke-width': qpo.unitStroke
     });
-  this.icon = c.circle(lw + mtr/2, tw + mtr/2, mtr/7).attr(qpo.circleAtts(color));
+  this.icon = c.circle(lw + mtr/2, tw + mtr/2).attr(qpo.circleAtts(color));
   this.phys = c.set(this.rect, this.icon);
   this.snap = function(){this.phys.attr({'transform':this.trans()});} //.bind(this if glitchy)
 
@@ -189,8 +191,9 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
     this.spawnText = c.text(six, siy, 0).attr({qpoText:[10]});
     this.spawnIconSet = c.set().push(this.spawnIcon, this.spawnText).hide();
     this.rects = c.set().push(this.rect, this.spawnIcon);
+    qpo.gui.push(this.spawnIconSet);
   }
-  this.showSpawnIcon = function(){
+  this.showSpawnIcon = function(){ //change the digit and fade in the set
     this.spawnText.attr({'text':this.spawnTimer});
     this.spawnIconSet.show();
     qpo.fadeIn(this.spawnIconSet, 2000*qpo.timeScale);
@@ -241,15 +244,17 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
         newIcon = qpo.arrow(lw+mtr/2, tw+mtr/2, color, 'right');
         break;
       case 'shoot':
-        newIcon = c.rect(lw+mtr/2 -5, tw+mtr/2 -5, 10,10).attr({
-          "fill":qpo.COLOR_DICT['green'],
-          'stroke':qpo.COLOR_DICT['green']
+        newIcon = c.rect(lw+mtr/2-2, tw+mtr/2-7.5, 4, 15, 2).attr({
+          // "fill":qpo.COLOR_DICT['green'],
+          'stroke':qpo.COLOR_DICT['green'],
+          'stroke-width':2
         });
         break;
       case 'bomb':
-        newIcon = c.rect(lw+mtr/2 -5, tw+mtr/2 -5, 10,10).attr({
-          "fill":qpo.COLOR_DICT['purple'],
+        newIcon = c.rect(lw+mtr/2 - 5, tw+mtr/2 - 5, 10*mtr/50, 10*mtr/50, 2).attr({
+          // "fill":qpo.COLOR_DICT['purple'],
           'stroke':qpo.COLOR_DICT['purple'],
+          'stroke-width':3,
         });
         break;
       case 'stay':
@@ -319,7 +324,7 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
           qpo.blueDead++;
           qpo.scoreBoard.addPoint("blue");
           qpo.redRewardQueue.push(1); //is this backwards?
-          qpo.updateBlueAU(qpo.activeGame.po);
+          if(this.active){qpo.updateBlueAU(qpo.activeGame.po);}
           break;
       }
       if (qpo.scoreBoard.blueScore >= qpo.activeGame.scoreToWin  //if score limit reached, disable respawn
@@ -357,7 +362,7 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
     this.deactivate();
     this.spawnTimer = qpo.spawnTimers[qpo.activeGame.po];
     if(this.team==qpo.playerTeam){ this.showSpawnIcon(); }
-    this.phys.stop();
+    // this.phys.stop();
     this.phys.animate({"opacity":0}, 2000*qpo.timeScale);
     setTimeout(function(){ //hide the visage and move it "off the board"
       this.phys.hide();
@@ -377,11 +382,7 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
           qpo.scoreBoard.addPoint("red");
           var number = this.num;
           qpo.redRewardQueue.push(-1); //is this backwards?
-          // controlPanel.actives[number].hide();
-          // qpo.gui.push(controlPanel.actives[number]);
-          // controlPanel.actives[number].show();
-          // controlPanel.changeIcon("death");
-          qpo.updateBlueAU(qpo.activeGame.po);
+          if (this.active){qpo.updateBlueAU(qpo.activeGame.po);}
           // controlPanel.disable();
           break;
       }
@@ -431,9 +432,12 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
     // this.phys.attr({'transform': 't'+ this.tx() + ',' +  this.ty()}); //put the Raph element where it goes
     this.snap();
     this.phys.show();
+    this.phys.attr({'opacity':1});
     if(this.spawnIconSet){this.spawnIconSet.hide();}
     this.alive = true;
-    (this.team == "red") ? (qpo.redDead -= 1) : (qpo.blueDead -= 1);
+    // (this.team == "red") ? (qpo.redDead -= 1) : (qpo.blueDead -= 1);
+    if(this.team=='red'){qpo.redDead-=1; console.log('red unit' + this.num + 'spawned')}
+    else {qpo.blueDead -=1}
   };
   this.recordMove = function(move){
     switch(this.team){ //record the move (in qpo.activeGame.record)
@@ -451,7 +455,7 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
 
   this.move = function(dir){
     switch(dir){
-      case 'up':
+      case 'up':{
         if (this.y == 0){ //check if red, and if so, score.
           if (this.team == 'red'){
             this.y = -1 ;
@@ -459,11 +463,11 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
           }
         }
         else { this.y -= 1 ;}
-        break;
-      case 'right':
+        break;}
+      case 'right':{
         if (this.x != qpo.activeGame.q-1){ this.x += 1; }
-        break;
-      case 'down':
+        break;}
+      case 'down':{
         if (this.y == qpo.activeGame.q-1){ //bottom wall: score blue.
           if (this.team == 'blue'){ //score
             this.y = qpo.activeGame.q;
@@ -471,13 +475,13 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
           }
         }
         else { this.y += 1 ; }
-        break;
-      case 'left':
+        break;}
+      case 'left':{
         if (this.x != 0) { this.x -= 1; }
         // this.moveLeft();
-        break;
-      default:
-        console.log('idiots say what?');
+        break;}
+      default:{
+        console.log('idiots say what?');}
     }
     this.phys.animate({'transform':this.trans()}, 3000*qpo.timeScale, easingType); //move that son of a gun
     if ((dir == 'up' && this.team == 'red') || (dir=='down' && this.team =='blue')) {this.movingForward = true;}
@@ -514,9 +518,9 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
   }
   this.shoot = function(){
     this.movingForward = false;
-    var width = 5;
+    var width = 4;
     var height = 20;
-    var speed = 2.5; // in units per turn
+    var speed = 4; // in units per turn
     var lw = qpo.guiCoords.gameBoard.leftWall;
     var tw = qpo.guiCoords.gameBoard.topWall;
     var shot, anim;
@@ -524,7 +528,7 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
       case "blue":
         shot = c.rect(lw+this.x*mtr + mtr*(25-width/2)/50,
                       tw+this.y*mtr + this.rect.attr('height') + 2*mtr/50,
-                      mtr*width/50, mtr*2/50);
+                      mtr*width/50, mtr*2/50, qpo.scr);
         anim = Raphael.animation({"height":height*mtr/50}, 500*qpo.timeScale,
           function(){ shot.animate({"y": shot.attr('y') + speed*mtr*qpo.activeGame.q},
             3000*qpo.activeGame.q*qpo.timeScale);
@@ -539,7 +543,7 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
       case "red":
         shot = c.rect(lw+this.x*mtr + mtr*(25-width/2)/50,
                       tw+this.y*mtr - mtr*4/50,
-                      mtr*width/50, mtr*2/50);
+                      mtr*width/50, mtr*2/50, qpo.scr);
         anim = Raphael.animation({"height":height*mtr/50, "y": shot.attr('y') - 0.5*mtr}, 500*qpo.timeScale,
           function(){
             shot.animate({"y": shot.attr('y') - speed*mtr*qpo.activeGame.q}, 3000*qpo.activeGame.q*qpo.timeScale);
