@@ -43,11 +43,12 @@ switch(qpo.font){
 qpo.upr = 5; //upper panel corner radius
 qpo.upperPanel = function(titleEl){ //return the top white panel Raph
   var box = titleEl.getBBox();
-  var margin = 20;
+  var xMargin = 20; //Left-right
   var topMargin = 60;
-  var panelWidth = box.width + 2 * margin;
-  var panelHeight = box.height + margin + topMargin;
-  var panel = c.rect(box.x - margin, box.y - topMargin, panelWidth, panelHeight, qpo.upr)
+  var botMargin = 10; //bottom
+  var panelWidth = box.width + 2 * xMargin;
+  var panelHeight = box.height + botMargin + topMargin;
+  var panel = c.rect(box.x - xMargin, box.y - topMargin, panelWidth, panelHeight, qpo.upr)
     .insertBefore(titleEl)
     .attr({'fill':qpo.COLOR_DICT['foreground'],'stroke':'none'});
   titleEl.attr({'fill': qpo.COLOR_DICT['background']})
@@ -198,8 +199,9 @@ qpo.CursorList = function(list, initialCursorPosition){ // A list with a "select
   return this;
 }
 
-qpo.MenuOption = function(gx, gy, textStr, action, menu, active){ // AKA UnitButton
+qpo.MenuOption = function(gx, gy, textStr, action, menu, active, order, color){ // AKA UnitButton
   //pass in a spawn point, some text, and a function to execute when this option is chosen
+  this.color = color || 'blue';
   qpo.guiDimens.squareSize = 50;
   this.gx = gx;
   this.gy = gy;
@@ -208,8 +210,8 @@ qpo.MenuOption = function(gx, gy, textStr, action, menu, active){ // AKA UnitBut
   this.active = active || false;
 
   this.render = function(){ //do all the stuff that creates or changes Raph els
-    // console.log('menu option ' + this.textStr + ' rendered'); //success
-    this.unit = new qpo.Unit('blue', this.gx, this.gy); // arg 'num' gets set to 0
+    this.unit = new qpo.Unit(this.color, this.gx, this.gy); // arg 'num' gets set to 0
+    if(order){this.unit.setIcon(order)}
 
     this.text = qpo.xtext(this.unit.rect.attr('x')+this.unit.tx()+mtr*5/4,
       this.unit.rect.attr('y')+this.unit.ty()+mtr/2, this.textStr, 20);
@@ -250,23 +252,23 @@ qpo.makeMuteButton = function(){ //make an icon that can mute the music when cli
   );
 }
 
-qpo.makeMenus = function(){
+qpo.makeMenus = function(){ //Lay out the menu skeletons (without creating Raphael elements, except the Main Menu's)
   qpo.mode = "menu"; // Type of screen that's active -- can be "menu", "game", "tut", or "other"
 
   qpo.menus = {};
 
   //make all the menus:
   qpo.menus['Main Menu'] = new qpo.Menu('Main Menu', [
-    new qpo.MenuOption(0,1,'Play', function(){}, 'Main Menu', true),
-    new qpo.MenuOption(0,3,'How To Play', function(){}, 'Main Menu'),
-    new qpo.MenuOption(0,5,'Compete', function(){}, 'Main Menu')
+    new qpo.MenuOption(0,1,'Play', function(){}, 'Main Menu', true, 'moveRight'),
+    new qpo.MenuOption(0,3,'How To Play', function(){}, 'Main Menu', false, 'shoot'),
+    new qpo.MenuOption(0,5,'Compete', function(){}, 'Main Menu', false, 'bomb', 'red')
   ], 'title');
   qpo.menus['Main Menu'].up = function(){qpo.menus['Main Menu'].close('title')};
 
   qpo.menus['Game Setup'] = new qpo.Menu('Game Setup', [
     new qpo.MenuOption(0,1,'2v2', function(){}, 'Game Setup', true),
-    new qpo.MenuOption(0,3,'4v4', function(){}, 'Game Setup', false),
-    new qpo.MenuOption(0,5,'6v6', function(){}, 'Game Setup', false)
+    new qpo.MenuOption(0,3,'4v4', function(){}, 'Game Setup', false, 'shoot'),
+    new qpo.MenuOption(0,5,'6v6', function(){}, 'Game Setup', false, 'bomb', 'red')
   ], 'Main Menu');
   qpo.menus['How To Play'] = new qpo.Menu('How To Play', null, 'Main Menu', true);
   qpo.menus['Compete'] = new qpo.Menu('Compete', null, 'Main Menu', true);
@@ -303,14 +305,40 @@ qpo.makeMenus = function(){
         var set = c.set(); //set for texts, title, and upperPanel
         for(ind in texts){ //Create raph els from the texts array
           ind = parseInt(ind);
-          var y = 140+ ind*40;
-          switch(ind){
-            case 0:
-            case 1: {
-              y = y - 20
+          var y = 140 + ind*40;
+          var color;
+          switch(ind){ //prep the color of the text
+            case 4:
+            case 10: { // q/bomb (purple)
+              color = 'purple';
+              break;
             }
-            case 2: {
+            case 5:
+            case 11: { // e/shoot (green)
+              color = 'green';
+              break;
+            }
+            case 8:
+            case 14: { // arrow keys/select unit (orange)
+              color = 'orange';
+              break;
+            }
+            default: { color = 'foreground'; } //white
+          }
+          switch(ind){ //create the text in the correct place
+            case 0:
+            case 1: { y -= 20 }
+            case 2: { //cases 0-2 (centered elements)
               set.push(c.text(c.width/2, y, texts[ind]).attr({qpoText:[20]}))
+              break;
+            }
+            case 3:
+            case 4:
+            case 5:
+            case 6:
+            case 7:
+            case 8: { //cases 3-8 (left column)
+              set.push(qpo.xtext(150, y, texts[ind], 20, qpo.COLOR_DICT[color]));
               break;
             }
             case 9:
@@ -318,13 +346,9 @@ qpo.makeMenus = function(){
             case 11:
             case 12:
             case 13:
-            case 14: {
+            case 14: { //cases 9-14 (right column)
               y = 140 + (ind-6)*40;
-              set.push(qpo.xtext(310, y, texts[ind], 20))
-              break;
-            }
-            default: {
-              set.push(qpo.xtext(150, y, texts[ind], 20))
+              set.push(qpo.xtext(310, y, texts[ind], 20, qpo.COLOR_DICT[color]));
               break;
             }
           }

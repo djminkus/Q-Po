@@ -223,12 +223,17 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
 
   //METHODS
   var easingType = '>';
-  this.order = function(order){ // Set the unit's icon, and deactivate the unit.
+  this.order = function(order){ // Set the unit's icon, deactivate the unit, and add order to queue.
+    this.setIcon(order);
+    this.deactivate();
+    qpo.blueMovesQueue[qpo.blueActiveUnit] = order;
+    if (!this.alive || this.willScore){ this.icon.hide();}
+  }
+  this.setIcon = function(order){
     this.phys.exclude(this.icon);
     this.icon.remove(); //remove the old icon from the paper
     var newIcon;
     var color = qpo.COLOR_DICT[this.team];
-    // var args = [lw+mtr/2, tw+mtr/2, color, null];
     switch(order){ //add the new icon
       case 'moveUp':
         newIcon = qpo.arrow(lw+mtr/2, tw+mtr/2, color, 'up');
@@ -262,13 +267,11 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
         break;
       default:
         console.log('this was unexpected');
+        console.log(order)
     }
     newIcon.attr({'transform':'t'+this.tx()+','+this.ty()});
     this.phys.push(newIcon);
     this.icon = newIcon;
-    this.deactivate();
-    qpo.blueMovesQueue[qpo.blueActiveUnit] = order;
-    if (!this.alive || this.willScore){ this.icon.hide();}
   }
   this.resetIcon = function(){
     this.phys.exclude(this.icon);
