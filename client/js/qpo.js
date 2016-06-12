@@ -412,7 +412,6 @@ qpo.countdownScreen = function(settings){ //settings are [q, po, multi, music, r
   setTimeout(function(){qpo.startGame(settings);},3000);
   qpo.mode="other";
 }
-
 qpo.startGame = function(settings){ //called when countdown reaches 0
   //settings are [q, po, multi, music, respawn, turns]
 
