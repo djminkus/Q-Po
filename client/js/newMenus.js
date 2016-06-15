@@ -101,6 +101,8 @@ qpo.Menu = function(titleStr, itemList, parent, placeholder){ // A Menu contains
       this.upperPanel = qpo.upperPanel(this.title);
       this.layer1 = c.set().push(this.background, this.title, this.upperPanel);
 
+      qpo.makeMuteButton();
+
       this.board = new qpo.Board(1, 7, 200, 120, 40);
       qpo.board = this.board;
       this.layer2 = c.set().push(this.board.all);
@@ -125,9 +127,6 @@ qpo.Menu = function(titleStr, itemList, parent, placeholder){ // A Menu contains
       this.comingSoon = c.text(c.width/2, c.height/2, 'Coming Soon!').attr({qpoText:[50]});
       this.all = c.set().push(this.background, this.comingSoon);
       qpo.fadeIn(this.all);
-
-      // this.next = function(){console.log('why u do taht?')};
-      // this.previous = function(){console.log('whyyyyyyyy')};
     }.bind(this);
   }
 
@@ -223,10 +222,12 @@ qpo.MenuOption = function(gx, gy, textStr, action, menu, active, order, color){ 
 
     this.activate = function(){
       this.text.attr({'fill':qpo.COLOR_DICT['orange']});
+      this.unit.activate();
       this.active = true;
     }
     this.deactivate = function(){
       this.text.attr({'fill':qpo.COLOR_DICT['foreground']});
+      this.unit.deactivate();
       this.active = false;
     }
   }
@@ -237,10 +238,11 @@ qpo.MenuOption = function(gx, gy, textStr, action, menu, active, order, color){ 
 }
 
 qpo.makeMuteButton = function(){ //make an icon that can mute the music when clicked
+  console.log('mute button made');
   qpo.muteButton = c.path("M-4,-4 L4,-4 L10,-10 L10,10 L4,4 L-4,4 L-4,-4")
     .attr({"stroke-width":2, "stroke":qpo.COLOR_DICT["green"],
       "fill":qpo.COLOR_DICT["green"], "opacity":1})
-    .transform("t15,580")
+    .transform("t15,500")
     .click(function(){
       switch(qpo.menuSong.volume){
         case 1: { qpo.menuSong.volume = 0.2; break;}
@@ -281,7 +283,10 @@ qpo.makeMenus = function(){ //Lay out the menu skeletons (without creating Rapha
   qpo.menus['How To Play'].open = (function(){
     var original = qpo.menus['How To Play'].open;
     return function() {
-        var result = original.apply(this, arguments); // use .apply() to call the baseline "open" function within this scope
+        // Use .apply() to call the baseline "open" function within this scope:
+        var result = original.apply(this, arguments);
+
+        // Then do some custom stuff because this menu is different from normal:
         var menu = qpo.menus['How To Play'];
         menu.comingSoon.remove();
 
@@ -295,12 +300,14 @@ qpo.makeMenus = function(){ //Lay out the menu skeletons (without creating Rapha
           'w/a/s/d',
           'x',
           'arrow keys',
-          'ACTION', //9
+          'backspace/delete',
+          'ACTION', //10
           'bomb',
           'shoot',
           'move left/up/right/down',
           'stay',
-          'change active unit', //4
+          'change active unit', //15
+          'go to previous menu' //16
         ]
         var set = c.set(); //set for texts, title, and upperPanel
         for(ind in texts){ //Create raph els from the texts array
@@ -309,17 +316,17 @@ qpo.makeMenus = function(){ //Lay out the menu skeletons (without creating Rapha
           var color;
           switch(ind){ //prep the color of the text
             case 4:
-            case 10: { // q/bomb (purple)
+            case 11: { // q/bomb (purple)
               color = 'purple';
               break;
             }
             case 5:
-            case 11: { // e/shoot (green)
+            case 12: { // e/shoot (green)
               color = 'green';
               break;
             }
             case 8:
-            case 14: { // arrow keys/select unit (orange)
+            case 15: { // arrow keys/select unit (orange)
               color = 'orange';
               break;
             }
@@ -337,25 +344,26 @@ qpo.makeMenus = function(){ //Lay out the menu skeletons (without creating Rapha
             case 5:
             case 6:
             case 7:
-            case 8: { //cases 3-8 (left column)
-              set.push(qpo.xtext(150, y, texts[ind], 20, qpo.COLOR_DICT[color]));
+            case 8:
+            case 9: { //cases 3-9 (left column)
+              set.push(qpo.xtext(100, y, texts[ind], 20, qpo.COLOR_DICT[color]));
               break;
             }
-            case 9:
             case 10:
             case 11:
             case 12:
             case 13:
-            case 14: { //cases 9-14 (right column)
-              y = 140 + (ind-6)*40;
-              set.push(qpo.xtext(310, y, texts[ind], 20, qpo.COLOR_DICT[color]));
+            case 14:
+            case 15:
+            case 16: { //cases 10-16 (right column)
+              y = 140 + (ind-7)*40;
+              set.push(qpo.xtext(320, y, texts[ind], 20, qpo.COLOR_DICT[color]));
               break;
             }
           }
         }
 
         var upperPanel, title;
-        // menu.upperPanel = c.rect(c.width/4,-10, c.width/2, 100, qpo.upr).attr({'fill':qpo.COLOR_DICT['foreground']});
         menu.title = title = c.text(c.width/2, 60, 'How To Play').attr({qpoText:[qpo.menus['How To Play'].TITLE_SIZE, qpo.COLOR_DICT['background']]});
         menu.upperPanel = upperPanel = qpo.upperPanel(menu.title);
 
@@ -393,8 +401,7 @@ qpo.displayTitleScreen = function(){ //Called whenever title screen is displayed
   this.layer1 = c.set().push(this.blackness);
 
   qpo.makeMuteButton();
-  qpo.activeGame = new qpo.Game(11,3,false,false,true); //just to define the unit size
-
+  qpo.activeGame = new qpo.Game(11, 3, false, false, true); //just to define the unit size
 
   //2ND LAYER (foreground) : board, then units that spell "Q-Po", then prompt
   var UNIT_LENGTH = qpo.guiDimens.squareSize;
@@ -470,15 +477,11 @@ qpo.displayTitleScreen = function(){ //Called whenever title screen is displayed
   qpo.fadeIn(this.all);
 
   this.close = function(){ //clear screen and make main menu
-    // for (var i = 0; i < qpo.shots.length; i++){if (qpo.shots[i]) {qpo.shots[i].remove();}} //remove shots
-    // for (var i = 0; i < qpo.bombs.length; i++){if (qpo.bombs[i]) {qpo.bombs[i].phys.remove();}} //remove bombs
     qpo.fadeOutGlow(qpo.glows);
     this.promptt.stop();
     qpo.fadeOut(this.promptt, function(){}, 200);
     qpo.fadeOut(this.all, function(){
       c.clear();
-      // qpo.shots = [];
-      // qpo.bombs = [];
       qpo.guiCoords.gameBoard.leftWall = 25;
       qpo.guiCoords.gameBoard.topWall = 75;
       qpo.menus['Main Menu'].open();

@@ -1,6 +1,6 @@
-/** Q-PO : a JS game by @akaDavidGarrett
+/** Q-PO : A lean action-strategy game designed for competitive and collaborative online multiplayer.
 
-Q-Po is a competitive browser game that combines elements of real-time strategy games, top-down shooters,
+Q-Po is a competitive game that combines elements of real-time strategy games, top-down shooters,
   and turn-based strategy games, resulting in fast-paced, competitive gameplay that's easy to learn,
   but hard to master.
 
@@ -9,30 +9,12 @@ How to get familiar with the code:
   1. Understand raphael.js basics.
   2. Look at qpo.setup() first.
   3. See menus.js.
-  3. Pay attention with the startGame() and newTurn() functions. They will reference
+  3. Pay attention to the startGame() and newTurn() functions. They reference
     the other functions in a logical order.
   To understand the first thing you see when you load the page,
     look at menus.js. When a new game is started, countdownScreen()
     is called. This leads to startGame() being called, which leads to newTurn()
     being called every three seconds.
-
-SHORT-TERM TODO:
-  [   ] Separate server-side code and client code
-  [   ] Realign menu options (left) and game results page (show player rating)
-  [   ] Fix glitch where blue loses if both teams' last units die simultaneously
-  [ x ] Enable "go back" in menus via backspace (keycode 8)
-  [ x ] Make game keep track of win/loss ratio in each session
-  [ x ] In single-player sessions, give player a rating based on
-          record at various levels vs. computer.
-  [ x ] Fix glitch where when you return to the main screen,
-      enter doesn't work until up/down are pressed
-  [ x ] Make units stop in place after each turn? (Don't bother until you decide:
-          Is it a good idea to allow units one "motion" and one "attack/technique" each turn?)
-  [ x ] make turn length tweakable (DONE -- via qpo.timeScale [in "setup()"])
-  [ x ] Make menus keyboard-controlled
-  [ x ] Make walls stop units' motion in wall's direction
-  [ x ] Fix unit movement animations (currently depend on unit's grid position)
-  [ x ] Balance shot animations (red v. blue)
 
 alpha must contain:
   [  ]  Improved gameplay (blocks, AI, goal lines, scalable team size/board, spawn system)
@@ -45,14 +27,12 @@ beta must feature:
   [  ] Even better gameplay (using feedback from alpha)
   [  ] More reliable servers (via code reviews/consults)
   [  ] A more rewarding ranking system (using feedback from alpha)
-v1 should
 
 LONG-TERM TODO:
   See Issues/Feature Requests on Github:
     https://github.com/djminkus/QPO/issues
-  [   ] Use Neural Networks to implement good AI
-  [   ] Make a server
-  [   ] Enable PVP (Implement user login system)
+  [   ] Improve neural networks AI
+  [   ] User login/profile system
   [   ] Implement Ranking System
   [   ] Open beta and advertise
   [   ] Improve game based on beta feedback
@@ -60,10 +40,6 @@ LONG-TERM TODO:
   [   ] Throw $$ tourney
   --- MAYBES
   [   ] Implement Subscription System
-  [   ] adjust tutorial
-  [   ] Implement pause function
-  --- DONE
-  [ x ] Create a tutorial
 
 Contents of this code: (updated June 2, 2015)
   VAR DECLARATIONS
@@ -92,12 +68,6 @@ var c = new Raphael("raphContainer", 600, 600); //create the Raphael canvas
 
 // CHOOSE A SONG:
 var songURL = "./music/timekeeper.mp3"
-// var songURL = "./music/qpo.mp3"                 // neil's first iteration
-// var songURL =  "./music/loadingScreen.mp3"      // neil's menu song
-// var songURL =  "./music/underwaterStars.mp3"  //uncomment for underwaterStars
-// var song = new Audio("./music/qpo.mp3")            //  neil's first iteration
-// var song = new Audio("./music/loadingScreen.mp3")        // neil's menu song
-// var song = new Audio("./music/underwaterStars.mp3")  //uncomment for underwaterStars
 
 c.customAttributes.segment = function (x, y, r, a1, a2) { //for pie timer
   var flag = (a2 - a1) > 180,
