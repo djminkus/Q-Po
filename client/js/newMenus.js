@@ -97,8 +97,8 @@ qpo.Menu = function(titleStr, itemList, parent, placeholder){ // A Menu contains
       qpo.activeMenu = this.titleStr;
 
       this.background = c.rect(0,0, c.width, c.height).attr({'fill':qpo.COLOR_DICT['background']});
-      this.title = c.text(c.width/2, 60, this.titleStr).attr({qpoText:[this.TITLE_SIZE, qpo.COLOR_DICT['background']]});
-      this.upperPanel = qpo.upperPanel(this.title);
+      this.title = c.text(c.width/2, 60, this.titleStr).attr({qpoText:[this.TITLE_SIZE, qpo.COLOR_DICT['foreground']]});
+      // this.upperPanel = qpo.upperPanel(this.title);
       this.layer1 = c.set().push(this.background, this.title, this.upperPanel);
 
       qpo.makeMuteButton();
@@ -238,7 +238,6 @@ qpo.MenuOption = function(gx, gy, textStr, action, menu, active, order, color){ 
 }
 
 qpo.makeMuteButton = function(){ //make an icon that can mute the music when clicked
-  console.log('mute button made');
   qpo.muteButton = c.path("M-4,-4 L4,-4 L10,-10 L10,10 L4,4 L-4,4 L-4,-4")
     .attr({"stroke-width":2, "stroke":qpo.COLOR_DICT["green"],
       "fill":qpo.COLOR_DICT["green"], "opacity":1})
@@ -416,7 +415,6 @@ qpo.displayTitleScreen = function(){ //Called whenever title screen is displayed
   this.layer2 = c.set().push(this.board.all);
   //Spawn units in the shape of the letters "Q-Po".
   this.qUnits = new Array();
-  this.qRaphs = c.set();
   this.qUnits.push(
     new qpo.Unit('blue', 1,0,0),
     new qpo.Unit('blue', 0,1,1),
@@ -429,12 +427,17 @@ qpo.displayTitleScreen = function(){ //Called whenever title screen is displayed
     new qpo.Unit('red', 3,4,3),
     new qpo.Unit('red', 4,4,4)
   );
-  for(var i=0; i<this.qUnits.length; i++){ this.qRaphs.push(this.qUnits[i].phys); }
+  this.qRaphs = c.set();
+  for(var i=0; i<this.qUnits.length; i++){ //randomize icons and store to set
+    this.qUnits[i].randomIcon();
+    this.qRaphs.push(this.qUnits[i].phys);
+  }
 
-  this.dash = (new qpo.Unit('red',5,2,5)).phys;
+  this.dashUnit = new qpo.Unit('red',5,2,5);
+  this.dashUnit.randomIcon();
+  this.dash = this.dashUnit.phys;
 
   this.pUnits = new Array();
-  this.pRaphs = c.set();
   this.pUnits.push(
     new qpo.Unit('blue', 7,0,5),
     new qpo.Unit('blue', 8,0,6),
@@ -446,10 +449,13 @@ qpo.displayTitleScreen = function(){ //Called whenever title screen is displayed
     new qpo.Unit('red', 9,2,8),
     new qpo.Unit('red', 7,3,9)
   );
-  for(var i=0; i<this.pUnits.length; i++){ this.pRaphs.push(this.pUnits[i].phys); }
+  this.pRaphs = c.set();
+  for(var i=0; i<this.pUnits.length; i++){ //randomize icons and store to set
+     this.pUnits[i].randomIcon();
+     this.pRaphs.push(this.pUnits[i].phys);
+   }
 
   this.oUnits = new Array();
-  this.oRaphs = c.set();
   this.oUnits.push(
     new qpo.Unit('blue', 12,0,10),
     new qpo.Unit('blue', 13,0,11),
@@ -460,14 +466,18 @@ qpo.displayTitleScreen = function(){ //Called whenever title screen is displayed
     new qpo.Unit('red', 11,2,12),
     new qpo.Unit('red', 14,2,13)
   );
-  for(var i=0; i<this.oUnits.length; i++){ this.oRaphs.push(this.oUnits[i].phys); }
+  this.oRaphs = c.set();
+  for(var i=0; i<this.oUnits.length; i++){ //randomize icons and store to set
+    this.oUnits[i].randomIcon();
+    this.oRaphs.push(this.oUnits[i].phys);
+  }
 
   this.title = c.set(this.qRaphs, this.dash, this.pRaphs, this.oRaphs);
   this.layer2.push(this.title, this.board);
 
   //3rd layer (prompt)
   this.promptt = c.text(qpo.guiDimens.gpWidth/2, qpo.guiDimens.gpHeight/2, "Press enter to start")
-    .attr({qpoText:[32,qpo.COLOR_DICT["red"]], "opacity":1});
+    .attr({qpoText:[32,qpo.COLOR_DICT["orange"]], "opacity":1});
   qpo.blink(this.promptt);
   this.layer3 = c.set().push(this.promptt);
 

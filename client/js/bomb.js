@@ -39,7 +39,9 @@ function startBomb(su){ //su = source unit
 function improveBomb(bomb){ //color it and make it explodable
   bomb.phys.attr({
     // "fill":qpo.COLOR_DICT["purple"],
-    "opacity": 0.9,
+    "opacity": 1,
+    'fill-opacity':.25,
+    'stroke-opacity':1,
     "stroke":qpo.COLOR_DICT["purple"],
     'stroke-width':qpo.bombStroke
   });
@@ -56,9 +58,9 @@ function improveBomb(bomb){ //color it and make it explodable
         "x": cx - (qpo.bombSize/2 - 7*qpo.guiDimens.squareSize/50),
         "width": qpo.bombSize,
         "height": qpo.bombSize,
-        'opacity':1,
-        'stroke-width':8
-
+        // 'opacity': 1,
+        'stroke-width': 8,
+        'fill-opacity': 1
       },
       "100%": {
         "y":cy+7*qpo.guiDimens.squareSize/50,

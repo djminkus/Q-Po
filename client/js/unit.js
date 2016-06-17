@@ -15,7 +15,6 @@ qpo.circleAtts = function(color){ //attributes for the neutral/stay icon
   }
 }
 qpo.shotAtts = {
-  // "fill":qpo.COLOR_DICT["green"],
   "opacity":1,
   'stroke': qpo.COLOR_DICT["green"],
   'stroke-width':2
@@ -29,9 +28,9 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
   //   (For now, only blue units are numbered (6-20-15) )
 
   var mtr = qpo.guiDimens.squareSize; //mtr for meter, like, a unit of length
-  // console.log('' + qpo.testttt +' ' +mtr);
-  // qpo.testttt ++;
-  var lw = qpo.board.lw; //left wall
+  this.mtr = mtr;
+
+  var lw = qpo.board.lw; //left wall, for convenience
   var tw = qpo.board.tw; //top wall
 
   this.team = color; //"red" or "blue"
@@ -161,8 +160,10 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
   this.ntrans = function(){return ('t'+this.ntx()+','+this.nty())};
 
   this.rect = c.rect(lw,tw,mtr,mtr).attr({
-      // "fill":qpo.COLOR_DICT['color'],
+      "fill":qpo.COLOR_DICT[color],
+      'fill-opacity': 0.25,
       "opacity":1,
+      'stroke-opacity':1,
       'stroke':qpo.COLOR_DICT[color],
       'stroke-width': qpo.unitStroke
     });
@@ -287,6 +288,10 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
       }
     }
   }
+  this.randomIcon = function(){ //randomize the unit's icon (for title screen)
+    var choice = Math.floor(7*Math.random());
+    this.setIcon(qpo.moves[choice]);
+  }
   this.activate = function(){
     this.rects.attr({"stroke":qpo.COLOR_DICT["orange"]});
     if(!this.alive){ this.phys.hide(); };
@@ -365,8 +370,9 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
     this.deactivate();
     this.spawnTimer = qpo.spawnTimers[qpo.activeGame.po];
     if(this.team==qpo.playerTeam){ this.showSpawnIcon(); }
-    // this.phys.stop();
-    this.phys.animate({"opacity":0}, 2000*qpo.timeScale);
+    this.icon.attr({'opacity':0});
+    this.phys.animate({ "opacity":0 }, 2000*qpo.timeScale);
+    this.rect.animate({ 'height':0, 'width':0 }, 2000*qpo.timeScale)
     setTimeout(function(){ //hide the visage and move it "off the board"
       this.phys.hide();
       this.x = -1;
@@ -436,6 +442,7 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
     this.snap();
     this.phys.show();
     this.phys.attr({'opacity':1});
+    this.rect.attr({ 'height':this.mtr, 'width':this.mtr });
     if(this.spawnIconSet){this.spawnIconSet.hide();}
     this.alive = true;
     // (this.team == "red") ? (qpo.redDead -= 1) : (qpo.blueDead -= 1);

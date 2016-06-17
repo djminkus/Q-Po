@@ -126,7 +126,7 @@ qpo.setup = function(){ // set up global vars and stuff
   qpo.trainingMode = false;
   qpo.waitTime = 100; //ms between moves
   qpo.gameLength = 45;
-  qpo.unitStroke = 4;
+  qpo.unitStroke = 3.5;
   qpo.bombStroke = 3;
   qpo.iconStroke = 2;
   qpo.SHOT_LENGTH = 0.5; //ratio of shot length to unit length
@@ -379,7 +379,7 @@ qpo.countdownScreen = function(settings){ //settings are [q, po, multi, music, r
              qpo.cdblackness.animate({"opacity":0},200,"<");
              }, 2800);
   setTimeout(function(){numbers.remove()},3000);
-  setTimeout(function(){qpo.startGame(settings);},3000);
+  setTimeout(function(){qpo.startGame(settings);}, 3000);
   qpo.mode="other";
 }
 qpo.startGame = function(settings){ //called when countdown reaches 0
