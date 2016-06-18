@@ -293,7 +293,13 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
     this.setIcon(qpo.moves[choice]);
   }
   this.activate = function(){
-    this.rects.attr({"stroke":qpo.COLOR_DICT["orange"]});
+    //
+    var pinchEls = qpo.pinch(this.rect);
+
+    setTimeout(function(){
+      this.rects.attr({"stroke":qpo.COLOR_DICT["orange"]});
+      pinchEls.remove();
+    }.bind(this), 200)
     if(!this.alive){ this.phys.hide(); };
     this.phys.toFront();
     this.active = true;

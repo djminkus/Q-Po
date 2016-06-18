@@ -402,78 +402,7 @@ qpo.displayTitleScreen = function(){ //Called whenever title screen is displayed
   qpo.makeMuteButton();
   qpo.activeGame = new qpo.Game(11, 3, false, false, true); //just to define the unit size
 
-  //2ND LAYER (foreground) : board, then units that spell "Q-Po", then prompt
-  var UNIT_LENGTH = qpo.guiDimens.squareSize;
-  var adj = -5;
-  var grid_start = 2;
-  qpo.guiCoords.gameBoard.leftWall = adj + UNIT_LENGTH*grid_start;
-  qpo.guiCoords.gameBoard.topWall = adj + UNIT_LENGTH*grid_start;
-  this.board = new qpo.Board(17,7, qpo.guiCoords.gameBoard.leftWall, qpo.guiCoords.gameBoard.rightWall);
-  qpo.board = this.board;
-  this.board.all.transform('t' + -(UNIT_LENGTH) + ',' + -(UNIT_LENGTH));
-  qpo.glows.transform('t' + -(UNIT_LENGTH) + ',' + -(UNIT_LENGTH));
-  this.layer2 = c.set().push(this.board.all);
-  //Spawn units in the shape of the letters "Q-Po".
-  this.qUnits = new Array();
-  this.qUnits.push(
-    new qpo.Unit('blue', 1,0,0),
-    new qpo.Unit('blue', 0,1,1),
-    new qpo.Unit('blue', 2,0,2),
-    new qpo.Unit('blue', 3,1,3),
-    new qpo.Unit('blue', 3,2,4),
-    new qpo.Unit('red', 0,2,0),
-    new qpo.Unit('red', 1,3,1),
-    new qpo.Unit('red', 2,3,2),
-    new qpo.Unit('red', 3,4,3),
-    new qpo.Unit('red', 4,4,4)
-  );
-  this.qRaphs = c.set();
-  for(var i=0; i<this.qUnits.length; i++){ //randomize icons and store to set
-    this.qUnits[i].randomIcon();
-    this.qRaphs.push(this.qUnits[i].phys);
-  }
-
-  this.dashUnit = new qpo.Unit('red',5,2,5);
-  this.dashUnit.randomIcon();
-  this.dash = this.dashUnit.phys;
-
-  this.pUnits = new Array();
-  this.pUnits.push(
-    new qpo.Unit('blue', 7,0,5),
-    new qpo.Unit('blue', 8,0,6),
-    new qpo.Unit('blue', 9,0,7),
-    new qpo.Unit('blue', 7,1,8),
-    new qpo.Unit('blue', 9,1,9),
-    new qpo.Unit('red', 7,2,6),
-    new qpo.Unit('red', 8,2,7),
-    new qpo.Unit('red', 9,2,8),
-    new qpo.Unit('red', 7,3,9)
-  );
-  this.pRaphs = c.set();
-  for(var i=0; i<this.pUnits.length; i++){ //randomize icons and store to set
-     this.pUnits[i].randomIcon();
-     this.pRaphs.push(this.pUnits[i].phys);
-   }
-
-  this.oUnits = new Array();
-  this.oUnits.push(
-    new qpo.Unit('blue', 12,0,10),
-    new qpo.Unit('blue', 13,0,11),
-    new qpo.Unit('blue', 11,1,12),
-    new qpo.Unit('blue', 14,1,13),
-    new qpo.Unit('red', 12,3,10),
-    new qpo.Unit('red', 13,3,11),
-    new qpo.Unit('red', 11,2,12),
-    new qpo.Unit('red', 14,2,13)
-  );
-  this.oRaphs = c.set();
-  for(var i=0; i<this.oUnits.length; i++){ //randomize icons and store to set
-    this.oUnits[i].randomIcon();
-    this.oRaphs.push(this.oUnits[i].phys);
-  }
-
-  this.title = c.set(this.qRaphs, this.dash, this.pRaphs, this.oRaphs);
-  this.layer2.push(this.title, this.board);
+  
 
   //3rd layer (prompt)
   this.promptt = c.text(qpo.guiDimens.gpWidth/2, qpo.guiDimens.gpHeight/2, "Press enter to start")

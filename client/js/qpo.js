@@ -129,6 +129,7 @@ qpo.setup = function(){ // set up global vars and stuff
   qpo.unitStroke = 3.5;
   qpo.bombStroke = 3;
   qpo.iconStroke = 2;
+  qpo.pinchAmount = 20; //pixels for pinch animaton
   qpo.SHOT_LENGTH = 0.5; //ratio of shot length to unit length
   qpo.SHOT_WIDTH = 0.1; //ratio of shot width to unit length
   qpo.defaultQ = 7;
@@ -361,7 +362,54 @@ qpo.setup = function(){ // set up global vars and stuff
 
     return arrow;
   }
+  qpo.pinch = function(el, stroke){ //takes in raph el, returns a set of orange lines pinching in on it
+    var strk = stroke || qpo.unitStroke;
+    var time = 100;
+    var box = el.getBBox();
+    var set = c.set();
+    var top = c.path('M'+box.x+','+box.y+' L'+box.x2+','+box.y).data('which','top');
+    var right = c.path('M'+box.x2+','+box.y+' L'+box.x2+','+box.y2).data('which','right');
+    var bottom = c.path('M'+box.x+','+box.y2+' L'+box.x2+','+box.y2).data('which','bottom');
+    var left = c.path('M'+box.x+','+box.y+' L'+box.x+','+box.y2).data('which','left');
+    set.push(top, right, bottom, left);
+    set.attr({'stroke':qpo.COLOR_DICT["orange"], 'stroke-width':strk});
+    set.forEach(function(each){ // each is Raph element
+      var box = each.getBBox();
+      switch(each.data('which')){
+        case 'top': {
+          each.animate({
+            "0%": {'transform':'t'+'0,-'+qpo.pinchAmount},
+            "100%": {'transform':''}
+          }, time)
+          break;
+        }
+        case 'right': {
+          each.animate({
+            "0%": {'transform':'t'+qpo.pinchAmount+',0'},
+            "100%": {'transform':''}
+          }, time)
+          break;
+        }
+        case 'bottom': {
+          each.animate({
+            "0%": {'transform':'t'+'0,'+qpo.pinchAmount},
+            "100%": {'transform':''}
+          }, time)
+          break;
+        }
+        case 'left': {
+          each.animate({
+            "0%": {'transform':'t-'+qpo.pinchAmount+',0'},
+            "100%": {'transform':''}
+          }, time)
+          break;
+        }
+      }
+    })
+    return set;
+  }
 }
+
 qpo.setup();
 
 qpo.countdownScreen = function(settings){ //settings are [q, po, multi, music, respawn, turns]
