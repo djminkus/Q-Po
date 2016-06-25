@@ -9,11 +9,52 @@ app.get('/', function(req, res){
   res.sendFile('./index.html');
 });
 
+//	//	//	//	//	//	//	//	//	//	//	//	//	//	//	//	//	//	//	//	//	//	//	//	//
+const activeUsers = []; //TEMPORARY. Will use a database once basic Socket.io stuff is in place //
+const activeRooms = [];
+//	//	//	//	//	//	//	//	//	//	//	//	//	//	//	//	//	//	//	//	//	//	//	//	//
+
 io.on('connection', function(socket){
   // socket.on('chat message', function(msg){
     // io.emit('chat message', msg);
   // });
   console.log("a user connected");
+  const newUser = {
+  	id: socket.id,
+  	name: 'user' + (activeUsers.length + 1)
+  };
+
+  activeUsers.push(newUser); //Add current user to activeUsers
+
+  socket.emit("user connected", newUser);
+
+  console.log("Active users: ", activeUsers);
+  console.log("Active rooms: ", activeRooms.length);
+
+  socket.on("user connected", function(data) {
+	  if (activeRooms.length === 0) {
+	  	  //If no rooms are active, create a new one with active user's id
+		  socket.join("room" + socket.id);
+		  activeRooms.push({
+		  	id: socket.id,
+		  	name: "room" + (activeRooms.length + 1)
+		  });
+		  socket.emit("room created", activeRooms[activeRooms.length]);
+		} else {
+			//Eventually do something else...
+			console.log("BLORG!");
+		}
+	});
+
+	socket.on("room created", function(data) {
+		console.log("New room created: ", data);
+	});
+
+	socket.on("disconnect", function(data) {
+		console.log("User disconnected");
+	})
+	
+
 });
 
 // console.log(http);
