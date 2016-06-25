@@ -1,9 +1,12 @@
-var app = require('express')();
+var express = require('express'); //Import express separately for later use
+const app = express();
 var http = require('http').createServer(app);
 var io = require('socket.io')(http); //IO is the server
 
+app.use(express.static(__dirname + "./../client")); //Serve client folder
+
 app.get('/', function(req, res){
-  res.send('<p>Hello world</p>');
+  res.sendFile('./index.html');
 });
 
 io.on('connection', function(socket){
@@ -16,7 +19,9 @@ io.on('connection', function(socket){
 // console.log(http);
 // console.log(http.listen);
 
-http.listen(1024, function(){
+const port = (process.env.PORT || 1024); //Set port to work with hosting services
+
+http.listen(port, function(){
   console.log('listening on *:1024');
 });
 
