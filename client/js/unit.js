@@ -293,19 +293,16 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
     this.setIcon(qpo.moves[choice]);
   }
   this.activate = function(){
-    //
     var pinchEls = qpo.pinch(this.rect);
-
-    setTimeout(function(){
-      this.rects.attr({"stroke":qpo.COLOR_DICT["orange"]});
-      pinchEls.remove();
-    }.bind(this), 200)
+    this.turnOrange = setTimeout(function(){this.rects.attr({"stroke":qpo.COLOR_DICT["orange"]})}.bind(this), 200);
+    setTimeout(function(){pinchEls.remove()}.bind(this), 200);
     if(!this.alive){ this.phys.hide(); };
     this.phys.toFront();
     this.active = true;
     qpo.blueActiveUnit = this.num;
   }
   this.deactivate = function(){
+    clearTimeout(this.turnOrange);
     if(this.team == qpo.playerTeam){ this.rects.attr({inactiveUnit:this.team}); }
     else { this.rect.attr({inactiveUnit:this.team}); }
     this.active = false;
@@ -507,9 +504,10 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
   this.bomb = function(){
     this.movingForward = false;
     var bomb;
-    bomb = new startBomb(this);
-    improveBomb(bomb);
-    finishBomb(bomb);
+    bomb = new qpo.Bomb(this);
+    // bomb = new startBomb(this);
+    // improveBomb(bomb);
+    // finishBomb(bomb);
     bomb.next();
     if(qpo.mode=="menu"){ //put the bomb's phys in the correct layer
       bomb.phys.toBack();

@@ -1,8 +1,4 @@
-// var song = new Audio("./music/qpo.mp3")            //  neil's first iteration
-// var song = new Audio("./music/gameMode.mp3")        //uncomment for gameMode (second version)
-// var song = new Audio("./music/underwaterStars.mp3")  //uncomment for underwaterStars
-
-qpo.Game = function(q, po, type, playMusic, respawn, turns){ //"Game" class. Instantiated every time a new round is called.
+qpo.Game = function(q, po, type, playMusic, respawn, turns){ //"Game" class.
   this.po = po; //# of units per team. Min 1, max 7.
   qpo.timeScale = (function(){ //adjust timeScale based on po.
     var adj = 0.25; //adjustment
@@ -24,7 +20,7 @@ qpo.Game = function(q, po, type, playMusic, respawn, turns){ //"Game" class. Ins
   var exponent = 0.8;
   var factor = 12;
   var correction = 2;
-  var scoringFormula = function(e,f,c,also){
+  var scoringFormula = function(e,f,c,also){ //generate the score limit based on params
     var result = Math.pow(also,e) * f - c // po^e * factor - correction
     result *= this.lastTurn/60; //multiply by num turns divided by 60
     return Math.floor(result);;

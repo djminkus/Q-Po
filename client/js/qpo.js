@@ -66,9 +66,6 @@ qpo = new Object();
 console.log("RESET " + Date());
 var c = new Raphael("raphContainer", 600, 600); //create the Raphael canvas
 
-// CHOOSE A SONG:
-var songURL = "./music/timekeeper.mp3"
-
 c.customAttributes.segment = function (x, y, r, a1, a2) { //for pie timer
   var flag = (a2 - a1) > 180,
   color = (a2 - a1 + 120) / (360*5)  ;
@@ -80,6 +77,7 @@ c.customAttributes.segment = function (x, y, r, a1, a2) { //for pie timer
   };
 };
 
+var songURL = "./music/timekeeper.mp3"
 qpo = {
   /* WEBSOCKET THINGS (NOT SOCKET.IO)
   "socket" : new WebSocket('ws://echo.websocket.org'), //this url will change
@@ -101,7 +99,6 @@ qpo.menuMusic = function(){
   qpo.menuSong.currentTime = 0;
   qpo.menuSong.play();
   // if (qpo.playMusic) { // loop the menuSong every 1 minute and 48 seconds
-  //   qpo.en
   //   qpo.menuSongInterval = setInterval(function(){
   //     qpo.menuSong.currentTime = 0;
   //     qpo.menuSong.play();
@@ -412,28 +409,9 @@ qpo.setup = function(){ // set up global vars and stuff
 
 qpo.setup();
 
-qpo.countdownScreen = function(settings){ //settings are [q, po, multi, music, respawn, turns]
-  qpo.cdblackness = c.rect(0, 0, qpo.guiCoords.gamePanel.width, qpo.guiCoords.gamePanel.height);
-  qpo.cdblackness.attr({"fill":"black"});
-  var numbers = c.text(c.width/2,c.height/2,"3").attr({qpoText:[72]});
-  setTimeout( //2
-    function(){numbers.attr({"text":"2"})},
-    1000);
-  setTimeout( //1
-    function(){numbers.attr({"text":"1"})},
-    2000);
-  setTimeout(function(){ //set blackness opacity to 0 when countdown is finished
-             qpo.menus["main"].blackness.animate({"opacity":0},200,"<");
-             qpo.cdblackness.animate({"opacity":0},200,"<");
-             }, 2800);
-  setTimeout(function(){numbers.remove()},3000);
-  setTimeout(function(){qpo.startGame(settings);}, 3000);
-  qpo.mode="other";
-}
-qpo.startGame = function(settings){ //called when countdown reaches 0
+qpo.startGame = function(settings){ //draw the board/GUI, place units, and start the game.
   //settings are [q, po, multi, music, respawn, turns]
 
-  // KILL MENU MUSIC:
   // qpo.menuSong.pause();
   // qpo.menuSong.currentTime = 0 ;
   // clearInterval(qpo.menuSongInterval);
@@ -610,7 +588,7 @@ qpo.Board = function(cols, rows, x, y, m){ //Board class constructor
   return this; //return the constructed Board object
 }
 
-qpo.placeUnits = function(){ //called from startGame()
+qpo.placeUnits = function(){ //called at the start of each game (from startGame)
   //  Place U units randomly but symmetrically on an NxM board (N columns, M rows)
   //  Remember that rows and columns are zero-indexed.
   //  Also, blue is on top, red on bottom.
@@ -665,10 +643,6 @@ qpo.placeUnits = function(){ //called from startGame()
     qpo.redUnits[i] = new qpo.Unit("red", qpo.guiDimens.columns-1-gridXs[i], qpo.guiDimens.rows-1-gridY[i],i);
     qpo.units.push(qpo.blueUnits[i]);
     qpo.units.push(qpo.redUnits[i]);
-    // console.log("blue unit created in column " + gridXs[i] + ", row " + gridY[i]);
-    // console.log("red unit created in column " + (qpo.guiDimens.columns-1-gridXs[i])
-    //   + ", row " + (qpo.guiDimens.rows-1-gridY[i]));
-    //evens are blue, odds are red, low numbers to the left
     qpo.blueUnits[i].phys.attr({'opacity':0});
     qpo.redUnits[i].phys.attr({'opacity':0});
 
@@ -751,7 +725,6 @@ qpo.drawGUI = function(q,po){ //create the turn timer (pie), board, and control 
 }
 
 //INCREMENT FUNCTIONS (no new Raph elements created)
-
 qpo.newTurn = function(){ // called every time game clock is divisible by 3
   // qpo.activeGame.turnNumber++;
   qpo.activeGame.incrementTurn();
@@ -1191,10 +1164,6 @@ qpo.updateBlueAU = function(po, cond){ //Called when a command is sent and when 
     }
   }
 }
-qpo.moveHighlights = function(old, neww, index){ //not in use. revive when orange is "slid" from unit to unit
-  old.deactivate(); //turn off old highlight on gameboard
-  neww.activate(); // turn on new hightight on gameboard
-}
 qpo.sendMoveToServer = function(moveStr){
   // console.log(eval("new Date().getTime()"));
   qpo.timeSinceLastMove = ( eval("new Date().getTime()") - qpo.lastMoveTime );
@@ -1353,7 +1322,6 @@ $(window).keydown(function(event){
   }
 });
 
-//Functions for the end of the game/the new round
 qpo.endGame = function(result){
   clearInterval(qpo.clockUpdater);
   clearInterval(qpo.collisionDetector);
@@ -1404,9 +1372,4 @@ qpo.endGame = function(result){
   // qpo.activeGame.song.pause();
   // qpo.activeGame.song.currentTime=0;
   // qpo.menuMusic();
-}
-qpo.newRound = function(){
-  // qpo.menus["main"].blackness.attr({"opacity":1}).show();
-  qpo.menus["endG"].all.remove();
-  return qpo.countdownScreen(qpo.currentSettings);
 }

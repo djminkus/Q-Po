@@ -1,7 +1,7 @@
 qpo.bombEasing = 'linear';
 
-//CREATE BOMB TYPE/CLASS -- not implemented (see "explode()")
-function startBomb(su){ //su = source unit
+// "Bomb" class
+qpo.Bomb = function(su){ //su = source unit
   var UNIT = qpo.guiDimens.squareSize;
   var INITIAL_BOMB_SIZE = 10*qpo.guiDimens.squareSize/50;
   var BOMB_MARGIN_Y = 20*qpo.guiDimens.squareSize/50;
@@ -34,23 +34,20 @@ function startBomb(su){ //su = source unit
   this.index = ind;
   qpo.bombs[this.index] = this;
 
-  return this;
-}
-function improveBomb(bomb){ //color it and make it explodable
-  bomb.phys.attr({
-    // "fill":qpo.COLOR_DICT["purple"],
+  this.phys.attr({
+    "fill":qpo.COLOR_DICT["purple"],
     "opacity": 1,
     'fill-opacity':.25,
     'stroke-opacity':1,
     "stroke":qpo.COLOR_DICT["purple"],
     'stroke-width':qpo.bombStroke
   });
-  bomb.explode = function(){ //animate the bomb's explosion
-    bomb.exploded = true;
-    bomb.timer = -1;
-    var cx = bomb.phys.getBBox().x;
-    var cy = bomb.phys.getBBox().y;
-    bomb.phys.stop();
+  this.explode = function(){ //animate the bomb's explosion
+    this.exploded = true;
+    this.timer = -1;
+    var cx = this.phys.getBBox().x;
+    var cy = this.phys.getBBox().y;
+    this.phys.stop();
 
     var anim = Raphael.animation({
       "16.6%": {
@@ -60,6 +57,7 @@ function improveBomb(bomb){ //color it and make it explodable
         "height": qpo.bombSize,
         // 'opacity': 1,
         'stroke-width': 8,
+        'stroke-opacity':1,
         'fill-opacity': 1
       },
       "100%": {
@@ -68,30 +66,30 @@ function improveBomb(bomb){ //color it and make it explodable
         "width":0,
         "height":0,
         'opacity':0,
-        'stroke-width':0
+        'stroke-width':0,
+        'fill-opacity':.25
       }
-    }, 3000*qpo.timeScale, function(){ qpo.bombs[bomb.index] = false; });
-    bomb.phys.animate(anim);
+    }, 3000*qpo.timeScale, function(){ qpo.bombs[this.index] = false; });
+    this.phys.animate(anim);
   }
-}
-function finishBomb(bomb){ //send it on its way
-  bomb.next = function(){ //make the bomb count down or explode
-    if (bomb.timer == 0){
-      bomb.explode();
-    } else if (bomb.timer > 0 ){
+  this.next = function(){ //make the bomb count down or explode
+    if (this.timer == 0){
+      this.explode();
+    } else if (this.timer > 0 ){
       var bombAnim;
-      switch(bomb.team){
+      switch(this.team){
         case "blue":
-          bombAnim = Raphael.animation({"y":bomb.phys.attr('y') + 0.98 * qpo.guiDimens.squareSize},
-            3000*qpo.timeScale, qpo.bombEasing, function(){bomb.next()} );
-          bomb.phys.animate(bombAnim);
+          bombAnim = Raphael.animation({"y":this.phys.attr('y') + 0.98 * qpo.guiDimens.squareSize},
+            3000*qpo.timeScale, qpo.bombEasing, function(){this.next()}.bind(this) );
           break;
         case "red":
-          bombAnim = Raphael.animation({"y":bomb.phys.attr('y') - 0.98*qpo.guiDimens.squareSize}, 3000*qpo.timeScale, function(){bomb.next()} );
-          bomb.phys.animate(bombAnim);
+          bombAnim = Raphael.animation({"y":this.phys.attr('y') - 0.98*qpo.guiDimens.squareSize}, 3000*qpo.timeScale, function(){this.next()}.bind(this) );
           break;
       }
+      this.phys.animate(bombAnim);
     }
-    bomb.timer = bomb.timer - 1;
+    this.timer = this.timer - 1;
   }
+
+  return this;
 }
