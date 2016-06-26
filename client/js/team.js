@@ -1,9 +1,10 @@
-qpo.Team = function(){
-  this.color; // 'red' or 'blue' (related: qpo.playerColor, qpo.unit.team)
-  this.unitsList; //list of this team's units (to replace qpo.blueUnits and qpo.redUnits)
-  this.activeUnit; //to replace qpo.blueActiveUnit and qpo.redActiveUnit
-  this.movesQueue; //to replace qpo.blueMovesQueue and qpo.redMovesQueue
-  this.playerType; //either 'human', 'rigid', 'neural', or 'random' (related: qpo.aiTypes)
+qpo.Team = function(color){
+  this.color = color || null; // 'red' or 'blue' (related: qpo.playerColor, qpo.unit.team)
+  this.units = new Array(); //list of this team's units (to replace qpo.blueUnits and qpo.redUnits)
+  this.players = new Array(); //list of this team's players
+
+  this.addPlayer = function(player){ this.players.push(player); }
+  this.addUnit = function(unit){ this.units.push(unit); }
 
   return this;
 }

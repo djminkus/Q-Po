@@ -168,17 +168,27 @@ qpo.Menu = function(titleStr, itemList, parent, placeholder){ // A Menu contains
 }
 
 qpo.CursorList = function(list, initialCursorPosition){ // A list with a "selected" or "active" item
+  // Methods break unless each item in "list" has a "render()" method
+
   list===null ? this.list = new Array() : this.list=list ;
   this.length = this.list.length;
   this.cursorPosition = initialCursorPosition || 0;
   this.selectedItem = this.list[this.cursorPosition];
 
-  this.render = function(){ // generate the raphs
+  this.rendered = false;
+
+  this.render = function(){ // Generate the raphs.
     // console.log('CursorList rendered'); //success
     for (var i=0; i<this.length; i++){ this.list[i].render(); } //render each item in the list
     try{this.selectedItem.activate()}
-    catch(err){console.log('placeholder menu.')};
+    catch(err){console.log('placeholder menu, or unexpected error')};
+    this.rendered = true;
   }.bind(this);
+
+  this.addItem = function(item){
+    this.list.push(item)
+    if(this.rendered){item.render()}
+  }
 
   this.next = function(){
     this.selectedItem.deactivate();

@@ -182,6 +182,9 @@ qpo.setup = function(){ // set up global vars and stuff
     qpo.trainingMode = true;
   }
 
+  //LOAD/INITIALIZE PLAYER
+  qpo.user = localStorage['player'] || new qpo.Player(null, 'epicGuest', 'human', null);
+
   //MISC (ETC + DYNAMIC/UTILITY ARRAYS)
   qpo.gui = c.set(); // Should contain only elements relevant to the current screen.
   qpo.blueUnits = [];
@@ -424,7 +427,7 @@ qpo.startGame = function(settings){ //draw the board/GUI, place units, and start
   qpo.bombs=[];
 
   qpo.drawGUI(qpo.activeGame.q, qpo.activeGame.po);
-  setTimeout(function(){ // wait 1500 ms, then do placeUnits
+  setTimeout(function(){ // wait 1500 ms, then placeUnits() and set initial state
     qpo.placeUnits(); // puts the units on the board
     qpo.activeGame.state = qpo.activeGame.getState();
   }, 1500);
@@ -434,7 +437,6 @@ qpo.startGame = function(settings){ //draw the board/GUI, place units, and start
     qpo.timer.pie.animate({segment: [qpo.guiCoords.turnTimer.x, qpo.guiCoords.turnTimer.y, qpo.guiCoords.turnTimer.r, -90, -90]}, 3000*qpo.timeScale);
     qpo.collisionDetector = setInterval(function(){qpo.detectCollisions(qpo.activeGame.po)}, 50);
   }, 7500);
-
 
   console.log('NEW GAME');
 }
@@ -499,11 +501,11 @@ qpo.findSpawn = function(color){
   return foundSpawn;
 }
 
-//GUI ELEMENTS
+//FUNCTIONS THAT CREATE RAPH ELEMENTS
 qpo.Board = function(cols, rows, x, y, m){ //Board class constructor
   this.all = c.set();
 
-  this.mtr = m || qpo.guiDimens.squareSize; //mtr for meter, or unit size, the quantum of q-po.
+  this.mtr = m || qpo.guiDimens.squareSize; //mtr for meter, or unit size (in pixels)--the length quantum of q-po.
   qpo.guiDimens.squareSize = this.mtr; //make sure they agree
 
   this.rows = rows;
@@ -592,11 +594,11 @@ qpo.placeUnits = function(){ //called at the start of each game (from startGame)
   //  Place U units randomly but symmetrically on an NxM board (N columns, M rows)
   //  Remember that rows and columns are zero-indexed.
   //  Also, blue is on top, red on bottom.
-  //    1. Board must be at least 3x3.
-  //    2. If board has a center panel (M and N are odd), don't place units there. (Column N/2, Row M/2.)
-  //    3. NxM/2 spaces are available per team. (NXM/2-1 if both are odd.) Choose U random, mutually-exclusive
+  //    0. Board must be at least 3x3.
+  //    1. If board has a center panel (M and N are odd), don't place units there. (Column N/2, Row M/2.)
+  //    2. NxM/2 spaces are available per team. (NXM/2-1 if both are odd.) Choose U random, mutually-exclusive
   //         spaces from these possiblities, and place units there.
-  //    4. Don't place units in such a way that two opposing units spawn "touching" each other.
+  //    3. Don't place units in such a way that two opposing units spawn touching each other.
 
   var gridXs = []; // the column numbers of each blue unit to be placed
   var gridY = [] // the row numbers of each blue unit to be placed
