@@ -61,10 +61,10 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
             row = this.y + rowSep*Math.pow(-1,i); //select a row to look in
             if (row < -1 || row > qpo.activeGame.q) {row = this.y + rowSep*Math.pow(-1, i+1)} //don't allow non-rows
             for(var j=0; j<qpo.activeGame.po; j++){
-              if (((qpo.blueUnits[j].x == col && qpo.blueUnits[j].y == row) ||
-                  (col == qpo.blueUnits[j].x == -1) )
-                  && qpo.blueUnits[j].spawnTimer < 1) {
-                ind = qpo.blueUnits[j].num;
+              if (((qpo.blue.units[j].x == col && qpo.blue.units[j].y == row) ||
+                  (col == qpo.blue.units[j].x == -1) )
+                  && qpo.blue.units[j].spawnTimer < 1) {
+                ind = qpo.blue.units[j].num;
                 looking=false;
               } //found it!
             }
@@ -85,10 +85,10 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
             col = this.x + colSep*Math.pow(-1,i); //select a col to look in
             if (col < -1 || col > qpo.activeGame.q) {col = this.x + colSep*Math.pow(-1, i+1)} //don't allow non-cols
             for(var j=0; j<qpo.activeGame.po; j++){
-              if (((qpo.blueUnits[j].x == col && qpo.blueUnits[j].y == row) ||
-                  (row == qpo.blueUnits[j].x == -1) )
-                  && qpo.blueUnits[j].spawnTimer < 1) {
-                ind = qpo.blueUnits[j].num;
+              if (((qpo.blue.units[j].x == col && qpo.blue.units[j].y == row) ||
+                  (row == qpo.blue.units[j].x == -1) )
+                  && qpo.blue.units[j].spawnTimer < 1) {
+                ind = qpo.blue.units[j].num;
                 looking=false;
               } //found it!
             }
@@ -109,10 +109,10 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
             row = this.y + rowSep*Math.pow(-1,i); //select a row to look in
             if (row < -1 || row > qpo.activeGame.q) {row = this.y + rowSep*Math.pow(-1, i+1)} //don't allow non-rows
             for(var j=0; j<qpo.activeGame.po; j++){
-              if (((qpo.blueUnits[j].x == col && qpo.blueUnits[j].y == row) ||
-                  (col == qpo.blueUnits[j].x == -1) )
-                  && qpo.blueUnits[j].spawnTimer < 1) {
-                ind = qpo.blueUnits[j].num;
+              if (((qpo.blue.units[j].x == col && qpo.blue.units[j].y == row) ||
+                  (col == qpo.blue.units[j].x == -1) )
+                  && qpo.blue.units[j].spawnTimer < 1) {
+                ind = qpo.blue.units[j].num;
                 looking=false;
               } //found it!
             }
@@ -133,10 +133,10 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
             col = this.x + colSep*Math.pow(-1,i); //select a col to look in
             if (col < -1 || col > qpo.activeGame.q) {col = this.x + colSep*Math.pow(-1, i+1)} //don't allow non-cols
             for(var j=0; j<qpo.activeGame.po; j++){
-              if (((qpo.blueUnits[j].x == col && qpo.blueUnits[j].y == row) ||
-                  (row == qpo.blueUnits[j].x == -1) )
-                  && qpo.blueUnits[j].spawnTimer < 1) {
-                ind = qpo.blueUnits[j].num;
+              if (((qpo.blue.units[j].x == col && qpo.blue.units[j].y == row) ||
+                  (row == qpo.blue.units[j].x == -1) )
+                  && qpo.blue.units[j].spawnTimer < 1) {
+                ind = qpo.blue.units[j].num;
                 looking=false;
               } //found it!
             }
@@ -149,7 +149,7 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
         console.log('HELLO FROM THE OTHER SIIIIIIIIDE');
     }
     this.deactivate();
-    qpo.blueUnits[ind].activate();
+    qpo.blue.units[ind].activate();
     // console.log('search complete, found index ' + ind)
   }
 
@@ -169,7 +169,7 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
     });
   this.icon = c.circle(lw + mtr/2, tw + mtr/2).attr(qpo.circleAtts(color));
   this.phys = c.set(this.rect, this.icon);
-  this.snap = function(){this.phys.attr({'transform':this.trans()});} //.bind(this if glitchy)
+  this.snap = function(){this.phys.attr({'transform':this.trans()});} //.bind(this) if glitchy
 
   this.num = num || 0; //which unit is it? (# on team)
   this.alive = true;
@@ -200,6 +200,7 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
     qpo.fadeIn(this.spawnIconSet, 2000*qpo.timeScale);
   }
   this.rects = c.set(this.rect, this.spawnIcon);
+  this.nextAction = 'stay';
 
   this.snap();
   try{ //record the unit's initial spawn to the game record, loading blue coords in first
@@ -227,7 +228,8 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
   this.order = function(order){ // Set the unit's icon, deactivate the unit, and add order to queue.
     this.setIcon(order);
     this.deactivate();
-    qpo.blueMovesQueue[qpo.blueActiveUnit] = order;
+    // qpo.blueMovesQueue[qpo.blueActiveUnit] = order;
+    this.nextAction = order;
     if (!this.alive || this.willScore){ this.icon.hide();}
   }
   this.setIcon = function(order){
@@ -466,6 +468,15 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
     }
   }
 
+  this.actions = {
+    'moveUp' : function(){ this.move('up') }
+    'moveRight' : function(){ this.move('right') }
+    'moveDown' : function(){ this.move('down') }
+    'moveLeft' : function(){ this.move('left') }
+    'bomb' : function(){ this.bomb() }
+    'shoot' : function(){ this.shoot() }
+    'stay' : function(){ this.stay() }
+  }
   this.move = function(dir){
     switch(dir){
       case 'up':{
@@ -494,7 +505,8 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
         // this.moveLeft();
         break;}
       default:{
-        console.log('idiots say what?');}
+        console.log('idiots say what?');
+      }
     }
     this.phys.animate({'transform':this.trans()}, 3000*qpo.timeScale, easingType); //move that son of a gun
     if ((dir == 'up' && this.team == 'red') || (dir=='down' && this.team =='blue')) {this.movingForward = true;}
@@ -607,6 +619,12 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
       }
     }
   }
+
+  this.executeMove = function(){
+    this.actions[this.nextAction]();
+    this.nextAction = 'stay';
+  }
+  this.nextSpawn = -1; //turn number of this unit's next spawn
 
   return this;
 }

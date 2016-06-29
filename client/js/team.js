@@ -1,6 +1,6 @@
 qpo.Team = function(color){
   this.color = color || null; // 'red' or 'blue' (related: qpo.playerColor, qpo.unit.team)
-  this.units = new Array(); //list of this team's units (to replace qpo.blueUnits and qpo.redUnits)
+  this.units = new Array(); //list of this team's units (to replace qpo.blue.units and qpo.red.units)
   this.players = new Array(); //list of this team's players
 
   this.addPlayer = function(player){ this.players.push(player); }

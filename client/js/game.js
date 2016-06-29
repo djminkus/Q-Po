@@ -19,6 +19,8 @@ qpo.Game = function(q, po, type, playMusic, respawn, turns, ppt){ //"Game" class
     'red': new qpo.Team('red'),
     'blue': new qpo.Team('blue')
   }
+  qpo.blue = this.teams.blue;
+  qpo.red = this.teams.red;
   this.players = (new Array()).push(qpo.user);
 
   this.turnNumber = 0; //How far through this game are we?
@@ -58,17 +60,17 @@ qpo.Game = function(q, po, type, playMusic, respawn, turns, ppt){ //"Game" class
     //  We'll format the array properly later. Let's start with the raw values.
     for (var i=0; i<po; i++){
       // 16 qpo-grid coords of units (4 per po--red/blue x/y):
-      if(qpo.blueUnits[i].alive){ //0-7: blue x,y
-        arr[2*i] = qpo.blueUnits[i].x; //values from 0 to (q-1)
-        arr[2*i + 1] = qpo.blueUnits[i].y; //principle: keep coords of same obj together
+      if(qpo.blue.units[i].alive){ //0-7: blue x,y
+        arr[2*i] = qpo.blue.units[i].x; //values from 0 to (q-1)
+        arr[2*i + 1] = qpo.blue.units[i].y; //principle: keep coords of same obj together
       }
       else { // -1 if dead
         arr[2*i] = -1;
         arr[2*i + 1] = -1;
       }
-      if(qpo.redUnits[i].alive){ //8-15: red x,y
-        arr[2*qpo.activeGame.po + 2*i] = qpo.redUnits[i].x;
-        arr[2*qpo.activeGame.po + 2*i + 1] = qpo.redUnits[i].y;
+      if(qpo.red.units[i].alive){ //8-15: red x,y
+        arr[2*qpo.activeGame.po + 2*i] = qpo.red.units[i].x;
+        arr[2*qpo.activeGame.po + 2*i + 1] = qpo.red.units[i].y;
       }
       else { // -1 if dead
         arr[2*qpo.activeGame.po + 2*i] = -1;

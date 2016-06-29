@@ -182,19 +182,8 @@ qpo.setup = function(){ // set up global vars and stuff
     qpo.trainingMode = true;
   }
 
-  //LOAD/INITIALIZE PLAYER
-  qpo.user = localStorage['player'] || new qpo.Player(null, 'epicGuest', 'human', null);
-
   //MISC (ETC + DYNAMIC/UTILITY ARRAYS)
   qpo.gui = c.set(); // Should contain only elements relevant to the current screen.
-  qpo.blueUnits = [];
-  qpo.redUnits = [];
-  qpo.unitLists = {
-    "red" : qpo.redUnits,
-    "blue" : qpo.blueUnits
-  }
-  qpo.blueMovesQueue = [];
-  qpo.redMovesQueue = [];
   qpo.shots = [];
   qpo.bombs = [];
   qpo.blueActiveUnit = 0;
@@ -408,9 +397,7 @@ qpo.setup = function(){ // set up global vars and stuff
     })
     return set;
   }
-}
-
-qpo.setup();
+}();
 
 qpo.startGame = function(settings){ //draw the board/GUI, place units, and start the game.
   //settings are [q, po, multi, music, respawn, turns]
@@ -641,34 +628,34 @@ qpo.placeUnits = function(){ //called at the start of each game (from startGame)
   };
   for (var i=0; i<qpo.activeGame.po; i++) { // Make a new unit at the spot
     chooseSpots(i);
-    qpo.blueUnits[i] = new qpo.Unit("blue",gridXs[i],gridY[i],i);
-    qpo.redUnits[i] = new qpo.Unit("red", qpo.guiDimens.columns-1-gridXs[i], qpo.guiDimens.rows-1-gridY[i],i);
-    qpo.units.push(qpo.blueUnits[i]);
-    qpo.units.push(qpo.redUnits[i]);
-    qpo.blueUnits[i].phys.attr({'opacity':0});
-    qpo.redUnits[i].phys.attr({'opacity':0});
+    qpo.blue.units[i] = new qpo.Unit("blue",gridXs[i],gridY[i],i);
+    qpo.red.units[i] = new qpo.Unit("red", qpo.guiDimens.columns-1-gridXs[i], qpo.guiDimens.rows-1-gridY[i],i);
+    qpo.units.push(qpo.blue.units[i]);
+    qpo.units.push(qpo.red.units[i]);
+    qpo.blue.units[i].phys.attr({'opacity':0});
+    qpo.red.units[i].phys.attr({'opacity':0});
 
     (function(ind){ //fade in all units
-      qpo.fadeIn(qpo.blueUnits[ind].phys, 1000);
-      qpo.fadeIn(qpo.redUnits[ind].phys, 1000);
+      qpo.fadeIn(qpo.blue.units[ind].phys, 1000);
+      qpo.fadeIn(qpo.red.units[ind].phys, 1000);
     })(i); //closure for loop scope
 
     (function(ind){ //highlight player's units in sequence
       setTimeout(function(){
-        if(ind>0){qpo.blueUnits[ind-1].deactivate();}
-        qpo.fadeIn(qpo.blueUnits[ind].phys, 1000);
-        qpo.blueUnits[ind].activate();
+        if(ind>0){qpo.blue.units[ind-1].deactivate();}
+        qpo.fadeIn(qpo.blue.units[ind].phys, 1000);
+        qpo.blue.units[ind].activate();
       }, 3000 + i*(1500/qpo.activeGame.po));
     })(i); //closure for loop scope
   }
 
   setTimeout(function(){ //activate first unit in prep for game
-    qpo.blueUnits[qpo.activeGame.po-1].deactivate();
-    qpo.blueUnits[0].activate();
-    setTimeout(function(){qpo.blueUnits[0].deactivate()},100);
-    setTimeout(function(){qpo.blueUnits[0].activate()},200);
-    setTimeout(function(){qpo.blueUnits[0].deactivate()},300);
-    setTimeout(function(){qpo.blueUnits[0].activate()},400);
+    qpo.blue.units[qpo.activeGame.po-1].deactivate();
+    qpo.blue.units[0].activate();
+    setTimeout(function(){qpo.blue.units[0].deactivate()},100);
+    setTimeout(function(){qpo.blue.units[0].activate()},200);
+    setTimeout(function(){qpo.blue.units[0].deactivate()},300);
+    setTimeout(function(){qpo.blue.units[0].activate()},400);
   }, 4500);
 }
 
@@ -772,22 +759,26 @@ qpo.newTurn = function(){ // called every time game clock is divisible by 3
 
   //// MOVE EXECUTION SECTION
   qpo.snap(); //snap all units into their correct positions prior to executing new moves
-  var po = qpo.activeGame.po;
+  var po = qpo.activeGame.po; //for convenience
+  var ru = null; //red unit, for convenience
+  var bu = null; //blue unit, for convenience
   for (var i=0; i<po; i++){ //Generate AI moves & execute all moves
     if (!qpo.multiplayer){ // In single player, generate red's moves automatically:
+      ru = qpo.activeGame.teams.red.units[i];
+      bu = qpo.activeGame.teams.blue.units[i];
       switch(qpo.aiType){ // Generate a move from random, rigid, or neural AI
         case "random": {
-          qpo.redMovesQueue[i] = qpo.moves[Math.round(Math.random()*6)];
+          ru.nextAction = qpo.moves[Math.round(Math.random()*6)];
           break;
         }
         case "rigid": {
-          qpo.redMovesQueue[i] = findMove(qpo.redUnits[i]);
+          ru.nextAction = findMove(qpo.red.units[i]);
           break;
         }
         case "neural": {
           input[217] = i-0.5-(po/2); //generate a zero-mean input representing chosen unit
-          var action = qpo.ali.nn.forward(input); // Have the AI net generate a move
-          qpo.redMovesQueue[i] = qpo.actions[action]; //get the proper string
+          var action = qpo.ali.nn.forward(input); // Have the AI net generate a move (integer)
+          ru.nextAction = qpo.actions[action]; //get the proper string
           break;
         }
         default: {
@@ -798,17 +789,17 @@ qpo.newTurn = function(){ // called every time game clock is divisible by 3
       if(qpo.trainingMode){ // In training mode, generate blue's moves, too.
         switch(qpo.trainerOpponent){
           case "random": {
-            qpo.blueMovesQueue[i] = qpo.moves[Math.round(Math.random()*6)];
+            bu.nextAction = qpo.moves[Math.round(Math.random()*6)];
             break;
           }
           case "rigid": {
-            qpo.blueMovesQueue[i] = findMove(qpo.blueUnits[i]);
+            bu.nextAction = findMove(qpo.blue.units[i]);
             break;
           }
           case "neural": {
             input[217] = i-0.5-(po/2); //generate a zero-mean input representing chosen unit
             var action = qpo.ali.nn.forward(input); // Have the AI net generate a move
-            qpo.blueMovesQueue[i] = qpo.actions[action]; //get the proper string
+            bu.nextAction = qpo.actions[action]; //get the proper string
             break;
           }
           default: {
@@ -818,81 +809,25 @@ qpo.newTurn = function(){ // called every time game clock is divisible by 3
         }
       }
     }
+    if(ru.alive){ru.executeMove()}
+    if(bu.alive){bu.executeMove()}
 
-    // execute red's moves:
-    if (qpo.redUnits[i].alive){
-      switch(qpo.redMovesQueue[i]) {
-        case "moveLeft" :
-          qpo.redUnits[i].move('left');
-          break;
-        case "moveUp" :
-          qpo.redUnits[i].move('up');
-          break;
-        case "moveRight" :
-          qpo.redUnits[i].move('right');
-          break;
-        case "moveDown" :
-          qpo.redUnits[i].move('down');
-          break;
-        case "shoot" :
-          qpo.redUnits[i].shoot();
-          break;
-        case "bomb" :
-          qpo.redUnits[i].bomb();
-          break;
-        case "stay" :
-          qpo.redUnits[i].stay();
-          break;
-      }
-    }
-
-    //execute blue's moves:
-    if (qpo.blueUnits[i].alive){
-      switch(qpo.blueMovesQueue[i]) {
-        case "moveLeft" :
-          qpo.blueUnits[i].move('left');
-          break;
-        case "moveUp" :
-          qpo.blueUnits[i].move('up');
-          break;
-        case "moveRight" :
-          qpo.blueUnits[i].move('right');
-          break;
-        case "moveDown" :
-          qpo.blueUnits[i].move('down');
-          break;
-        case "shoot" :
-          qpo.blueUnits[i].shoot();
-          break;
-        case "bomb" :
-          qpo.blueUnits[i].bomb();
-          break;
-        case "stay" :
-          qpo.blueUnits[i].stay();
-          break;
-      }
-    }
-
-    //clear/reset the move queues:
-    qpo.redMovesQueue[i]="stay";
-    qpo.blueMovesQueue[i]="stay";
-
-    qpo.blueUnits[i].resetIcon();
+    bu.resetIcon(); //reset the icons for the player's team
   }
+
   if(qpo.activeGame.turnNumber == qpo.activeGame.lastTurn-1){
     // TODO: Stop allowing units to shoot and bomb.
     //Stop counting down numbers on the timer.
     //Start checking whether all shots and bombs are off the board. If so, end the game.
-    for(var i=0; i<qpo.blueUnits.length; i++){qpo.blueUnits[i].deactivate()}
+    for(var i=0; i<qpo.blue.units.length; i++){qpo.blue.units[i].deactivate()}
   }
-
   if (!qpo.trainingMode){ //animate the pie, but not in training mode
     qpo.timer.pie.attr({segment: [qpo.guiCoords.turnTimer.x, qpo.guiCoords.turnTimer.y, qpo.guiCoords.turnTimer.r, -90, 269]});
     qpo.timer.pie.animate({segment: [qpo.guiCoords.turnTimer.x, qpo.guiCoords.turnTimer.y, qpo.guiCoords.turnTimer.r, -90, -90]}, 3000*qpo.timeScale);
   }
   if (qpo.activeGame.turnNumber == qpo.activeGame.lastTurn){ //End the game, if it's time.
     if (qpo.activeGame.isEnding == false){ //find the winner and store to gameResult
-      for(var i=0; i<qpo.blueUnits.length; i++){qpo.blueUnits[i].deactivate()}
+      for(var i=0; i<qpo.blue.units.length; i++){qpo.blue.units[i].deactivate()}
       var gameResult;
       qpo.blueActiveUnit = 50;
       qpo.redActiveUnit = 50;
@@ -906,8 +841,8 @@ qpo.newTurn = function(){ // called every time game clock is divisible by 3
 }
 qpo.snap = function(){ //correct unit positions just before the start of each turn
   for (var i=0; i<qpo.activeGame.po; i++){
-    if(qpo.blueUnits[i].alive){ qpo.blueUnits[i].snap(); }
-    if(qpo.redUnits[i].alive){ qpo.redUnits[i].snap(); }
+    if(qpo.blue.units[i].alive){ qpo.blue.units[i].snap(); }
+    if(qpo.red.units[i].alive){ qpo.red.units[i].snap(); }
   }
 };
 
@@ -1056,14 +991,14 @@ qpo.detectCollisions = function(ts){ //ts is teamSize, aka po
     }//end iterating over bombs
   } //end iterating over bombs after checking if bombs exists
 
-  //ITERATE OVER UNITS HERE. We have the qpo.blueUnits and qpo.redUnits arrays as well
+  //ITERATE OVER UNITS HERE. We have the qpo.blue.units and qpo.red.units arrays as well
   //  as the "units" array. Check for collisions with walls and for collisions between
   //  units of opposite colors.
   for (var i=0; i<ts; i++){ //iterate over blue team of units
     //Get the blue unit's borders
-    if(qpo.blueUnits[i].alive){ //detect some collisions
-      var nBOU = qpo.blueUnits[i].rect.getBBox().y + 1; //make it 1 pixel smaller than it really is, to fix collisions glitch
-      var wBOU = qpo.blueUnits[i].rect.getBBox().x + 1;
+    if(qpo.blue.units[i].alive){ //detect some collisions
+      var nBOU = qpo.blue.units[i].rect.getBBox().y + 1; //make it 1 pixel smaller than it really is, to fix collisions glitch
+      var wBOU = qpo.blue.units[i].rect.getBBox().x + 1;
       var sBOU = nBOU + qpo.guiDimens.squareSize - 2;
       var eBOU = wBOU + qpo.guiDimens.squareSize - 2;
 
@@ -1076,38 +1011,38 @@ qpo.detectCollisions = function(ts){ //ts is teamSize, aka po
         if (sBOU > qpo.guiCoords.gameBoard.bottomWall){ //South wall. Score.
           // var testC = c.circle(300, qpo.guiCoords.gameBoard.bottomWall ,20).attr({'stroke':'white'});
           // var testC2 = c.circle(200, sBOU, 20).attr({'stroke':'purple'});
-          // var testC3 = c.circle(100, qpo.blueUnits[i].rect.getBBox().y + qpo.guiDimens.squareSize -1, 20).attr({'stroke':'pink'}) ;
+          // var testC3 = c.circle(100, qpo.blue.units[i].rect.getBBox().y + qpo.guiDimens.squareSize -1, 20).attr({'stroke':'pink'}) ;
           // setTimeout(function(){
           //   testC.remove()
           // }, 500);
-          qpo.blueUnits[i].score('collision');
+          qpo.blue.units[i].score('collision');
         }
         else{ //Other wall. Stop and snap
-          qpo.blueUnits[i].phys.stop();
-          qpo.blueUnits[i].snap();
+          qpo.blue.units[i].phys.stop();
+          qpo.blue.units[i].snap();
         }
       }
 
-      if(qpo.redUnits[i].alive){ //wall detection red
+      if(qpo.red.units[i].alive){ //wall detection red
         //get the red unit's borders:
-        var nBOUr = qpo.redUnits[i].rect.getBBox().y + 1 ;
-        var wBOUr = qpo.redUnits[i].rect.getBBox().x + 1 ;
+        var nBOUr = qpo.red.units[i].rect.getBBox().y + 1 ;
+        var wBOUr = qpo.red.units[i].rect.getBBox().x + 1 ;
         var sBOUr = nBOUr + qpo.guiDimens.squareSize - 2;
         var eBOUr = wBOUr + qpo.guiDimens.squareSize - 2;
 
         //if the red unit has hit a wall, stop the unit and place it snugly on the wall.
         if (nBOUr < qpo.guiCoords.gameBoard.topWall || wBOUr < qpo.guiCoords.gameBoard.leftWall ||
             sBOUr > qpo.guiCoords.gameBoard.bottomWall || eBOUr > qpo.guiCoords.gameBoard.rightWall) {
-          qpo.redUnits[i].phys.stop();
-          qpo.redUnits[i].snap();
-          if (nBOUr < qpo.guiCoords.gameBoard.topWall){ qpo.redUnits[i].score(); }
+          qpo.red.units[i].phys.stop();
+          qpo.red.units[i].snap();
+          if (nBOUr < qpo.guiCoords.gameBoard.topWall){ qpo.red.units[i].score(); }
         }
       }
 
       for (var j=0; j<ts; j++) { //iterate over red team of units
-        if (qpo.redUnits[j].alive){
-          var nBOU2 = qpo.redUnits[j].rect.getBBox().y + 1;
-          var wBOU2 = qpo.redUnits[j].rect.getBBox().x + 1;
+        if (qpo.red.units[j].alive){
+          var nBOU2 = qpo.red.units[j].rect.getBBox().y + 1;
+          var wBOU2 = qpo.red.units[j].rect.getBBox().x + 1;
           var sBOU2 = nBOU2 + qpo.guiDimens.squareSize - 2;
           var eBOU2 = wBOU2 + qpo.guiDimens.squareSize - 2;
 
@@ -1119,8 +1054,8 @@ qpo.detectCollisions = function(ts){ //ts is teamSize, aka po
               ( wBOU <= eBOU2 && eBOU2 <= eBOU ) ||
               ( wBOU2 <= wBOU && wBOU <= eBOU2 ) ||
               ( wBOU2 <= eBOU && eBOU <= eBOU2 )) ) {
-            qpo.redUnits[j].kill();
-            qpo.blueUnits[i].kill();
+            qpo.red.units[j].kill();
+            qpo.blue.units[i].kill();
           }
         }
       }//end iterating over red units
@@ -1148,8 +1083,8 @@ qpo.updateBlueAU = function(po, cond){ //Called when a command is sent and when 
   var oldBlueAU, newBlueAU;
   while (findingUnit) { // keep looking until you find the new active unit.
     if (ind == po) { ind = 0; }
-    newBlueAU = qpo.blueUnits[ind];
-    oldBlueAU = qpo.blueUnits[qpo.blueActiveUnit];
+    newBlueAU = qpo.blue.units[ind];
+    oldBlueAU = qpo.blue.units[qpo.blueActiveUnit];
     //When you find the new one, deactivate the old unit, activate the new one, and update qpo.blueActiveUnit.
     if ((newBlueAU.spawnTimer < 1) && (qpo.activeGame.isEnding == false)){
       //  This is our new active unit. It's either alive or about to be. Do stuff. Also...
@@ -1157,7 +1092,7 @@ qpo.updateBlueAU = function(po, cond){ //Called when a command is sent and when 
       findingUnit = false; //unit has now been found. Exit the While loop after this iteration.
       // qpo.moveHighlights(oldBlueAU, newBlueAU, ind);
       qpo.blueActiveUnit = ind;
-      qpo.blueUnits[ind].activate();
+      qpo.blue.units[ind].activate();
     }
     ind++;
     tries++;
@@ -1261,7 +1196,7 @@ $(window).keydown(function(event){
       break;
     case "game":
       try { //try to respond to the keypress appropriately
-        if (qpo.blueUnits[qpo.blueActiveUnit].spawnTimer>0){ //If active unit is dead and not spawning next turn, try moving to another unit (as a fallback:)
+        if (qpo.blue.units[qpo.blueActiveUnit].spawnTimer>0){ //If active unit is dead and not spawning next turn, try moving to another unit (as a fallback:)
           event.preventDefault();
           qpo.updateBlueAU(qpo.activeGame.po, "dead");
         }
@@ -1276,7 +1211,7 @@ $(window).keydown(function(event){
             case 88: //qweasdx detected (order)
               var moveStr = qpo.keyCodes[event.keyCode];
               // console.log('keypress detected: ' + event.keyCode + ', leading to moveStr' + qpo.keyCodes[event.keyCode]);
-              qpo.blueUnits[qpo.blueActiveUnit].order(moveStr);
+              qpo.blue.units[qpo.blueActiveUnit].order(moveStr);
               qpo.updateBlueAU(qpo.activeGame.po, "move"); //activate the new AU and board
               // controlPanel.accept(event);
               break;
@@ -1284,7 +1219,7 @@ $(window).keydown(function(event){
             case 38:
             case 39:
             case 40: //up/left/right/down arrows (move highlight)
-              if(!qpo.gameEnding){ qpo.blueUnits[qpo.blueActiveUnit].search(qpo.dirMap[event.keyCode]); }
+              if(!qpo.gameEnding){ qpo.blue.units[qpo.blueActiveUnit].search(qpo.dirMap[event.keyCode]); }
               break;
             default: //some other key detected (invalid)
               //left = 37
@@ -1297,7 +1232,7 @@ $(window).keydown(function(event){
           }
         }
       }
-      catch(err){ //probably because qpo.blueUnits[-1] doesn't exist. do nothing.
+      catch(err){ //probably because qpo.blue.units[-1] doesn't exist. do nothing.
         ;
       }
       break;

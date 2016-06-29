@@ -1,7 +1,7 @@
 //Set up the menu objects and open the title screen.
 
 qpo.font = 'Orbitron';
-switch(qpo.font){
+switch(qpo.font){ //for easy font switching
   case 'Righteous':{
     WebFontConfig = { google: { families: [ 'Righteous::latin' ] } };
     break;
@@ -70,7 +70,6 @@ c.customAttributes.qpoText = function(size, fill){ //style text white with Open 
     // "font-family":"sans-serif"
   };
 }
-
 qpo.xtext = function(x, y, str, size, color){ //make a Raphael text el with its left end at x and centered vertically on y
   var size = size || 10;
   var color = color || qpo.COLOR_DICT['foreground'];
@@ -166,7 +165,6 @@ qpo.Menu = function(titleStr, itemList, parent, placeholder){ // A Menu contains
 
   return this;
 }
-
 qpo.CursorList = function(list, initialCursorPosition){ // A list with a "selected" or "active" item
   // Methods break unless each item in "list" has a "render()" method
 
@@ -207,7 +205,6 @@ qpo.CursorList = function(list, initialCursorPosition){ // A list with a "select
 
   return this;
 }
-
 qpo.MenuOption = function(gx, gy, textStr, action, menu, active, order, color){ // AKA UnitButton
   //pass in a spawn point, some text, and a function to execute when this option is chosen
   this.color = color || 'blue';
@@ -399,7 +396,6 @@ qpo.makeMenus = function(){ //Lay out the menu skeletons (without creating Rapha
   // qpo.menus['Match Results'] = new qpo.Menu('Match Results', null, 'Main Menu');
   // qpo.menus['Demo'] = new qpo.Menu('Demo', null, 'Main Menu'); //TODO: add 1-Po, 4-Po, and 7-Po buttons
 }
-
 qpo.displayTitleScreen = function(){ //Called whenever title screen is displayed
   qpo.activeMenu = "title";
   // qpo.menus["title"] = this;
@@ -511,6 +507,7 @@ qpo.displayTitleScreen = function(){ //Called whenever title screen is displayed
   return this;
 }
 
-//CREATE TITLE SCREEN:
+//CREATE TITLE SCREEN AND MENUS:
 qpo.titleScreen = new qpo.displayTitleScreen();
 qpo.makeMenus();
+qpo.user = localStorage['player'] || new qpo.Player(null, 'epicGuest', 'human', null);
