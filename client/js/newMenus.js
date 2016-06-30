@@ -262,7 +262,7 @@ qpo.makeMenus = function(){ //Lay out the menu skeletons (without creating Rapha
   qpo.menus['Main Menu'] = new qpo.Menu('Main Menu', [
     new qpo.MenuOption(0,1,'Play', function(){}, 'Main Menu', true, 'moveRight'),
     new qpo.MenuOption(0,3,'How To Play', function(){}, 'Main Menu', false, 'shoot'),
-    new qpo.MenuOption(0,5,'Compete', function(){}, 'Main Menu', false, 'bomb', 'red')
+    new qpo.MenuOption(0,5,'Compete', function(){qpo.startGame();}, 'Main Menu', false, 'bomb', 'red')
   ], 'title');
   qpo.menus['Main Menu'].up = function(){qpo.menus['Main Menu'].close('title')};
 
