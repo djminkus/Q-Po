@@ -135,6 +135,8 @@ qpo.setup = function(){ // set up global vars and stuff
   qpo.settings2v2 = [7,2,false];
   qpo.settings4v4 = [9,4,false];
   qpo.settings6v6 = [11,6,false];
+  qpo.settings2v2multi = [7,2,true];
+  qpo.settings6v6multi = [11,6,true];
 
   // (DNA): STATIC DICTS N ARRAYS
   qpo.spawnTimers = [null, 1,2,2,2,3,3,3,4]; //index is po

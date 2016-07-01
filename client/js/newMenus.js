@@ -158,6 +158,13 @@ qpo.Menu = function(titleStr, itemList, parent, placeholder){ // A Menu contains
           qpo.startGame(qpo.settings6v6, true, true, qpo.gameLength);
           break;
         }
+        case '2v2m': {
+          qpo.startGame(qpo.settings2v2multi, true, true, qpo.gameLength);
+          break;
+        }
+        case '6v6m': {
+          qpo.startGame(qpo.settings6v6multi, true, true, qpo.gameLength);
+        }
         default : { qpo.menus[status].open(); }
       }
     }.bind(this), time);
@@ -391,7 +398,7 @@ qpo.makeMenus = function(){ //Lay out the menu skeletons (without creating Rapha
   qpo.menus['Game Setup'].cl.list[1].action = function(){ qpo.menus['Game Setup'].close('4v4', 1000); }
   qpo.menus['Game Setup'].cl.list[2].action = function(){ qpo.menus['Game Setup'].close('6v6', 1000); }
 
-  qpo.menus['Compete'].cl.list[0].action = function(){ qpo.menus['Compete'].close('2v2', 1000); }
+  qpo.menus['Compete'].cl.list[0].action = function(){ qpo.menus['Compete'].close('2v2m', 1000); }
 
   qpo.menus['Match Complete'].cl.list[0].action = function(){ qpo.menus['Match Complete'].close('parent'); }
 
