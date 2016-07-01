@@ -815,7 +815,7 @@ qpo.newTurn = function(){ // called every time game clock is divisible by 3
     bu.resetIcon(); //reset the icons for the player's team
   }
 
-  if(qpo.activeGame.turnNumber == qpo.activeGame.lastTurn-1){
+  if(qpo.activeGame.turnNumber == qpo.activeGame.lastTurn-1){ //stop allowing units to shoot and bomb
     // TODO: Stop allowing units to shoot and bomb.
     //Stop counting down numbers on the timer.
     //Start checking whether all shots and bombs are off the board. If so, end the game.

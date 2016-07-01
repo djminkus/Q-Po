@@ -279,7 +279,9 @@ qpo.makeMenus = function(){ //Lay out the menu skeletons (without creating Rapha
     new qpo.MenuOption(0,5,'6v6', function(){}, 'Game Setup', false, 'bomb', 'red')
   ], 'Main Menu');
   qpo.menus['How To Play'] = new qpo.Menu('How To Play', null, 'Main Menu', true);
-  qpo.menus['Compete'] = new qpo.Menu('Compete', null, 'Main Menu', true);
+  qpo.menus['Compete'] = new qpo.Menu('Compete', [
+    new qpo.MenuOption(0,1,'Play', function(){}, 'Compete', true)
+  ], 'Main Menu', false);
 
   qpo.menus['Match Complete'] = new qpo.Menu('Match Complete',[
     new qpo.MenuOption(0,1, 'Main Menu', function(){}, 'Match Complete', true)
@@ -388,6 +390,8 @@ qpo.makeMenus = function(){ //Lay out the menu skeletons (without creating Rapha
   qpo.menus['Game Setup'].cl.list[0].action = function(){ qpo.menus['Game Setup'].close('2v2', 1000); }
   qpo.menus['Game Setup'].cl.list[1].action = function(){ qpo.menus['Game Setup'].close('4v4', 1000); }
   qpo.menus['Game Setup'].cl.list[2].action = function(){ qpo.menus['Game Setup'].close('6v6', 1000); }
+
+  qpo.menus['Compete'].cl.list[0].action = function(){ qpo.menus['Compete'].close('2v2', 1000); }
 
   qpo.menus['Match Complete'].cl.list[0].action = function(){ qpo.menus['Match Complete'].close('parent'); }
 
@@ -508,6 +512,6 @@ qpo.displayTitleScreen = function(){ //Called whenever title screen is displayed
 }
 
 //CREATE TITLE SCREEN AND MENUS:
-qpo.titleScreen = new qpo.displayTitleScreen();
+qpo.titleScreen = new qpo.displayTitleScreen(); // ******
 qpo.makeMenus();
 qpo.user = localStorage['player'] || new qpo.Player(null, 'epicGuest', 'human', null);

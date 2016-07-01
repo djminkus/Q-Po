@@ -19,8 +19,8 @@ qpo.Game = function(q, po, type, playMusic, respawn, turns, ppt){ //"Game" class
     'red': new qpo.Team('red'),
     'blue': new qpo.Team('blue')
   }
+  qpo.red = this.teams.red; //add a convenient pointer
   qpo.blue = this.teams.blue;
-  qpo.red = this.teams.red;
   this.players = (new Array()).push(qpo.user);
 
   this.turnNumber = 0; //How far through this game are we?

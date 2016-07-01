@@ -161,7 +161,7 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
 
   this.rect = c.rect(lw,tw,mtr,mtr).attr({
       "fill":qpo.COLOR_DICT[color],
-      'fill-opacity': 0.25,
+      'fill-opacity': 0.10,
       "opacity":1,
       'stroke-opacity':1,
       'stroke':qpo.COLOR_DICT[color],
@@ -468,14 +468,15 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
     }
   }
 
+  var self = this;
   this.actions = {
-    'moveUp' : function(){ this.move('up') }
-    'moveRight' : function(){ this.move('right') }
-    'moveDown' : function(){ this.move('down') }
-    'moveLeft' : function(){ this.move('left') }
-    'bomb' : function(){ this.bomb() }
-    'shoot' : function(){ this.shoot() }
-    'stay' : function(){ this.stay() }
+    'moveUp' : function(){ self.move('up') }.bind(self),
+    'moveRight' : function(){ self.move('right')}.bind(self),
+    'moveDown' : function(){ self.move('down') }.bind(self),
+    'moveLeft' : function(){ self.move('left') }.bind(self),
+    'bomb' : function(){ self.bomb() }.bind(self),
+    'shoot' : function(){ self.shoot() }.bind(self),
+    'stay' : function(){ self.stay() }.bind(self)
   }
   this.move = function(dir){
     switch(dir){
