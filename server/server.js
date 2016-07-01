@@ -1,16 +1,27 @@
-var app = require('express')();
+"use strict";
+
+var express = require('express'); //Import express on its own to use for middlware
+const app = express();
 var http = require('http').createServer(app);
 var io = require('socket.io')(http); //IO is the server
 
+app.use(express.static(__dirname + "/../client/")); //Serve static files
+
 app.get('/', function(req, res){
-  res.send('<p>Hello world</p>');
+  res.sendFile('./index.html');
 });
 
 io.on('connection', function(socket){
-  // socket.on('chat message', function(msg){
-    // io.emit('chat message', msg);
-  // });
-  console.log("a user connected");
+  console.log("A user connected: ", socket.id);
+
+  socket.on("score", function(data) {
+    console.log("Socket received score event!", data);
+  });
+
+  socket.on("disconnect", function(data) {
+    console.log("A user disconnected");
+  });
+  
 });
 
 // console.log(http);

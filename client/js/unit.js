@@ -27,6 +27,8 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
   // num is this unit's number (within its team)
   //   (For now, only blue units are numbered (6-20-15) )
 
+  const self = this;
+
   var mtr = qpo.guiDimens.squareSize; //mtr for meter, like, a unit of length
   this.mtr = mtr;
 
@@ -469,13 +471,13 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
   }
 
   this.actions = {
-    'moveUp' : function(){ this.move('up') }
-    'moveRight' : function(){ this.move('right') }
-    'moveDown' : function(){ this.move('down') }
-    'moveLeft' : function(){ this.move('left') }
-    'bomb' : function(){ this.bomb() }
-    'shoot' : function(){ this.shoot() }
-    'stay' : function(){ this.stay() }
+    moveUp : function(){ self.move('up'); },
+    moveRight : function(){ self.move('right'); },
+    moveDown : function(){ self.move('down'); },
+    moveLeft : function(){ self.move('left'); },
+    bomb : function(){ self.bomb(); },
+    shoot : function(){ self.shoot(); },
+    stay : function(){ self.stay(); },
   }
   this.move = function(dir){
     switch(dir){
@@ -484,6 +486,7 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
           if (this.team == 'red'){
             this.y = -1 ;
             this.score();
+            socket.emit("score", {team: this.team});
           }
         }
         else { this.y -= 1 ;}
