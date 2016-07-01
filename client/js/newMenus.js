@@ -164,6 +164,7 @@ qpo.Menu = function(titleStr, itemList, parent, placeholder){ // A Menu contains
         }
         case '6v6m': {
           qpo.startGame(qpo.settings6v6multi, true, true, qpo.gameLength);
+          break;
         }
         default : { qpo.menus[status].open(); }
       }
@@ -287,7 +288,8 @@ qpo.makeMenus = function(){ //Lay out the menu skeletons (without creating Rapha
   ], 'Main Menu');
   qpo.menus['How To Play'] = new qpo.Menu('How To Play', null, 'Main Menu', true);
   qpo.menus['Compete'] = new qpo.Menu('Compete', [
-    new qpo.MenuOption(0,1,'Play', function(){}, 'Compete', true)
+    new qpo.MenuOption(0,1,'2v2', function(){}, 'Compete', true),
+    new qpo.MenuOption(0,3,'6v6', function(){}, 'Compete', false)
   ], 'Main Menu', false);
 
   qpo.menus['Match Complete'] = new qpo.Menu('Match Complete',[
@@ -399,6 +401,7 @@ qpo.makeMenus = function(){ //Lay out the menu skeletons (without creating Rapha
   qpo.menus['Game Setup'].cl.list[2].action = function(){ qpo.menus['Game Setup'].close('6v6', 1000); }
 
   qpo.menus['Compete'].cl.list[0].action = function(){ qpo.menus['Compete'].close('2v2m', 1000); }
+  qpo.menus['Compete'].cl.list[1].action = function(){ qpo.menus['Compete'].close('6v6m', 1000); }
 
   qpo.menus['Match Complete'].cl.list[0].action = function(){ qpo.menus['Match Complete'].close('parent'); }
 
