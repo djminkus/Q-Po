@@ -1,0 +1,2 @@
+# Ignore node_modules directory for easier git
+node_modules
