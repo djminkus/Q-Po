@@ -174,8 +174,6 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
   this.num = num || 0; //which unit is it? (# on team)
   this.alive = true;
   this.active = false; //is it highlighted?
-  this.shotReady = true; //not in use
-  this.bombReady = true; //not in use
   this.movingForward = false; //checked when this unit fires a shot, for animation purposes
   this.willScore = false;
   this.spawnTimer = -1; //how many turns until this unit spawns? (-1 if alive)
@@ -344,12 +342,7 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
         || qpo.scoreBoard.redScore >= qpo.activeGame.scoreToWin){
         qpo.activeGame.respawnEnabled = false;
       }
-      if (qpo.activeGame.respawnEnabled) { //queue the spawn if respawn is on
-        // Get current turn number, add 5 to it, and spawn the this then:
-        var thisTurn = qpo.activeGame.turnNumber;
-        var spawnTurn = thisTurn + this.spawnTimer + 1;
-        qpo.activeGame.upcomingSpawns.push([spawnTurn,this.num,this.team]); //add spawn to queue (checked from newTurn())
-      }
+      if (qpo.activeGame.respawnEnabled) { this.nextAction = 'recharge'; } //start counting down spawn timer
       else if (qpo.scoreBoard.redScore >= qpo.activeGame.scoreToWin // otherwise, end the game, if score limit reached.
         || qpo.scoreBoard.blueScore >= qpo.activeGame.scoreToWin && qpo.activeGame.isEnding == false){
         var gameResult;
@@ -404,12 +397,7 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
         || qpo.scoreBoard.redScore >= qpo.activeGame.scoreToWin){
         qpo.activeGame.respawnEnabled = false;
       }
-      if (qpo.activeGame.respawnEnabled) { //queue the spawn if respawn is on
-        // Get current turn number, add 5 to it, and spawn the unit then:
-        var thisTurn = qpo.activeGame.turnNumber;
-        var spawnTurn = thisTurn + this.spawnTimer + 1;
-        qpo.activeGame.upcomingSpawns.push([spawnTurn,this.num,this.team]); //add spawn to queue (checked from newTurn())
-      }
+      if (qpo.activeGame.respawnEnabled) { this.nextAction = 'recharge' }
       else if (qpo.scoreBoard.redScore >= qpo.activeGame.scoreToWin // otherwise, end the game, if score limit reached.
         || qpo.scoreBoard.blueScore >= qpo.activeGame.scoreToWin && qpo.activeGame.isEnding == false){
         var gameResult;
@@ -429,31 +417,6 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
       }
     }
   }
-  this.spawn = function(){ //call this at the moment you want a new unit to spawn
-    var spawnLoc = qpo.findSpawn(this.team); //get the [row, column] for the spawn (loc is location)
-    //put the unit at its spawn, show the unit, and set its "alive" property to "true":
-    // if(typeof spawnSpot[1] != "number"){ //console.log some stuff
-    //   console.log("NaN happening... chosen spawn was " + spawnLoc);
-    //   console.log(typeof spawnSpot[1]);
-    // }
-    // if(typeof spawnSpot[0] != "number"){ //console.log some stuff
-    //   console.log("NaN happening... chosen spawn was " + spawnLoc);
-    //   console.log(typeof spawnSpot[1]);
-    // }
-    // console.log(spawnSpot, spawnLoc);
-    this.x = spawnLoc[1]; //update the grid positions, for qpo.snap
-    this.y = spawnLoc[0]; //update the grid positions, for qpo.snap
-    // this.phys.attr({'transform': 't'+ this.tx() + ',' +  this.ty()}); //put the Raph element where it goes
-    this.snap();
-    this.phys.show();
-    this.phys.attr({'opacity':1});
-    this.rect.attr({ 'height':this.mtr, 'width':this.mtr });
-    if(this.spawnIconSet){this.spawnIconSet.hide();}
-    this.alive = true;
-    // (this.team == "red") ? (qpo.redDead -= 1) : (qpo.blueDead -= 1);
-    if(this.team=='red'){qpo.redDead-=1; console.log('red unit' + this.num + 'spawned')}
-    else {qpo.blueDead -=1}
-  };
   this.recordMove = function(move){
     switch(this.team){ //record the move (in qpo.activeGame.record)
       case "blue": {
@@ -476,7 +439,9 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
     'moveLeft' : function(){ self.move('left') }.bind(self),
     'bomb' : function(){ self.bomb() }.bind(self),
     'shoot' : function(){ self.shoot() }.bind(self),
-    'stay' : function(){ self.stay() }.bind(self)
+    'stay' : function(){ self.stay() }.bind(self),
+    'spawn' : function(){ self.spawn() }.bind(self),
+    'recharge' : function(){ self.recharge() }.bind(self)
   }
   this.move = function(dir){
     switch(dir){
@@ -518,9 +483,6 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
     this.movingForward = false;
     var bomb;
     bomb = new qpo.Bomb(this);
-    // bomb = new startBomb(this);
-    // improveBomb(bomb);
-    // finishBomb(bomb);
     bomb.next();
     if(qpo.mode=="menu"){ //put the bomb's phys in the correct layer
       bomb.phys.toBack();
@@ -620,10 +582,29 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
       }
     }
   }
+  this.spawn = function(){ //call this at the moment you want a new unit to spawn
+    this.spawnTimer = -1;
+    var spawnLoc = qpo.findSpawn(this.team); //get the [row, column] for the spawn (loc is location)
+    this.x = spawnLoc[1]; //update the grid positions, for qpo.snap
+    this.y = spawnLoc[0]; //update the grid positions, for qpo.snap
+    console.log(this.team + ' unit spawned at ' + this.x + ',' + this.y);
+    this.snap();
+    this.phys.show();
+    this.phys.attr({'opacity':1});
+    this.rect.attr({ 'height':this.mtr, 'width':this.mtr });
+    if(this.spawnIconSet){this.spawnIconSet.hide();}
+    this.alive = true;
+    if(this.team=='red'){qpo.redDead-=1}
+    else{qpo.blueDead -=1}
+  };
+  this.recharge = function(){
+    this.spawnTimer--;
+    if(this.spawnTimer==0){this.nextAction='spawn'};
+  }
 
   this.executeMove = function(){
     this.actions[this.nextAction]();
-    this.nextAction = 'stay';
+    if (this.alive){this.nextAction = 'stay';}
   }
   this.nextSpawn = -1; //turn number of this unit's next spawn
 

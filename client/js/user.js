@@ -12,5 +12,5 @@ qpo.User = function(handle, il, ir, ix){
   this.rankDown = function(){this.rank--}
   this.addExp = function(amt){this.exp += amt}
 
-  return this
+  return this;
 }

@@ -735,60 +735,39 @@ qpo.newTurn = function(){ // called every time game clock is divisible by 3
   qpo.activeGame.state = qpo.activeGame.getState();
   var input = qpo.convertStateToInputs(qpo.activeGame.state);
 
-  //// SPAWN SECTION
-  var completedSpawnIndices = new Array();
-  var spawn, spawnTurn, spawnerTeam;
-  for(var i=0; i<qpo.activeGame.upcomingSpawns.length; i++){ //if it's the right turn, spawn the unit.
-    spawn = qpo.activeGame.upcomingSpawns[i];
-    spawnTurn = spawn[0];
-    spawnerTeam = spawn[2];
-    spawnerNum = spawn[1];
-    if(spawnTurn == qpo.activeGame.turnNumber){ //if it's time, spawn the unit.
-      qpo.unitLists[spawnerTeam][spawnerNum].spawn();
-      completedSpawnIndices.push(i);
-    }
-    else{qpo.unitLists[spawnerTeam][spawnerNum].spawnTimer--;} //otherwise, reduce its timer
-  }
-  for(var i=0; i<completedSpawnIndices.length; i++){
-     //remove the spawn with that index from the array,
-     //  and decrement all higher indices in the list.
-    var index = completedSpawnIndices[i];
-    qpo.activeGame.upcomingSpawns.splice(index,index+1);
-    for (var j=i; j<completedSpawnIndices.length; j++){ //decrement all higher indices in the list.
-      if(completedSpawnIndices[j]>index){completedSpawnIndices[j]--;}
-    }
-  }
-
   //// MOVE EXECUTION SECTION
   qpo.snap(); //snap all units into their correct positions prior to executing new moves
   var po = qpo.activeGame.po; //for convenience
   var ru = null; //red unit, for convenience
   var bu = null; //blue unit, for convenience
   for (var i=0; i<po; i++){ //Generate AI moves & execute all moves
-    if (!qpo.multiplayer){ // In single player, generate red's moves automatically:
-      ru = qpo.activeGame.teams.red.units[i];
-      bu = qpo.activeGame.teams.blue.units[i];
-      switch(qpo.aiType){ // Generate a move from random, rigid, or neural AI
-        case "random": {
-          ru.nextAction = qpo.moves[Math.round(Math.random()*6)];
-          break;
-        }
-        case "rigid": {
-          ru.nextAction = findMove(qpo.red.units[i]);
-          break;
-        }
-        case "neural": {
-          input[217] = i-0.5-(po/2); //generate a zero-mean input representing chosen unit
-          var action = qpo.ali.nn.forward(input); // Have the AI net generate a move (integer)
-          ru.nextAction = qpo.actions[action]; //get the proper string
-          break;
-        }
-        default: {
-          console.log("this was unexpected");
-          break;
+    ru = qpo.activeGame.teams.red.units[i];
+    bu = qpo.activeGame.teams.blue.units[i];
+
+    if (!qpo.multiplayer){ // Generate AI moves
+      if(ru.alive){ //Generate a move from random, rigid, or neural AI
+        switch(qpo.aiType){
+          case "random": {
+            ru.nextAction = qpo.moves[Math.round(Math.random()*6)];
+            break;
+          }
+          case "rigid": {
+            ru.nextAction = findMove(qpo.red.units[i]);
+            break;
+          }
+          case "neural": {
+            input[217] = i-0.5-(po/2); //generate a zero-mean input representing chosen unit
+            var action = qpo.ali.nn.forward(input); // Have the AI net generate a move (integer)
+            ru.nextAction = qpo.actions[action]; //get the proper string
+            break;
+          }
+          default: {
+            console.log("this was unexpected");
+            break;
+          }
         }
       }
-      if(qpo.trainingMode){ // In training mode, generate blue's moves, too.
+      if(qpo.trainingMode && bu.alive){ // In training mode, generate a move for the blue unit, too.
         switch(qpo.trainerOpponent){
           case "random": {
             bu.nextAction = qpo.moves[Math.round(Math.random()*6)];
@@ -811,10 +790,10 @@ qpo.newTurn = function(){ // called every time game clock is divisible by 3
         }
       }
     }
-    if(ru.alive){ru.executeMove()}
-    if(bu.alive){bu.executeMove()}
-
+    ru.executeMove();
+    bu.executeMove();
     bu.resetIcon(); //reset the icons for the player's team
+
   }
 
   if(qpo.activeGame.turnNumber == qpo.activeGame.lastTurn-1){ //stop allowing units to shoot and bomb
@@ -1085,22 +1064,17 @@ qpo.updateBlueAU = function(po, cond){ //Called when a command is sent and when 
   var oldBlueAU, newBlueAU;
   while (findingUnit) { // keep looking until you find the new active unit.
     if (ind == po) { ind = 0; }
-    newBlueAU = qpo.blue.units[ind];
+    newBlueAU = qpo.blue.units[ind]; //potential new active unit
     oldBlueAU = qpo.blue.units[qpo.blueActiveUnit];
     //When you find the new one, deactivate the old unit, activate the new one, and update qpo.blueActiveUnit.
-    if ((newBlueAU.spawnTimer < 1) && (qpo.activeGame.isEnding == false)){
-      //  This is our new active unit. It's either alive or about to be. Do stuff. Also...
-      //  The game isn't ending, and it's been long enough since the last move.
+    if ((newBlueAU.alive) && (qpo.activeGame.isEnding == false)){ // This is our new active unit. Do stuff.
       findingUnit = false; //unit has now been found. Exit the While loop after this iteration.
-      // qpo.moveHighlights(oldBlueAU, newBlueAU, ind);
       qpo.blueActiveUnit = ind;
       qpo.blue.units[ind].activate();
     }
     ind++;
     tries++;
-    if (tries == po) { // No units are eligibile for activation. Stop looking and make sure the loop exits.
-      findingUnit = false;
-    }
+    if (tries == po) { findingUnit = false; } // No other units are eligibile for activation. Stop looking. Make sure the loop exits.
   }
 }
 qpo.sendMoveToServer = function(moveStr){
