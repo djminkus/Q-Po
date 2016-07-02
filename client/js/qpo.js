@@ -743,11 +743,15 @@ qpo.newTurn = function(){ // called every time game clock is divisible by 3
     spawnTurn = spawn[0];
     spawnerTeam = spawn[2];
     spawnerNum = spawn[1];
-    if(spawnTurn == qpo.activeGame.turnNumber){ //if it's time, spawn the unit.
-      qpo.unitLists[spawnerTeam][spawnerNum].spawn();
+    if(spawnTurn == qpo.activeGame.turnNumber){
+      console.log("747!!", qpo);
+     //if it's time, spawn the unit.
+      qpo.activeGame.teams[spawnerTeam].units[spawnerNum].spawn();
       completedSpawnIndices.push(i);
     }
-    else{qpo.unitLists[spawnerTeam][spawnerNum].spawnTimer--;} //otherwise, reduce its timer
+    else{
+      console.log("750!!", qpo);
+    qpo.activeGame.teams[spawnerTeam].units[spawnerNum].spawnTimer--;} //otherwise, reduce its timer
   }
   for(var i=0; i<completedSpawnIndices.length; i++){
      //remove the spawn with that index from the array,
