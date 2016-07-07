@@ -245,6 +245,17 @@ qpo.MenuOption = function(gx, gy, textStr, action, menu, active, order, color){ 
       this.unit.deactivate();
       this.active = false;
     }
+
+    this.raphs.hover(function(){
+      this.raphs.attr({'cursor':'crosshair'});
+      this.activate();
+    },
+      function(){
+        this.raphs.attr({'cursor':'default'});
+        this.deactivate();
+      },
+    this, this);
+    this.raphs.click(function(){this.action()}.bind(this));
   }
 
   this.action = action; //a function

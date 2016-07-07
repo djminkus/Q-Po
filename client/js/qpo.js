@@ -1055,9 +1055,8 @@ qpo.detectCollisions = function(ts){ //ts is teamSize, aka po
 
 qpo.updateBlueAU = function(po, cond){ //Called when a command is sent and when a unit dies.
   // Cond is condition (either "move" or "death"), the reason this function's being called.
-  // Deactivate the old active unit. Find the next 'eligible' unit and activate it,
-  // ("eligible" means "alive or about to be alive"),
-  // Update the "blueActiveUnit" var
+  // Deactivate the old active unit. Find the next living unit and activate it.
+  // Update the "blueActiveUnit" var.
   var findingUnit = true;
   var ind = qpo.blueActiveUnit + 1;
   var tries = 0;
