@@ -355,7 +355,7 @@ qpo.setup = function(){ // set up global vars and stuff
   }
   qpo.pinch = function(el, stroke){ //takes in raph el, returns a set of orange lines pinching in on it
     var strk = stroke || qpo.unitStroke;
-    var time = 100;
+    var time = 50;
     var box = el.getBBox();
     var set = c.set();
     var top = c.path('M'+box.x+','+box.y+' L'+box.x2+','+box.y).data('which','top');
@@ -370,28 +370,28 @@ qpo.setup = function(){ // set up global vars and stuff
         case 'top': {
           each.animate({
             "0%": {'transform':'t'+'0,-'+qpo.pinchAmount},
-            "100%": {'transform':''}
+            "100%": {'transform':'', 'opacity':0.3}
           }, time)
           break;
         }
         case 'right': {
           each.animate({
             "0%": {'transform':'t'+qpo.pinchAmount+',0'},
-            "100%": {'transform':''}
+            "100%": {'transform':'', 'opacity':0.3}
           }, time)
           break;
         }
         case 'bottom': {
           each.animate({
             "0%": {'transform':'t'+'0,'+qpo.pinchAmount},
-            "100%": {'transform':''}
+            "100%": {'transform':'', 'opacity':0.3}
           }, time)
           break;
         }
         case 'left': {
           each.animate({
             "0%": {'transform':'t-'+qpo.pinchAmount+',0'},
-            "100%": {'transform':''}
+            "100%": {'transform':'', 'opacity':0.3}
           }, time)
           break;
         }
@@ -513,9 +513,6 @@ qpo.Board = function(cols, rows, x, y, m){ //Board class constructor
   qpo.guiCoords.gameBoard.width = this.mtr * qpo.guiDimens.columns;
   qpo.guiCoords.gameBoard.height = this.mtr * qpo.guiDimens.rows;
 
-  // qpo.guiCoords.gameBoard.rightWall = qpo.guiCoords.gameBoard.leftWall + qpo.guiCoords.gameBoard.width;
-  // qpo.guiCoords.gameBoard.bottomWall = qpo.guiCoords.gameBoard.topWall + qpo.guiCoords.gameBoard.height;
-
   var leftWall = c.path('M'+this.lw+','+(this.tw-1) + 'L'+this.lw+','+(this.bw+1));
   var rightWall = c.path('M'+this.rw+','+(this.tw-1) + 'L'+this.rw+','+(this.bw+1));
   var sideWalls = c.set(leftWall, rightWall)
@@ -535,36 +532,19 @@ qpo.Board = function(cols, rows, x, y, m){ //Board class constructor
 
   this.outline = c.set(sideWalls, goalLines);
 
-  var crossSize = qpo.guiDimens.CROSS_SIZE;
-  var hcs = crossSize/2 //Half Cross Size
-
-  this.verts = c.set();
+  var dotSize = 2;
+  this.dots = c.set();
   for (var i=1; i<cols; i++) { //create the vertical marks
     for (var j=1; j<rows; j++){
       var xCoord = this.lw + (i*this.mtr);
-      var yCoord1 = this.tw + (j*this.mtr-hcs);
-      var yCoord2 = yCoord1 + crossSize;
-      var newString = ("M" + xCoord + "," + yCoord1 + "L" + xCoord + "," + yCoord2);
-      var newMark = c.path(newString);
-      this.verts.push(newMark);
+      var yCoord = this.tw + (j*this.mtr);
+      var newDot = c.circle(xCoord, yCoord, dotSize);
+      this.dots.push(newDot);
     }
   }
-
-  this.hors = c.set();
-  for (var i=1; i<rows; i++) { //create the horizontal marks
-    for (var j=1; j<cols; j++){
-      var yCoord = this.tw + (i*this.mtr);
-      var xCoord1 = this.lw + (j*this.mtr-hcs);
-      var xCoord2 = xCoord1 + crossSize;
-      var newString = ("M" + xCoord1 + "," + yCoord + "L" + xCoord2 + "," + yCoord);
-      var newMark = c.path(newString);
-      this.hors.push(newMark);
-    }
-  }
-
-  this.crosses = c.set().push(this.hors, this.verts).attr({'stroke':qpo.COLOR_DICT['foreground'], 'opacity':0});
-  this.all.push(this.crosses);
-
+  this.dots.attr({'fill':qpo.COLOR_DICT['foreground'], 'stroke-width':0});
+  this.all.push(this.dots);
+  
   if(qpo.mode=='game'){ //slide the walls in from off-screen
     sideWalls.transform('t0,-700');
     goalLines.transform('t-700,0');
