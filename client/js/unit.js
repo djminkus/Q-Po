@@ -264,7 +264,7 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
         });
         break;
       case 'stay':
-        newIcon = c.circle(lw + mtr/2, tw + mtr/2, mtr/10).attr(qpo.circleAtts(color));
+        newIcon = c.circle(lw+mtr/2, tw+mtr/2, mtr/10).attr(qpo.circleAtts(this.team));
         break;
       default:
         console.log('this was unexpected');
@@ -277,7 +277,7 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
   this.resetIcon = function(){
     this.phys.exclude(this.icon);
     this.icon.remove();
-    this.icon = c.circle(lw + mtr/2, tw + mtr/2, mtr/7).attr(qpo.circleAtts(color));
+    this.icon = c.circle(lw + mtr/2, tw + mtr/2, mtr/7).attr(qpo.circleAtts(this.team));
     this.phys.push(this.icon);
     this.snap();
     if(!this.alive){
@@ -587,7 +587,7 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
     var spawnLoc = qpo.findSpawn(this.team); //get the [row, column] for the spawn (loc is location)
     this.x = spawnLoc[1]; //update the grid positions, for qpo.snap
     this.y = spawnLoc[0]; //update the grid positions, for qpo.snap
-    console.log(this.team + ' unit spawned at ' + this.x + ',' + this.y);
+    // console.log(this.team + ' unit spawned at ' + this.x + ',' + this.y);
     this.snap();
     this.phys.show();
     this.phys.attr({'opacity':1});

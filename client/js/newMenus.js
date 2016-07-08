@@ -133,7 +133,8 @@ qpo.Menu = function(titleStr, itemList, parent, placeholder){ // A Menu contains
   this.up = function(){ this.close('parent'); }
 
   this.close = function(status, time){ //clear the canvas and open the next screen
-    qpo.fadeOutGlow(qpo.glows, function(){}, time);
+    qpo.ignoreInput = true;
+    qpo.fadeOutGlow(qpo.glows, function(){qpo.ignoreInput = false;}, time);
     qpo.fadeOut(this.all, function(){
       c.clear();
       this.all = null; //remove reference to raphs too
@@ -181,6 +182,13 @@ qpo.CursorList = function(list, initialCursorPosition){ // A list with a "select
   this.cursorPosition = initialCursorPosition || 0;
   this.selectedItem = this.list[this.cursorPosition];
 
+  this.select = function(index){
+    this.selectedItem.deactivate();
+    this.cursorPosition = index;
+    this.selectedItem = this.list[this.cursorPosition];
+    this.selectedItem.activate();
+  }
+
   this.rendered = false;
 
   this.render = function(){ // Generate the raphs.
@@ -197,24 +205,19 @@ qpo.CursorList = function(list, initialCursorPosition){ // A list with a "select
   }
 
   this.next = function(){
-    this.selectedItem.deactivate();
-    this.cursorPosition++;
-    if(this.cursorPosition >= this.list.length){this.cursorPosition = 0}; //loop back to start
-    this.selectedItem = this.list[this.cursorPosition];
-    this.selectedItem.activate();
+    if(this.cursorPosition>=this.list.length-1){this.select(0)}
+    else{this.select(this.cursorPosition+1)}
   }.bind(this); // <-- THIS is when to use .bind() (function's identifier passed to another object)
   this.previous = function(){
-    this.selectedItem.deactivate();
-    this.cursorPosition--;
-    if(this.cursorPosition == -1){this.cursorPosition = this.list.length-1}; //loop back to start
-    this.selectedItem = this.list[this.cursorPosition];
-    this.selectedItem.activate();
+    if(this.cursorPosition==0){this.select(this.list.length-1)}
+    else{this.select(this.cursorPosition-1)}
   }.bind(this);
 
   return this;
 }
-qpo.MenuOption = function(gx, gy, textStr, action, menu, active, order, color){ // AKA UnitButton
+qpo.MenuOption = function(gx, gy, textStr, action, menu, active, order, color, index){ // AKA UnitButton
   //pass in a spawn point, some text, and a function to execute when this option is chosen
+  this.index = index;
   this.color = color || 'blue';
   qpo.guiDimens.squareSize = 50;
   this.gx = gx;
@@ -224,6 +227,8 @@ qpo.MenuOption = function(gx, gy, textStr, action, menu, active, order, color){ 
   this.active = active || false;
 
   this.render = function(){ //do all the stuff that creates or changes Raph els
+    this.menu = qpo.menus[menu]; //the menu object that it belongs to
+
     this.unit = new qpo.Unit(this.color, this.gx, this.gy); // arg 'num' gets set to 0
     if(order){this.unit.setIcon(order)}
 
@@ -248,18 +253,20 @@ qpo.MenuOption = function(gx, gy, textStr, action, menu, active, order, color){ 
 
     this.raphs.hover(function(){
       this.raphs.attr({'cursor':'crosshair'});
-      this.activate();
+      this.menu.cl.select(this.index)
+      // this.activate();
     },
       function(){
         this.raphs.attr({'cursor':'default'});
-        this.deactivate();
+        // this.deactivate();
       },
     this, this);
     this.raphs.click(function(){this.action()}.bind(this));
+
   }
 
   this.action = action; //a function
-  this.menu = menu; //the menu object that it belongs to
+
   return this;
 }
 
@@ -286,25 +293,25 @@ qpo.makeMenus = function(){ //Lay out the menu skeletons (without creating Rapha
 
   //make all the menus:
   qpo.menus['Main Menu'] = new qpo.Menu('Main Menu', [
-    new qpo.MenuOption(0,1,'Play', function(){}, 'Main Menu', true, 'moveRight'),
-    new qpo.MenuOption(0,3,'How To Play', function(){}, 'Main Menu', false, 'shoot'),
-    new qpo.MenuOption(0,5,'Compete', function(){}, 'Main Menu', false, 'bomb', 'red')
+    new qpo.MenuOption(0,1,'Play', function(){}, 'Main Menu', true, 'moveRight', 'blue', 0),
+    new qpo.MenuOption(0,3,'How To Play', function(){}, 'Main Menu', false, 'shoot', 'blue', 1),
+    new qpo.MenuOption(0,5,'Compete', function(){}, 'Main Menu', false, 'bomb', 'red', 2)
   ], 'title');
   qpo.menus['Main Menu'].up = function(){qpo.menus['Main Menu'].close('title')};
 
   qpo.menus['Game Setup'] = new qpo.Menu('Game Setup', [
-    new qpo.MenuOption(0,1,'2v2', function(){}, 'Game Setup', true),
-    new qpo.MenuOption(0,3,'4v4', function(){}, 'Game Setup', false, 'shoot'),
-    new qpo.MenuOption(0,5,'6v6', function(){}, 'Game Setup', false, 'bomb', 'red')
+    new qpo.MenuOption(0,1,'2v2', function(){}, 'Game Setup', true, 'stay', 'blue', 0),
+    new qpo.MenuOption(0,3,'4v4', function(){}, 'Game Setup', false, 'shoot', 'blue', 1),
+    new qpo.MenuOption(0,5,'6v6', function(){}, 'Game Setup', false, 'bomb', 'red', 2)
   ], 'Main Menu');
   qpo.menus['How To Play'] = new qpo.Menu('How To Play', null, 'Main Menu', true);
   qpo.menus['Compete'] = new qpo.Menu('Compete', [
-    new qpo.MenuOption(0,1,'2v2', function(){}, 'Compete', true),
-    new qpo.MenuOption(0,3,'6v6', function(){}, 'Compete', false)
+    new qpo.MenuOption(0,1,'2v2', function(){}, 'Compete', true, 'stay', 'blue', 0),
+    new qpo.MenuOption(0,3,'6v6', function(){}, 'Compete', false, 'stay', 'blue', 1)
   ], 'Main Menu', false);
 
   qpo.menus['Match Complete'] = new qpo.Menu('Match Complete',[
-    new qpo.MenuOption(0,1, 'Main Menu', function(){}, 'Match Complete', true)
+    new qpo.MenuOption(0,1, 'Main Menu', function(){}, 'Match Complete', true, 'stay', 'blue', 0)
   ], 'Main Menu');
 
   //customize the "How To Play" menu:

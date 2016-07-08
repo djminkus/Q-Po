@@ -544,13 +544,13 @@ qpo.Board = function(cols, rows, x, y, m){ //Board class constructor
   }
   this.dots.attr({'fill':qpo.COLOR_DICT['foreground'], 'stroke-width':0});
   this.all.push(this.dots);
-  
+
   if(qpo.mode=='game'){ //slide the walls in from off-screen
     sideWalls.transform('t0,-700');
     goalLines.transform('t-700,0');
     this.outline.animate({'transform':''}, 1000, '');
-    setTimeout(function(){ //fade in crosses and show glows
-      qpo.fadeIn(this.crosses, 1000);
+    setTimeout(function(){ //fade in dots and show glows
+      qpo.fadeIn(this.dots, 1000);
       setTimeout(function(){qpo.glows.show()}, 2000);
     }.bind(this), 500);
   }
@@ -1080,6 +1080,7 @@ $(window).keydown(function(event){
     default:
       break;
   }
+  if(qpo.ignoreInput){return;}
   switch(qpo.mode){ //do the right thing based on what type of screen the user is in (menu, game, tutorial, etc)
     case "menu":
       switch(event.keyCode){
