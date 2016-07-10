@@ -773,7 +773,8 @@ qpo.newTurn = function(){ // called every time game clock is divisible by 3
     ru.executeMove();
     bu.executeMove();
     bu.resetIcon(); //reset the icons for the player's team
-
+    ru.updateLevel();
+    bu.updateLevel();
   }
 
   if(qpo.activeGame.turnNumber == qpo.activeGame.lastTurn-1){ //stop allowing units to shoot and bomb

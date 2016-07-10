@@ -20,6 +20,8 @@ qpo.shotAtts = {
   'stroke-width':2
 }
 qpo.scr = 2 //shot corner radius
+qpo.levelTurns = [2,3,5,8] //qpo.levelTurns[level-1] gives how many turns it takes to get to that level from previous level
+qpo.levelSAs = ['.', '..-', '-', ''] //stroke-dasharrays for each level
 
 qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
   // color is 'blue' or 'red' -- "Which team is the unit on?"
@@ -165,11 +167,48 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
       "opacity":1,
       'stroke-opacity':1,
       'stroke':qpo.COLOR_DICT[color],
-      'stroke-width': qpo.unitStroke
+      'stroke-width': qpo.unitStroke,
+      'stroke-dasharray': qpo.levelSAs[0]
     });
   this.icon = c.circle(lw + mtr/2, tw + mtr/2).attr(qpo.circleAtts(color));
   this.phys = c.set(this.rect, this.icon);
   this.snap = function(){this.phys.attr({'transform':this.trans()});} //.bind(this) if glitchy
+
+  this.level = 1;
+  this.turnsToNextLevel = qpo.levelTurns[0];
+  this.setLevel = function(newLevel){
+    if (newLevel < 1){this.level = 1} //don't allow level to go below 1
+    else if (newLevel > 4){this.level = 4} //don't allow level to go above 4
+    else{ this.level = newLevel }
+    this.rect.attr({'stroke-dasharray':qpo.levelSAs[this.level-1]});
+    this.turnsToNextLevel = qpo.levelTurns[this.level-1];
+    switch(this.level){ //unused for now
+      case 1: {
+        // this.rect.attr({'stroke-dasharray':'.'});
+        break;
+      }
+      case 2: {
+        // this.rect.attr({'stroke-dasharray':'..-'});
+        break;
+      }
+      case 3: {
+        // this.rect.attr({'stroke-dasharray':'-'});
+        break;
+      }
+      case 4: {
+        // this.rect.attr({'stroke-dasharray':''})
+        break;
+      }
+      default: {console.log('this was unexpected.')}
+    }
+  }
+  this.levelUp = function(){ this.setLevel(this.level+1) };
+  this.levelDown = function(){ this.setLevel(this.level-1) };
+  this.resetLevel = function(){ this.setLevel(1) };
+  this.updateLevel = function(){
+    this.turnsToNextLevel--;
+    if (this.turnsToNextLevel<0){this.levelUp()}
+  }
 
   this.num = num || 0; //which unit is it? (# on team)
   this.alive = true;
@@ -584,10 +623,11 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
   }
   this.spawn = function(){ //call this at the moment you want a new unit to spawn
     this.spawnTimer = -1;
+    this.resetLevel();
     var spawnLoc = qpo.findSpawn(this.team); //get the [row, column] for the spawn (loc is location)
     this.x = spawnLoc[1]; //update the grid positions, for qpo.snap
     this.y = spawnLoc[0]; //update the grid positions, for qpo.snap
-    // console.log(this.team + ' unit spawned at ' + this.x + ',' + this.y);
+    console.log(this.team + ' unit spawned at ' + this.x + ',' + this.y);
     this.snap();
     this.phys.show();
     this.phys.attr({'opacity':1});
