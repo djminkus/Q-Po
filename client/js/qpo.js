@@ -852,6 +852,7 @@ qpo.detectCollisions = function(ts){ //ts is teamSize, aka po
         qpo.units[j].kill();
         qpo.shots[i].data("hidden",true);
         splicers.push(i);
+        // console.log('shot ' + i + ' hit a unit');
       }
     }//end iterating over units within shots
     if (qpo.bombs.length > 0){ //iterate over bombs within shots (if bombs exist)
@@ -901,7 +902,6 @@ qpo.detectCollisions = function(ts){ //ts is teamSize, aka po
           //   and check if the bomb is exploded. If the bomb
           //   is not exploded, explode it.
 
-
           var nBOU = qpo.units[j].rect.getBBox().y;
           var wBOU = qpo.units[j].rect.getBBox().x;
           var sBOU = nBOU + qpo.guiDimens.squareSize;
@@ -917,7 +917,7 @@ qpo.detectCollisions = function(ts){ //ts is teamSize, aka po
               ( wBOB < eBOU && eBOU < eBOB )) &&
               (qpo.units[j].alive)) {
             qpo.units[j].kill();
-            //console.log("bomb " + i + " hit unit " +j);
+            // console.log("bomb " + i + " hit unit " + j);
             if ( !(qpo.bombs[i].exploded)){
               qpo.bombs[i].explode();
             }
@@ -1023,13 +1023,11 @@ qpo.detectCollisions = function(ts){ //ts is teamSize, aka po
     }
   } //end iterating over blue units
 
-  // Splice shots out of the shots array, one by one.
-  while (splicers.length > 0) {
-    qpo.shots.splice(splicers[0],1);
-    splicers.splice(0,1);
-    for (var i=0;i<splicers.length;i++){
-      splicers[i] -= 1;
-    }
+  while (splicers.length > 0) { // Splice collided shots out of the 'shots' array.
+    //The 'splicers' array contains the indices of shots to be removed from the 'shots' array.
+    qpo.shots.splice(splicers[0], 1); //remove desired shot from 'shots' array.
+    splicers.shift(); //remove first element of 'splicers' array.
+    for (var i=0; i<splicers.length; i++){ splicers[i] -= 1; } //decrement all other indices.
   }
 }
 

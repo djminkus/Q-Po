@@ -69,7 +69,10 @@ qpo.Bomb = function(su){ //su = source unit
         'stroke-width':0,
         'fill-opacity':.25
       }
-    }, 3000*qpo.timeScale, function(){ qpo.bombs[this.index] = false; });
+    }, 3000*qpo.timeScale, function(){
+      this.phys.hide();
+      qpo.bombs[this.index] = false;
+    }.bind(this));
     this.phys.animate(anim);
   }
   this.next = function(){ //make the bomb count down or explode

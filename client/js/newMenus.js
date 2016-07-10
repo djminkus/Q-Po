@@ -253,13 +253,9 @@ qpo.MenuOption = function(gx, gy, textStr, action, menu, active, order, color, i
 
     this.raphs.hover(function(){
       this.raphs.attr({'cursor':'crosshair'});
-      this.menu.cl.select(this.index)
-      // this.activate();
+      if(!this.active){this.menu.cl.select(this.index)}
     },
-      function(){
-        this.raphs.attr({'cursor':'default'});
-        // this.deactivate();
-      },
+      function(){ this.raphs.attr({'cursor':'default'}); },
     this, this);
     this.raphs.click(function(){this.action()}.bind(this));
 
