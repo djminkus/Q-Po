@@ -395,10 +395,12 @@ qpo.makeMenus = function(){ //Lay out the menu skeletons (without creating Rapha
         }
 
         var upperPanel, title;
-        menu.title = title = c.text(c.width/2, 60, 'How To Play').attr({qpoText:[qpo.menus['How To Play'].TITLE_SIZE, qpo.COLOR_DICT['background']]});
-        menu.upperPanel = upperPanel = qpo.upperPanel(menu.title);
+        menu.title = title = c.text(c.width/2, 60, 'How To Play').attr({qpoText:[qpo.menus['How To Play'].TITLE_SIZE, qpo.COLOR_DICT['foreground']]});
+        // menu.upperPanel = upperPanel = qpo.upperPanel(menu.title);
 
-        menu.all.push(set, upperPanel, title);
+        menu.all.push(set,
+          //  upperPanel,
+           title);
         qpo.fadeIn(menu.all);
 
         return result;
