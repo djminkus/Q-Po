@@ -13,8 +13,8 @@ qpo.Bomb = function(su){ //su = source unit
   this.team = su.team;
   this.timer = 3;
   this.exploded = false;
-  var lw = qpo.guiCoords.gameBoard.leftWall;
-  var tw = qpo.guiCoords.gameBoard.topWall;
+  var lw = qpo.board.lw;
+  var tw = qpo.board.tw;
   switch(this.team){ //make the "this.phys" and put it in the right place
     case "blue":
       this.phys = c.rect(lw +su.tx() + BOMB_MARGIN_X,

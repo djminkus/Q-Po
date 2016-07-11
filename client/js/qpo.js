@@ -138,6 +138,7 @@ qpo.setup = function(){ // set up global vars and stuff
   qpo.settings2v2multi = [7,2,true];
   qpo.settings3v3multi = [8,3,true];
   qpo.settings4v4multi = [9,4,true];
+  qpo.code = 0; //status code for multipurpose use
 
   // (DNA): STATIC DICTS N ARRAYS
   qpo.spawnTimers = [null, 1,2,2,2,3,3,3,4]; //index is po
@@ -202,7 +203,7 @@ qpo.setup = function(){ // set up global vars and stuff
         "height" : 100,
       },
       "gameBoard" : {
-        "leftWall" : 25,
+        "lw" : 25,
         "topWall" : 75,
         "bottomWall" : 75+350
         // 'rightWall' : 25+350
@@ -411,8 +412,6 @@ qpo.startGame = function(settings){ //draw the board/GUI, place units, and start
   qpo.mode = 'game';
 
   qpo.activeGame = new qpo.Game(settings[0], settings[1], settings[2], true, true, qpo.gameLength);
-  qpo.redDead = 0;
-  qpo.blueDead = 0;
   qpo.shots=[];
   qpo.bombs=[];
 
@@ -535,7 +534,7 @@ qpo.Board = function(cols, rows, x, y, m){ //Board class constructor
 
   var dotSize = 2;
   this.dots = c.set();
-  for (var i=1; i<cols; i++) { //create the vertical marks
+  for (var i=1; i<cols; i++) { //create the grid dots
     for (var j=1; j<rows; j++){
       var xCoord = this.lw + (i*this.mtr);
       var yCoord = this.tw + (j*this.mtr);
@@ -543,7 +542,7 @@ qpo.Board = function(cols, rows, x, y, m){ //Board class constructor
       this.dots.push(newDot);
     }
   }
-  this.dots.attr({'fill':qpo.COLOR_DICT['foreground'], 'stroke-width':0});
+  this.dots.attr({'fill':qpo.COLOR_DICT['foreground'], 'stroke-width':0, 'opacity':0});
   this.all.push(this.dots);
 
   if(qpo.mode=='game'){ //slide the walls in from off-screen
@@ -642,24 +641,19 @@ qpo.placeUnits = function(){ //called at the start of each game (from startGame)
   }, 4500);
 }
 
-qpo.Scoreboard = function(){ //draw the scoreBoard and push to gui
+qpo.Scoreboard = function(yAdj){ //draw the scoreboard and push to gui
   this.redScore = 0;
   this.blueScore = 0;
 
-  this.redScoreText = c.text(430,100, "0").attr({qpoText: [25, qpo.COLOR_DICT["red"]]});
+  this.redScoreText = c.text(430,100+yAdj, "0").attr({qpoText: [25, qpo.COLOR_DICT["red"]]});
   this.redSection = c.set().push(this.redScoreText);
 
-  this.blueScoreText = c.text(470,100, "0").attr({qpoText: [25, qpo.COLOR_DICT["blue"]]});
+  this.blueScoreText = c.text(470,100+yAdj, "0").attr({qpoText: [25, qpo.COLOR_DICT["blue"]]});
   this.blueSection = c.set().push(this.blueScoreText);
 
-  this.addPoint = function(color){
-    if (color == "red"){
-      this.redScore++;
-      this.redScoreText.attr({"text":this.redScore});
-    } else {
-      this.blueScore++;
-      this.blueScoreText.attr({"text":this.blueScore});
-    }
+  this.update = function(color){
+    this.redScoreText.attr({"text":qpo.teams.red.points});
+    this.blueScoreText.attr({"text":qpo.teams.blue.points});
   }
 
   this.all = c.set().push(this.redSection, this.blueSection).attr({'opacity':0});
@@ -668,8 +662,9 @@ qpo.Scoreboard = function(){ //draw the scoreBoard and push to gui
   qpo.gui.push(this.all);
   return this;
 };
-qpo.Timer = function(){
+qpo.Timer = function(yAdj){ //draw the turn timer and push to gui
   var t = qpo.guiCoords.turnTimer; //t.x, t.y, t.r are x center, y center, and radius of timer
+  t.y += yAdj
   this.value = qpo.activeGame.lastTurn;
   this.pie = c.path().attr({segment: [t.x, t.y, t.r, -90, 269],"stroke":"none",'opacity':0});
   this.text = c.text(t.x, t.y, qpo.activeGame.lastTurn).attr({qpoText:[30,qpo.COLOR_DICT['foreground']]});
@@ -687,13 +682,13 @@ qpo.Timer = function(){
   return this;
 }
 
-qpo.drawGUI = function(q,po){ //create the turn timer (pie), board, and control panel.
+qpo.drawGUI = function(q,po,xAdj, yAdj){ //create the turn timer (pie), board, and control panel.
   qpo.gui.push(c.rect(0, 0, qpo.guiDimens.gpWidth, qpo.guiDimens.gpHeight) //background
     .attr({"fill":qpo.COLOR_DICT['background']}));
-  qpo.activeGame.board = new qpo.Board(q, q); // make the board (with animation if game starting)
+  qpo.activeGame.board = new qpo.Board(q, q, 25+xAdj, 75+yAdj); // make the board (with animation if game starting)
   qpo.board = qpo.activeGame.board; //ugh messy
-  qpo.timer = new qpo.Timer();
-  qpo.scoreBoard = new qpo.Scoreboard(); //ugh inconsistent style
+  qpo.timer = new qpo.Timer(yAdj);
+  qpo.scoreboard = new qpo.Scoreboard(yAdj);
 }
 
 //INCREMENT FUNCTIONS (no new Raph elements created)
@@ -794,8 +789,8 @@ qpo.newTurn = function(){ // called every time game clock is divisible by 3
       var gameResult;
       qpo.blueActiveUnit = 50;
       qpo.redActiveUnit = 50;
-      if (qpo.scoreBoard.redScore == qpo.scoreBoard.blueScore) { gameResult = "tie"; }
-      else if (qpo.scoreBoard.redScore > qpo.scoreBoard.blueScore) { gameResult = "red"; }
+      if (qpo.scoreboard.redScore == qpo.scoreboard.blueScore) { gameResult = "tie"; }
+      else if (qpo.scoreboard.redScore > qpo.scoreboard.blueScore) { gameResult = "red"; }
       else { gameResult = "blue"; }
       qpo.activeGame.isEnding = true;
       setTimeout(function(){qpo.endGame(gameResult);}, 3000*qpo.timeScale);
@@ -824,7 +819,7 @@ qpo.detectCollisions = function(ts){ //ts is teamSize, aka po
     var eBOS = shotBox.x2;
     var wBOS = shotBox.x;
     //CHECK FOR COLLISION WITH WALL:
-    if (sBOS>qpo.guiCoords.gameBoard.bottomWall || nBOS<qpo.guiCoords.gameBoard.topWall){
+    if (sBOS>qpo.board.bw || nBOS<qpo.board.tw){
       qpo.shots[i].hide(); //make the shot disappear
       qpo.shots[i].data("hidden",true);
       splicers.push(i);
@@ -966,13 +961,13 @@ qpo.detectCollisions = function(ts){ //ts is teamSize, aka po
       var eBOU = wBOU + qpo.guiDimens.squareSize - 2;
 
       //if the blue unit has hit a wall, stop the unit and place it snugly on the wall.
-      if( nBOU < qpo.guiCoords.gameBoard.topWall ||
-          wBOU < qpo.guiCoords.gameBoard.leftWall ||
-          sBOU > qpo.guiCoords.gameBoard.bottomWall ||
-          eBOU > qpo.guiCoords.gameBoard.rightWall
+      if( nBOU < qpo.board.tw ||
+          wBOU < qpo.board.lw ||
+          sBOU > qpo.board.bw ||
+          eBOU > qpo.board.rw
         ){
-        if (sBOU > qpo.guiCoords.gameBoard.bottomWall){ //South wall. Score.
-          // var testC = c.circle(300, qpo.guiCoords.gameBoard.bottomWall ,20).attr({'stroke':'white'});
+        if (sBOU > qpo.board.bw){ //South wall. Score.
+          // var testC = c.circle(300, qpo.board.bw ,20).attr({'stroke':'white'});
           // var testC2 = c.circle(200, sBOU, 20).attr({'stroke':'purple'});
           // var testC3 = c.circle(100, qpo.blue.units[i].rect.getBBox().y + qpo.guiDimens.squareSize -1, 20).attr({'stroke':'pink'}) ;
           // setTimeout(function(){
@@ -994,11 +989,11 @@ qpo.detectCollisions = function(ts){ //ts is teamSize, aka po
         var eBOUr = wBOUr + qpo.guiDimens.squareSize - 2;
 
         //if the red unit has hit a wall, stop the unit and place it snugly on the wall.
-        if (nBOUr < qpo.guiCoords.gameBoard.topWall || wBOUr < qpo.guiCoords.gameBoard.leftWall ||
-            sBOUr > qpo.guiCoords.gameBoard.bottomWall || eBOUr > qpo.guiCoords.gameBoard.rightWall) {
+        if (nBOUr < qpo.board.tw || wBOUr < qpo.board.lw ||
+            sBOUr > qpo.board.bw || eBOUr > qpo.board.rw) {
           qpo.red.units[i].phys.stop();
           qpo.red.units[i].snap();
-          if (nBOUr < qpo.guiCoords.gameBoard.topWall){ qpo.red.units[i].score(); }
+          if (nBOUr < qpo.board.tw){ qpo.red.units[i].score(); }
         }
       }
 

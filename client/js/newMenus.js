@@ -39,6 +39,8 @@ switch(qpo.font){ //for easy font switching
   var s = document.getElementsByTagName('script')[0];
   s.parentNode.insertBefore(wf, s);
 })();
+qpo.activeMenuOptAtts = {'fill':qpo.COLOR_DICT['orange'], 'opacity':1}
+qpo.inactiveMenuOptAtts = {'fill':'grey', 'opacity':1}
 
 qpo.upr = 5; //upper panel corner radius
 qpo.upperPanel = function(titleEl){ //return the top white panel Raph
@@ -255,18 +257,23 @@ qpo.MenuOption = function(gx, gy, textStr, action, menu, active, order, color, i
     if(order){this.unit.setIcon(order)}
 
     this.text = qpo.xtext(this.unit.rect.attr('x')+this.unit.tx()+mtr*5/4,
-      this.unit.rect.attr('y')+this.unit.ty()+mtr/2, this.textStr, 20);
-    if(this.active){this.text.attr({'fill':qpo.COLOR_DICT['orange']})} //highlight it if active
+      this.unit.rect.attr('y')+this.unit.ty()+mtr/2, this.textStr, 20)
+    this.text.attr(qpo.inactiveMenuOptAtts);
+    if(this.active){this.text.attr(qpo.activeMenuOptAtts)} //highlight it if active
 
     this.raphs = c.set(this.text, this.unit.phys);
 
     this.activate = function(){
-      this.text.attr({'fill':qpo.COLOR_DICT['orange']});
+      this.text.attr(qpo.activeMenuOptAtts);
       this.unit.activate();
       this.active = true;
+      qpo.blink(this.text);
+      qpo.blink(this.unit.rect);
     }
     this.deactivate = function(){
-      this.text.attr({'fill':qpo.COLOR_DICT['foreground']});
+      this.text.stop();
+      this.unit.rect.stop();
+      this.text.attr(qpo.inactiveMenuOptAtts);
       this.unit.deactivate();
       this.active = false;
     }
@@ -310,10 +317,15 @@ qpo.makeMenus = function(){ //Lay out the menu skeletons (without creating Rapha
   //make all the menus:
   qpo.menus['Main Menu'] = new qpo.Menu('Main Menu', [
     new qpo.MenuOption(0,1,'Campaign', function(){}, 'Main Menu', true, 'stay', 'blue', 0),
-    new qpo.MenuOption(0,3,'Multiplayer', function(){}, 'Main Menu', false, 'stay', 'blue', 1),
-    new qpo.MenuOption(0,5,'Settings', function(){}, 'Main Menu', false, 'stay', 'blue', 2)
+    new qpo.MenuOption(0,2,'vs. Computer', function(){}, 'Main Menu', false, 'stay', 'blue', 1),
+    new qpo.MenuOption(0,3,'Multiplayer', function(){}, 'Main Menu', false, 'stay', 'blue', 2),
+    new qpo.MenuOption(0,5,'Settings', function(){}, 'Main Menu', false, 'stay', 'blue', 3)
   ], 'title');
   qpo.menus['Main Menu'].up = function(){qpo.menus['Main Menu'].close('title')};
+  qpo.menus['Main Menu'].cl.list[0].action = function(){ qpo.menus['Main Menu'].close('Campaign'); }
+  qpo.menus['Main Menu'].cl.list[1].action = function(){ qpo.menus['Main Menu'].close('vs. Computer'); }
+  qpo.menus['Main Menu'].cl.list[2].action = function(){ qpo.menus['Main Menu'].close('Multiplayer'); }
+  qpo.menus['Main Menu'].cl.list[3].action = function(){ qpo.menus['Main Menu'].close('Settings'); }
 
   qpo.menus['Campaign'] = new qpo.Menu('Campaign', [
     new qpo.MenuOption(0,1,'Mission 1', function(){}, 'Campaign', true, 'stay', 'blue', 0),
@@ -321,43 +333,40 @@ qpo.makeMenus = function(){ //Lay out the menu skeletons (without creating Rapha
     new qpo.MenuOption(0,3,'Mission 3', function(){}, 'Campaign', false, 'stay', 'blue', 2),
     new qpo.MenuOption(0,4,'Mission 4', function(){}, 'Campaign', false, 'stay', 'blue', 3)
   ], 'Main Menu');
-  qpo.menus['Multiplayer'] = new qpo.Menu('Multiplayer', [
-    new qpo.MenuOption(0,1,'2-Po', function(){}, 'Multiplayer', true, 'stay', 'blue', 0),
-    new qpo.MenuOption(0,3,'3-Po', function(){}, 'Multiplayer', false, 'stay', 'blue', 1),
-    new qpo.MenuOption(0,5,'4-Po', function(){}, 'Multiplayer', false, 'stay', 'blue', 2)
-  ], 'Main Menu');
-  qpo.menus['Settings'] = new qpo.Menu('Settings', [
-    new qpo.MenuOption(0,1,'coming', function(){}, 'Settings', true, 'stay', 'blue', 0),
-    new qpo.MenuOption(0,3,'soon', function(){}, 'Settings', false, 'stay', 'blue', 1)
-  ], 'Main Menu', false);
-
-  qpo.menus['Match Complete'] = new qpo.Menu('Match Complete',[
-    new qpo.MenuOption(0,1, 'Main Menu', function(){}, 'Match Complete', true, 'stay', 'blue', 0)
-  ], 'Main Menu');
-
-  //make menu options do what they're supposed to:
-  qpo.menus['Main Menu'].cl.list[0].action = function(){ qpo.menus['Main Menu'].close('Campaign'); }
-  qpo.menus['Main Menu'].cl.list[1].action = function(){ qpo.menus['Main Menu'].close('Multiplayer'); }
-  qpo.menus['Main Menu'].cl.list[2].action = function(){ qpo.menus['Main Menu'].close('Settings'); }
-
   qpo.menus['Campaign'].cl.list[0].action = function(){ qpo.menus['Campaign'].close('Mission 1', 1000); }
   qpo.menus['Campaign'].cl.list[1].action = function(){ qpo.menus['Campaign'].close('Mission 2', 1000); }
   qpo.menus['Campaign'].cl.list[2].action = function(){ qpo.menus['Campaign'].close('Mission 3', 1000); }
   qpo.menus['Campaign'].cl.list[3].action = function(){ qpo.menus['Campaign'].close('Mission 4', 1000); }
 
+  qpo.menus['vs. Computer'] = new qpo.Menu('vs. Computer', [
+    new qpo.MenuOption(0,1,'2-Po', function(){}, 'vs. Computer', true, 'stay', 'blue', 0),
+    new qpo.MenuOption(0,3,'3-Po', function(){}, 'vs. Computer', false, 'stay', 'blue', 1),
+    new qpo.MenuOption(0,5,'4-Po', function(){}, 'vs. Computer', false, 'stay', 'blue', 2)
+  ], 'Main Menu');
+  qpo.menus['vs. Computer'].cl.list[0].action = function(){ qpo.menus['vs. Computer'].close('2-Po', 1000); }
+  qpo.menus['vs. Computer'].cl.list[1].action = function(){ qpo.menus['vs. Computer'].close('3-Po', 1000); }
+  qpo.menus['vs. Computer'].cl.list[2].action = function(){ qpo.menus['vs. Computer'].close('4-Po', 1000); }
+
+  qpo.menus['Multiplayer'] = new qpo.Menu('Multiplayer', [
+    new qpo.MenuOption(0,1,'2-Po', function(){}, 'Multiplayer', true, 'stay', 'blue', 0),
+    new qpo.MenuOption(0,3,'3-Po', function(){}, 'Multiplayer', false, 'stay', 'blue', 1),
+    new qpo.MenuOption(0,5,'4-Po', function(){}, 'Multiplayer', false, 'stay', 'blue', 2)
+  ], 'Main Menu');
   qpo.menus['Multiplayer'].cl.list[0].action = function(){ qpo.menus['Multiplayer'].close('2-Po-M', 1000); }
   qpo.menus['Multiplayer'].cl.list[1].action = function(){ qpo.menus['Multiplayer'].close('3-Po-M', 1000); }
   qpo.menus['Multiplayer'].cl.list[2].action = function(){ qpo.menus['Multiplayer'].close('4-Po-M', 1000); }
 
+  qpo.menus['Settings'] = new qpo.Menu('Settings', [
+    new qpo.MenuOption(0,1,'coming', function(){}, 'Settings', true, 'stay', 'blue', 0),
+    new qpo.MenuOption(0,3,'soon', function(){}, 'Settings', false, 'stay', 'blue', 1)
+  ], 'Main Menu', false);
   qpo.menus['Settings'].cl.list[0].action = function(){ qpo.menus['Settings'].close('parent'); }
   qpo.menus['Settings'].cl.list[1].action = function(){ qpo.menus['Settings'].close('parent'); }
 
+  qpo.menus['Match Complete'] = new qpo.Menu('Match Complete',[
+    new qpo.MenuOption(0,1, 'Main Menu', function(){}, 'Match Complete', true, 'stay', 'blue', 0)
+  ], 'Main Menu');
   qpo.menus['Match Complete'].cl.list[0].action = function(){ qpo.menus['Match Complete'].close('parent'); }
-
-  // qpo.menus['Multiplayer'] =  new qpo.Menu('Multiplayer', null, 'Main Menu');
-
-  // qpo.menus['Match Results'] = new qpo.Menu('Match Results', null, 'Main Menu');
-  // qpo.menus['Demo'] = new qpo.Menu('Demo', null, 'Main Menu'); //TODO: add 1-Po, 4-Po, and 7-Po buttons
 }
 qpo.displayTitleScreen = function(){ //Called whenever title screen is displayed
   qpo.activeMenu = "title";
