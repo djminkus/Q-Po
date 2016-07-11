@@ -139,37 +139,58 @@ qpo.Menu = function(titleStr, itemList, parent, placeholder){ // A Menu contains
       c.clear();
       this.all = null; //remove reference to raphs too
       switch(status){
-        case 'title': {
+        case 'title': { //display title screen
           qpo.titleScreen = new qpo.displayTitleScreen();
           break;
         }
-        case 'parent' : {
+        case 'parent' : { //display parent menu
           this.parent.open();
           break;
         }
-        case '2v2': {
+        case 'Mission 1': { //start a mission
+          qpo.missions[0]();
+          break;
+        }
+        case 'Mission 2': { //start a mission
+          qpo.missions[1]();
+          break;
+        }
+        case 'Mission 3': { //start a mission
+          qpo.missions[2]();
+          break;
+        }
+        case 'Mission 4': { //start a mission
+          qpo.missions[3]();
+          break;
+        }
+        case '2-Po': {
           qpo.startGame(qpo.settings2v2, true, true, qpo.gameLength);
           break;
         }
-        case '4v4': {
+        case '3-Po': {
+          qpo.startGame(qpo.settings3v3, true, true, qpo.gameLength);
+          break;
+        }
+        case '4-Po': {
           qpo.startGame(qpo.settings4v4, true, true, qpo.gameLength);
           break;
         }
-        case '6v6': {
-          qpo.startGame(qpo.settings6v6, true, true, qpo.gameLength);
-          break;
-        }
-        case '2v2m': {
+        case '2-Po-M': {
           qpo.startGame(qpo.settings2v2multi, true, true, qpo.gameLength);
           break;
         }
-        case '6v6m': {
-          qpo.startGame(qpo.settings6v6multi, true, true, qpo.gameLength);
+        case '3-Po-M': {
+          qpo.startGame(qpo.settings3v3multi, true, true, qpo.gameLength);
+          break;
+        }
+        case '4-Po-M': {
+          qpo.startGame(qpo.settings4v4multi, true, true, qpo.gameLength);
           break;
         }
         default : { qpo.menus[status].open(); }
       }
     }.bind(this), time);
+
   }.bind(this);
 
   return this;
@@ -230,12 +251,11 @@ qpo.MenuOption = function(gx, gy, textStr, action, menu, active, order, color, i
     this.menu = qpo.menus[menu]; //the menu object that it belongs to
 
     this.unit = new qpo.Unit(this.color, this.gx, this.gy); // arg 'num' gets set to 0
+    this.unit.setLevel(4);
     if(order){this.unit.setIcon(order)}
 
     this.text = qpo.xtext(this.unit.rect.attr('x')+this.unit.tx()+mtr*5/4,
       this.unit.rect.attr('y')+this.unit.ty()+mtr/2, this.textStr, 20);
-    // this.text = c.text(this.unit.rect.attr('x')+this.unit.tx()+mtr*10/4, this.unit.rect.attr('y')+this.unit.ty()+mtr/2, this.textStr)
-    //   .attr({qpoText:[20]});
     if(this.active){this.text.attr({'fill':qpo.COLOR_DICT['orange']})} //highlight it if active
 
     this.raphs = c.set(this.text, this.unit.phys);
@@ -289,135 +309,48 @@ qpo.makeMenus = function(){ //Lay out the menu skeletons (without creating Rapha
 
   //make all the menus:
   qpo.menus['Main Menu'] = new qpo.Menu('Main Menu', [
-    new qpo.MenuOption(0,1,'Play', function(){}, 'Main Menu', true, 'moveRight', 'blue', 0),
-    new qpo.MenuOption(0,3,'How To Play', function(){}, 'Main Menu', false, 'shoot', 'blue', 1),
-    new qpo.MenuOption(0,5,'Compete', function(){}, 'Main Menu', false, 'bomb', 'red', 2)
+    new qpo.MenuOption(0,1,'Campaign', function(){}, 'Main Menu', true, 'stay', 'blue', 0),
+    new qpo.MenuOption(0,3,'Multiplayer', function(){}, 'Main Menu', false, 'stay', 'blue', 1),
+    new qpo.MenuOption(0,5,'Settings', function(){}, 'Main Menu', false, 'stay', 'blue', 2)
   ], 'title');
   qpo.menus['Main Menu'].up = function(){qpo.menus['Main Menu'].close('title')};
 
-  qpo.menus['Game Setup'] = new qpo.Menu('Game Setup', [
-    new qpo.MenuOption(0,1,'2v2', function(){}, 'Game Setup', true, 'stay', 'blue', 0),
-    new qpo.MenuOption(0,3,'4v4', function(){}, 'Game Setup', false, 'shoot', 'blue', 1),
-    new qpo.MenuOption(0,5,'6v6', function(){}, 'Game Setup', false, 'bomb', 'red', 2)
+  qpo.menus['Campaign'] = new qpo.Menu('Campaign', [
+    new qpo.MenuOption(0,1,'Mission 1', function(){}, 'Campaign', true, 'stay', 'blue', 0),
+    new qpo.MenuOption(0,2,'Mission 2', function(){}, 'Campaign', false, 'stay', 'blue', 1),
+    new qpo.MenuOption(0,3,'Mission 3', function(){}, 'Campaign', false, 'stay', 'blue', 2),
+    new qpo.MenuOption(0,4,'Mission 4', function(){}, 'Campaign', false, 'stay', 'blue', 3)
   ], 'Main Menu');
-  qpo.menus['How To Play'] = new qpo.Menu('How To Play', null, 'Main Menu', true);
-  qpo.menus['Compete'] = new qpo.Menu('Compete', [
-    new qpo.MenuOption(0,1,'2v2', function(){}, 'Compete', true, 'stay', 'blue', 0),
-    new qpo.MenuOption(0,3,'6v6', function(){}, 'Compete', false, 'stay', 'blue', 1)
+  qpo.menus['Multiplayer'] = new qpo.Menu('Multiplayer', [
+    new qpo.MenuOption(0,1,'2-Po', function(){}, 'Multiplayer', true, 'stay', 'blue', 0),
+    new qpo.MenuOption(0,3,'3-Po', function(){}, 'Multiplayer', false, 'stay', 'blue', 1),
+    new qpo.MenuOption(0,5,'4-Po', function(){}, 'Multiplayer', false, 'stay', 'blue', 2)
+  ], 'Main Menu');
+  qpo.menus['Settings'] = new qpo.Menu('Settings', [
+    new qpo.MenuOption(0,1,'coming', function(){}, 'Settings', true, 'stay', 'blue', 0),
+    new qpo.MenuOption(0,3,'soon', function(){}, 'Settings', false, 'stay', 'blue', 1)
   ], 'Main Menu', false);
 
   qpo.menus['Match Complete'] = new qpo.Menu('Match Complete',[
     new qpo.MenuOption(0,1, 'Main Menu', function(){}, 'Match Complete', true, 'stay', 'blue', 0)
   ], 'Main Menu');
 
-  //customize the "How To Play" menu:
-  qpo.menus['How To Play'].open = (function(){
-    var original = qpo.menus['How To Play'].open;
-    return function() {
-        // Use .apply() to call the baseline "open" function within this scope:
-        var result = original.apply(this, arguments);
-
-        // Then do some custom stuff because this menu is different from normal:
-        var menu = qpo.menus['How To Play'];
-        menu.comingSoon.remove();
-
-        var texts = [
-          'Q-Po is turn-based.', //0
-          'To score, reach their end zone or destroy their units.', //1
-          ' CONTROLS ', //2
-          'KEY', //3
-          'q',
-          'e',
-          'w/a/s/d',
-          'x',
-          'arrow keys',
-          'backspace/delete',
-          'ACTION', //10
-          'bomb',
-          'shoot',
-          'move left/up/right/down',
-          'stay',
-          'change active unit', //15
-          'go to previous menu' //16
-        ]
-        var set = c.set(); //set for texts, title, and upperPanel
-        for(ind in texts){ //Create raph els from the texts array
-          ind = parseInt(ind);
-          var y = 140 + ind*40;
-          var color;
-          switch(ind){ //prep the color of the text
-            case 4:
-            case 11: { // q/bomb (purple)
-              color = 'purple';
-              break;
-            }
-            case 5:
-            case 12: { // e/shoot (green)
-              color = 'green';
-              break;
-            }
-            case 8:
-            case 15: { // arrow keys/select unit (orange)
-              color = 'orange';
-              break;
-            }
-            default: { color = 'foreground'; } //white
-          }
-          switch(ind){ //create the text in the correct place
-            case 0:
-            case 1: { y -= 20 }
-            case 2: { //cases 0-2 (centered elements)
-              set.push(c.text(c.width/2, y, texts[ind]).attr({qpoText:[20]}))
-              break;
-            }
-            case 3:
-            case 4:
-            case 5:
-            case 6:
-            case 7:
-            case 8:
-            case 9: { //cases 3-9 (left column)
-              set.push(qpo.xtext(100, y, texts[ind], 20, qpo.COLOR_DICT[color]));
-              break;
-            }
-            case 10:
-            case 11:
-            case 12:
-            case 13:
-            case 14:
-            case 15:
-            case 16: { //cases 10-16 (right column)
-              y = 140 + (ind-7)*40;
-              set.push(qpo.xtext(320, y, texts[ind], 20, qpo.COLOR_DICT[color]));
-              break;
-            }
-          }
-        }
-
-        var upperPanel, title;
-        menu.title = title = c.text(c.width/2, 60, 'How To Play').attr({qpoText:[qpo.menus['How To Play'].TITLE_SIZE, qpo.COLOR_DICT['foreground']]});
-        // menu.upperPanel = upperPanel = qpo.upperPanel(menu.title);
-
-        menu.all.push(set,
-          //  upperPanel,
-           title);
-        qpo.fadeIn(menu.all);
-
-        return result;
-    };
-  })();
-
   //make menu options do what they're supposed to:
-  qpo.menus['Main Menu'].cl.list[0].action = function(){ qpo.menus['Main Menu'].close('Game Setup'); }
-  qpo.menus['Main Menu'].cl.list[1].action = function(){ qpo.menus['Main Menu'].close('How To Play'); }
-  qpo.menus['Main Menu'].cl.list[2].action = function(){ qpo.menus['Main Menu'].close('Compete'); }
+  qpo.menus['Main Menu'].cl.list[0].action = function(){ qpo.menus['Main Menu'].close('Campaign'); }
+  qpo.menus['Main Menu'].cl.list[1].action = function(){ qpo.menus['Main Menu'].close('Multiplayer'); }
+  qpo.menus['Main Menu'].cl.list[2].action = function(){ qpo.menus['Main Menu'].close('Settings'); }
 
-  qpo.menus['Game Setup'].cl.list[0].action = function(){ qpo.menus['Game Setup'].close('2v2', 1000); }
-  qpo.menus['Game Setup'].cl.list[1].action = function(){ qpo.menus['Game Setup'].close('4v4', 1000); }
-  qpo.menus['Game Setup'].cl.list[2].action = function(){ qpo.menus['Game Setup'].close('6v6', 1000); }
+  qpo.menus['Campaign'].cl.list[0].action = function(){ qpo.menus['Campaign'].close('Mission 1', 1000); }
+  qpo.menus['Campaign'].cl.list[1].action = function(){ qpo.menus['Campaign'].close('Mission 2', 1000); }
+  qpo.menus['Campaign'].cl.list[2].action = function(){ qpo.menus['Campaign'].close('Mission 3', 1000); }
+  qpo.menus['Campaign'].cl.list[3].action = function(){ qpo.menus['Campaign'].close('Mission 4', 1000); }
 
-  qpo.menus['Compete'].cl.list[0].action = function(){ qpo.menus['Compete'].close('2v2m', 1000); }
-  qpo.menus['Compete'].cl.list[1].action = function(){ qpo.menus['Compete'].close('6v6m', 1000); }
+  qpo.menus['Multiplayer'].cl.list[0].action = function(){ qpo.menus['Multiplayer'].close('2-Po-M', 1000); }
+  qpo.menus['Multiplayer'].cl.list[1].action = function(){ qpo.menus['Multiplayer'].close('3-Po-M', 1000); }
+  qpo.menus['Multiplayer'].cl.list[2].action = function(){ qpo.menus['Multiplayer'].close('4-Po-M', 1000); }
+
+  qpo.menus['Settings'].cl.list[0].action = function(){ qpo.menus['Settings'].close('parent'); }
+  qpo.menus['Settings'].cl.list[1].action = function(){ qpo.menus['Settings'].close('parent'); }
 
   qpo.menus['Match Complete'].cl.list[0].action = function(){ qpo.menus['Match Complete'].close('parent'); }
 
@@ -428,88 +361,18 @@ qpo.makeMenus = function(){ //Lay out the menu skeletons (without creating Rapha
 }
 qpo.displayTitleScreen = function(){ //Called whenever title screen is displayed
   qpo.activeMenu = "title";
-  // qpo.menus["title"] = this;
   qpo.mode = "menu";
 
   //1ST LAYER (background blackness)
   this.blackness = c.rect(0,0,c.width,c.height).attr({"fill":"black"});
   this.layer1 = c.set().push(this.blackness);
 
-  qpo.makeMuteButton();
-  qpo.activeGame = new qpo.Game(11, 3, false, false, true); //just to define the unit size
+  // qpo.makeMuteButton();
+  qpo.activeGame = new qpo.Game(11, 3, false, false, true); //needed for menus.
 
-  //2ND LAYER (foreground) : board, then units that spell "Q-Po"
-  var UNIT_LENGTH = qpo.guiDimens.squareSize;
-  var adj = -5;
-  var grid_start = 2;
-  qpo.guiCoords.gameBoard.leftWall = adj + UNIT_LENGTH*grid_start;
-  qpo.guiCoords.gameBoard.topWall = adj + UNIT_LENGTH*grid_start;
-  this.board = new qpo.Board(17,7, qpo.guiCoords.gameBoard.leftWall, qpo.guiCoords.gameBoard.rightWall);
-  qpo.board = this.board;
-  this.board.all.transform('t' + -(UNIT_LENGTH) + ',' + -(UNIT_LENGTH));
-  qpo.glows.transform('t' + -(UNIT_LENGTH) + ',' + -(UNIT_LENGTH));
-  this.layer2 = c.set().push(this.board.all);
-  //Spawn units in the shape of the letters "Q-Po".
-  this.qUnits = new Array();
-  this.qUnits.push(
-    new qpo.Unit('blue', 1,0,0),
-    new qpo.Unit('blue', 0,1,1),
-    new qpo.Unit('blue', 2,0,2),
-    new qpo.Unit('blue', 3,1,3),
-    new qpo.Unit('blue', 3,2,4),
-    new qpo.Unit('red', 0,2,0),
-    new qpo.Unit('red', 1,3,1),
-    new qpo.Unit('red', 2,3,2),
-    new qpo.Unit('red', 3,4,3),
-    new qpo.Unit('red', 4,4,4)
-  );
-  this.qRaphs = c.set();
-  for(var i=0; i<this.qUnits.length; i++){ //randomize icons and store to set
-    this.qUnits[i].randomIcon();
-    this.qRaphs.push(this.qUnits[i].phys);
-  }
-
-  this.dashUnit = new qpo.Unit('red',5,2,5);
-  this.dashUnit.randomIcon();
-  this.dash = this.dashUnit.phys;
-
-  this.pUnits = new Array();
-  this.pUnits.push(
-    new qpo.Unit('blue', 7,0,5),
-    new qpo.Unit('blue', 8,0,6),
-    new qpo.Unit('blue', 9,0,7),
-    new qpo.Unit('blue', 7,1,8),
-    new qpo.Unit('blue', 9,1,9),
-    new qpo.Unit('red', 7,2,6),
-    new qpo.Unit('red', 8,2,7),
-    new qpo.Unit('red', 9,2,8),
-    new qpo.Unit('red', 7,3,9)
-  );
-  this.pRaphs = c.set();
-  for(var i=0; i<this.pUnits.length; i++){ //randomize icons and store to set
-     this.pUnits[i].randomIcon();
-     this.pRaphs.push(this.pUnits[i].phys);
-   }
-
-  this.oUnits = new Array();
-  this.oUnits.push(
-    new qpo.Unit('blue', 12,0,10),
-    new qpo.Unit('blue', 13,0,11),
-    new qpo.Unit('blue', 11,1,12),
-    new qpo.Unit('blue', 14,1,13),
-    new qpo.Unit('red', 12,3,10),
-    new qpo.Unit('red', 13,3,11),
-    new qpo.Unit('red', 11,2,12),
-    new qpo.Unit('red', 14,2,13)
-  );
-  this.oRaphs = c.set();
-  for(var i=0; i<this.oUnits.length; i++){ //randomize icons and store to set
-    this.oUnits[i].randomIcon();
-    this.oRaphs.push(this.oUnits[i].phys);
-  }
-
-  this.title = c.set(this.qRaphs, this.dash, this.pRaphs, this.oRaphs);
-  this.layer2.push(this.title, this.board);
+  //2ND LAYER (foreground) : Logo
+  this.logo = c.image('../client/images/logo.png', (300-386/2), -50, 386, 386);
+  this.layer2 = c.set().push(this.logo)
 
   //3rd layer (prompt)
   this.promptt = c.text(qpo.guiDimens.gpWidth/2, qpo.guiDimens.gpHeight/2, "Press enter to start")
@@ -523,7 +386,6 @@ qpo.displayTitleScreen = function(){ //Called whenever title screen is displayed
   qpo.fadeIn(this.all);
 
   this.close = function(){ //clear screen and make main menu
-    qpo.fadeOutGlow(qpo.glows);
     this.promptt.stop();
     qpo.fadeOut(this.promptt, function(){}, 200);
     qpo.fadeOut(this.all, function(){

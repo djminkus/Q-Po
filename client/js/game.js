@@ -3,11 +3,12 @@ qpo.Game = function(q, po, type, playMusic, respawn, turns, ppt){ //"Game" class
   qpo.guiDimens.squareSize = 350/q;   //aim to keep width of board at 7*50 (350). So, qpo.guiDimens.squareSize = 350/q.
   qpo.bombSize = 2 * qpo.guiDimens.squareSize;
   qpo.currentSettings = [q,po,type,playMusic,respawn,turns];
-  qpo.timeScale = (function(){ //adjust timeScale based on po.
-    var adj = 0.25; //adjustment
-    var factor = 1/5;
-    return (adj + po*factor);
-  })(); //0.45, 0.65, 0.85, 1.05, 1.25, etc
+  // qpo.timeScale = (function(){ //adjust timeScale based on po.
+  //   var adj = 0.25; //adjustment
+  //   var factor = 1/5;
+  //   return (adj + po*factor);
+  // })(); //0.45, 0.65, 0.85, 1.05, 1.25, etc
+  qpo.timeScale = 0.25 + 3 * 1/5; //make timeScale static as if po=3.
 
   this.po = po; //# of units per team. Min 1, max 7.
   this.respawnEnabled = respawn;
