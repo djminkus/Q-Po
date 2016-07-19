@@ -1,41 +1,56 @@
+qpo.Mission = function(snippets){ //incomplete and unused class
+  // snippets is an array of strings
+  // More to come
+  this.snippets = snippets;
+  this.textEls = c.set();
+  for (var i=0; i<snippets.length; i++){ //create text els from snippets
+    this.textEls.push(c.text(300, 40+i*25, this.snippets[i]).attr({qpoText:25}).hide());
+  }
+  this.end = function(){qpo.endGame('blue')}
+  qpo.activeMission = this;
+  return this;
+}
+
 qpo.missions = [
   function(){ //MISSION 1:
-    var mt = [
+    var mt = [ // mission text strings.
       'Use w/a/s/d to move the blue unit',
-      'across the enemy goal line.',
-    ]//mission texts
+      'across the enemy goal line.'
+    ]
     qpo.mode = 'game';
     qpo.code = 1;
+    qpo.timeScale = .45;
 
-    qpo.activeGame = new qpo.Game(7,1,'single',false,false);
+    qpo.activeGame = new qpo.Game(5,1,'campaign',false,false);
     qpo.shots=[];
     qpo.bombs=[];
 
     var q = qpo.activeGame.q
-    qpo.drawGUI(7,1,0,50)
+    qpo.drawGUI(5, 1, 0.0, 50)
     qpo.timer.text.remove()
     qpo.scoreboard.all.remove()
 
-    mts = [
+    mts = [ //mission text Raph els
       c.text(300, 40, mt[0]).attr({qpoText:25}).hide(),
       c.text(300, 75, mt[1]).attr({qpoText:25}).hide()
     ];
-    var mte = c.set( //mission text elements
-      mts[0], mts[1]
-    );
+    var mte = c.set(mts[0], mts[1]);
+    // mte.attr({'opacity':})
+    qpo.gui.push(mte)
+    // qpo.blink(mte, 3000*qpo.timeScale);
 
     setTimeout(function(){ // Spawn a red and blue unit
-      qpo.blue.units[0] = new qpo.Unit("blue",3,1,0);
+      qpo.blue.units[0] = new qpo.Unit("blue",2,1,0);
       qpo.units.push(qpo.blue.units[0]);
       qpo.blue.units[0].phys.attr({'opacity':0});
       qpo.fadeIn(qpo.blue.units[0].phys, 1000, function(){});
-      qpo.red.units[0] = new qpo.Unit("red",3,5,0);
+      qpo.red.units[0] = new qpo.Unit("red",3,3,0);
       qpo.units.push(qpo.red.units[0]);
       qpo.red.units[0].phys.attr({'opacity':0});
       qpo.fadeIn(qpo.red.units[0].phys, 1000, function(){
-        qpo.fadeIn(mte, 1000)
+        qpo.fadeIn(mte, 1000);
       }.bind(this), function(){
-        qpo.blink(mts[0]); qpo.blink(mts[1])
+        // qpo.blink(mts[0]); qpo.blink(mts[1])
       }.bind(this));
     }, 1500);
 
@@ -71,6 +86,13 @@ qpo.missions = [
     }, 4500);
 
     console.log('Mission 1 begun.');
+    qpo.activeMission = this;
+
+    this.end = function(){
+      qpo.endGame('blue', 1);
+    } //end the mission
+
+    return this;
   },
   function(){ //MISSION 2:
 

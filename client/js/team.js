@@ -4,7 +4,10 @@ qpo.Team = function(color){
   this.players = new Array(); //list of this team's players
   this.points = 0;
 
-  this.addPoint = function(){ this.points++; }
+  this.addPoint = function(){
+    this.points++;
+    qpo.scoreboard.update();
+  }
 
   this.addPlayer = function(player){ this.players.push(player); }
   this.addUnit = function(unit){ this.units.push(unit); }

@@ -90,45 +90,35 @@ qpo.Menu = function(titleStr, itemList, parent, placeholder){ // A Menu contains
   this.TITLE_SIZE = 40;
 
   this.isPlaceholder = placeholder || false;
-  if ( this.isPlaceholder == false ){ //make a real menu.
-    this.cl = new qpo.CursorList(itemList);
+  this.cl = new qpo.CursorList(itemList);
 
-    this.open = function(){ // (re)create all the raphs for this menu.
-      qpo.mode = 'menu';
-      qpo.activeMenu = this.titleStr;
+  this.open = function(h){ // (re)create all the raphs for this menu.
+    //h is index in cl of menu option to highlight on load.
+    var h = h || 0;
+    qpo.mode = 'menu';
+    qpo.activeMenu = this.titleStr;
 
-      this.background = c.rect(0,0, c.width, c.height).attr({'fill':qpo.COLOR_DICT['background']});
-      this.title = c.text(c.width/2, 60, this.titleStr).attr({qpoText:[this.TITLE_SIZE, qpo.COLOR_DICT['foreground']]});
-      // this.upperPanel = qpo.upperPanel(this.title);
-      this.layer1 = c.set().push(this.background, this.title, this.upperPanel);
+    this.background = c.rect(0,0, c.width, c.height).attr({'fill':qpo.COLOR_DICT['background']});
+    this.title = c.text(c.width/2, 60, this.titleStr).attr({qpoText:[this.TITLE_SIZE, qpo.COLOR_DICT['foreground']]});
+    // this.upperPanel = qpo.upperPanel(this.title);
+    this.layer1 = c.set().push(this.background, this.title, this.upperPanel);
 
-      qpo.makeMuteButton();
+    qpo.makeMuteButton();
 
-      this.board = new qpo.Board(1, 7, 200, 120, 40);
-      qpo.board = this.board;
-      this.layer2 = c.set().push(this.board.all);
+    this.board = new qpo.Board(1, 7, 200, 120, 40);
+    qpo.board = this.board;
+    this.layer2 = c.set().push(this.board.all);
 
-      this.cl.render();
+    this.cl.render();
+    // this.cl.select(h);
 
-      this.next = this.cl.next;
-      this.previous = this.cl.previous;
+    this.next = this.cl.next;
+    this.previous = this.cl.previous;
 
-      this.all = c.set().push(this.layer1, this.layer2);
-      for(var i=0; i < this.cl.length; i++){ this.all.push(this.cl.list[i].raphs); }
-      qpo.fadeIn(this.all);
-      qpo.fadeInGlow(qpo.glows);
-    }.bind(this);
-  }
-  else { // make a placeholder menu
-    this.open = function(){ // (re)create all the raphs for this menu.
-      qpo.mode = 'menu';
-      qpo.activeMenu = this.titleStr;
-
-      this.background = c.rect(0,0, c.width, c.height).attr({'fill':qpo.COLOR_DICT['background']});
-      this.comingSoon = c.text(c.width/2, c.height/2, 'Coming Soon!').attr({qpoText:[50]});
-      this.all = c.set().push(this.background, this.comingSoon);
-      qpo.fadeIn(this.all);
-    }.bind(this);
+    this.all = c.set().push(this.layer1, this.layer2);
+    for(var i=0; i < this.cl.length; i++){ this.all.push(this.cl.list[i].raphs); }
+    qpo.fadeIn(this.all);
+    qpo.fadeInGlow(qpo.glows);
   }
 
   this.parent = qpo.menus[parent] || 'title';
@@ -192,7 +182,6 @@ qpo.Menu = function(titleStr, itemList, parent, placeholder){ // A Menu contains
         default : { qpo.menus[status].open(); }
       }
     }.bind(this), time);
-
   }.bind(this);
 
   return this;
@@ -334,9 +323,9 @@ qpo.makeMenus = function(){ //Lay out the menu skeletons (without creating Rapha
     new qpo.MenuOption(0,4,'Mission 4', function(){}, 'Campaign', false, 'stay', 'blue', 3)
   ], 'Main Menu');
   qpo.menus['Campaign'].cl.list[0].action = function(){ qpo.menus['Campaign'].close('Mission 1', 1000); }
-  qpo.menus['Campaign'].cl.list[1].action = function(){ qpo.menus['Campaign'].close('Mission 2', 1000); }
-  qpo.menus['Campaign'].cl.list[2].action = function(){ qpo.menus['Campaign'].close('Mission 3', 1000); }
-  qpo.menus['Campaign'].cl.list[3].action = function(){ qpo.menus['Campaign'].close('Mission 4', 1000); }
+  // qpo.menus['Campaign'].cl.list[1].action = function(){ qpo.menus['Campaign'].close('Mission 2', 1000); }
+  // qpo.menus['Campaign'].cl.list[2].action = function(){ qpo.menus['Campaign'].close('Mission 3', 1000); }
+  // qpo.menus['Campaign'].cl.list[3].action = function(){ qpo.menus['Campaign'].close('Mission 4', 1000); }
 
   qpo.menus['vs. Computer'] = new qpo.Menu('vs. Computer', [
     new qpo.MenuOption(0,1,'2-Po', function(){}, 'vs. Computer', true, 'stay', 'blue', 0),
@@ -380,8 +369,9 @@ qpo.displayTitleScreen = function(){ //Called whenever title screen is displayed
   qpo.activeGame = new qpo.Game(11, 3, false, false, true); //needed for menus.
 
   //2ND LAYER (foreground) : Logo
-  this.logo = c.image('../client/images/logo.png', (300-386/2), -50, 386, 386);
-  this.layer2 = c.set().push(this.logo)
+  this.logo = c.image('../client/images/logo.png', (300-386/2), -50, 386, 386)
+    .attr({'tooltip':"hi"});
+  this.layer2 = c.set().push(this.logo);
 
   //3rd layer (prompt)
   this.promptt = c.text(qpo.guiDimens.gpWidth/2, qpo.guiDimens.gpHeight/2, "Press enter to start")
@@ -404,6 +394,7 @@ qpo.displayTitleScreen = function(){ //Called whenever title screen is displayed
       qpo.menus['Main Menu'].open();
     }, 400);
   };
+  this.all.click(function(){ this.close() }.bind(this));
 
   return this;
 }

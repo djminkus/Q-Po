@@ -352,52 +352,52 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
     this.alive = false;
     this.willScore = false;
     this.deactivate();
-    this.spawnTimer = qpo.spawnTimers[qpo.activeGame.po];
-    if (this.team==qpo.playerTeam){this.showSpawnIcon()}
-    // this.phys.stop();
+    if(qpo.code==1){ qpo.activeMission.end() } //Code 1 = Campaign mode. End mission.
+    else{ // do normal game mode stuff
+      this.spawnTimer = qpo.spawnTimers[qpo.activeGame.po];
+      if (this.team==qpo.playerTeam){this.showSpawnIcon()}
+      if(qpo.mode == "game"){ //deal with scoreboard, AI, spawn, control panel, and ending game
+        qpo[this.team].addPoint();
+        switch(this.team){ // update scoreboard, prep to reward AI
+          case qpo.otherTeam: //enemy team ("red" until server implementation)
+            qpo.redRewardQueue.push(-1); //is this backwards?
+            break;
+          case qpo.playerTeam: //player team ("blue" until server implementation)
+            qpo.redRewardQueue.push(1); //is this backwards?
+            if(this.active){qpo.updateBlueAU(qpo.activeGame.po);}
+            break;
+        }
+        if (qpo.scoreboard.blueScore >= qpo.activeGame.scoreToWin  //if score limit reached, disable respawn
+          || qpo.scoreboard.redScore >= qpo.activeGame.scoreToWin){
+          qpo.activeGame.respawnEnabled = false;
+        }
+        if (qpo.activeGame.respawnEnabled) { this.nextAction = 'recharge'; } //start counting down spawn timer
+        else if (qpo.scoreboard.redScore >= qpo.activeGame.scoreToWin // otherwise, end the game, if score limit reached.
+          || qpo.scoreboard.blueScore >= qpo.activeGame.scoreToWin && qpo.activeGame.isEnding == false){
+          var gameResult;
+          setTimeout(function(){ //set gameResult to "tie","blue",or "red" (after 20 ms to account for performance issues)
+            if(qpo.scoreboard.redScore==qpo.scoreboard.blueScore){
+              gameResult = "tie";
+            } else if (qpo.scoreboard.blueScore > qpo.scoreboard.redScore) {
+              gameResult = "blue";
+            } else {
+              gameResult = "red";
+            }
+          }, 2000*qpo.timeScale);
+          qpo.blueActiveUnit = -1;
+          qpo.redActiveUnit = -1;
+          qpo.activeGame.isEnding = true;
+          setTimeout(function(){endGame(gameResult);}, 2000*qpo.timeScale);
+        }
+      }
+    }
     this.phys.animate({"opacity":0}, 2000*qpo.timeScale);
-    // console.log('this '+this.num +' scored');
     setTimeout(function(){ //hide the visage and move it "off the board"
       this.phys.hide();
       this.x = -1;
       this.y = -1;
       this.phys.attr({'opacity':1, 'transform':this.trans()});
     }.bind(this), 2000*qpo.timeScale)
-    if(qpo.mode == "game"){ //deal with scoreboard, AI, spawn, control panel, and ending game
-      switch(this.team){ // update scoreboard, prep to reward AI
-        case qpo.otherTeam: //enemy team ("red" until server implementation)
-          qpo.scoreboard.addPoint("red");
-          qpo.redRewardQueue.push(-1); //is this backwards?
-          break;
-        case qpo.playerTeam: //player team ("blue" until server implementation)
-          qpo.scoreboard.addPoint("blue");
-          qpo.redRewardQueue.push(1); //is this backwards?
-          if(this.active){qpo.updateBlueAU(qpo.activeGame.po);}
-          break;
-      }
-      if (qpo.scoreboard.blueScore >= qpo.activeGame.scoreToWin  //if score limit reached, disable respawn
-        || qpo.scoreboard.redScore >= qpo.activeGame.scoreToWin){
-        qpo.activeGame.respawnEnabled = false;
-      }
-      if (qpo.activeGame.respawnEnabled) { this.nextAction = 'recharge'; } //start counting down spawn timer
-      else if (qpo.scoreboard.redScore >= qpo.activeGame.scoreToWin // otherwise, end the game, if score limit reached.
-        || qpo.scoreboard.blueScore >= qpo.activeGame.scoreToWin && qpo.activeGame.isEnding == false){
-        var gameResult;
-        setTimeout(function(){ //set gameResult to "tie","blue",or "red" (after 20 ms to account for performance issues)
-          if(qpo.scoreboard.redScore==qpo.scoreboard.blueScore){
-            gameResult = "tie";
-          } else if (qpo.scoreboard.blueScore > qpo.scoreboard.redScore) {
-            gameResult = "blue";
-          } else {
-            gameResult = "red";
-          }
-        }, 2000*qpo.timeScale);
-        qpo.blueActiveUnit = -1;
-        qpo.redActiveUnit = -1;
-        qpo.activeGame.isEnding = true;
-        setTimeout(function(){endGame(gameResult);}, 2000*qpo.timeScale);
-      }
-    }
   }
   this.kill = function(){
     this.alive = false;
@@ -415,13 +415,12 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
       this.phys.attr({'opacity':1, 'transform':this.trans()});
     }.bind(this), 2000);
     if(qpo.mode == "game"){ //deal with scoreboard, AI, spawn, control panel, and ending game
+      qpo[this.team].addPoint();
       switch(this.team){ // update scoreboard, prep to reward AI
         case qpo.otherTeam: //enemy team ("red" until server implementation)
-          qpo.scoreboard.addPoint("blue");
           qpo.redRewardQueue.push(1); //is this backwards?
           break;
         case qpo.playerTeam: //player team ("blue" until server implementation)
-          qpo.scoreboard.addPoint("red");
           var number = this.num;
           qpo.redRewardQueue.push(-1); //is this backwards?
           if (this.active){qpo.updateBlueAU(qpo.activeGame.po);}

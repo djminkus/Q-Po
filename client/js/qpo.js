@@ -73,7 +73,9 @@ c.customAttributes.segment = function (x, y, r, a1, a2) { //for pie timer
   a2 = (a2 % 360) * Math.PI / 180;
   return {
     path: [["M", x, y], ["l", r * Math.cos(a1), r * Math.sin(a1)], ["A", r, r, 0, +flag, 1, x + r * Math.cos(a2), y + r * Math.sin(a2)], ["z"]],
-    fill: "hsb(" + color + ", .75, .8)"
+    stroke: "hsb(" + color + ", .75, .8)",
+    'stroke-width': 2 //,
+    // fill: "hsb(" + color + ", .75, .8)"
   };
 };
 
@@ -118,6 +120,7 @@ qpo.setup = function(){ // set up global vars and stuff
   // };
 
   // TOP-LEVEL SETTINGS:
+  qpo.bar = // Bar, as in musical measure -- A time pixel, per se.
   qpo.timeScale = 0.5; // Bigger means slower; 1 is original 3-seconds-per-turn
   qpo.playMusic = false;
   qpo.trainingMode = false;
@@ -170,6 +173,8 @@ qpo.setup = function(){ // set up global vars and stuff
     39: 'right',
     40: 'down'
   };
+  qpo.userExpLevels = new Array();
+  for(var i=0; i<100; i++){qpo.userExpLevels[i] = 100*i + Math.pow(2, i/5)}
 
   // NEURAL STUFF:
   (qpo.trainingMode) ? (qpo.timeScale=0.05) : (qpo.timeScale=0.5) ;
@@ -652,8 +657,8 @@ qpo.Scoreboard = function(yAdj){ //draw the scoreboard and push to gui
   this.blueSection = c.set().push(this.blueScoreText);
 
   this.update = function(color){
-    this.redScoreText.attr({"text":qpo.teams.red.points});
-    this.blueScoreText.attr({"text":qpo.teams.blue.points});
+    this.redScoreText.attr({"text":qpo.red.points});
+    this.blueScoreText.attr({"text":qpo.blue.points});
   }
 
   this.all = c.set().push(this.redSection, this.blueSection).attr({'opacity':0});
@@ -682,7 +687,9 @@ qpo.Timer = function(yAdj){ //draw the turn timer and push to gui
   return this;
 }
 
-qpo.drawGUI = function(q,po,xAdj, yAdj){ //create the turn timer (pie), board, and control panel.
+qpo.drawGUI = function(q, po, xAdj, yAdj){ //create the turn timer (pie), board, and control panel.
+  var xAdj = xAdj || 0;
+  var yAdj = yAdj || 0;
   qpo.gui.push(c.rect(0, 0, qpo.guiDimens.gpWidth, qpo.guiDimens.gpHeight) //background
     .attr({"fill":qpo.COLOR_DICT['background']}));
   qpo.activeGame.board = new qpo.Board(q, q, 25+xAdj, 75+yAdj); // make the board (with animation if game starting)
@@ -1210,51 +1217,58 @@ $(window).keydown(function(event){
   }
 });
 
-qpo.endGame = function(result){
+qpo.endGame = function(winner, h){
+  var h = h || 0;
   clearInterval(qpo.clockUpdater);
   clearInterval(qpo.collisionDetector);
   clearInterval(qpo.turnStarter);
-  // var date1, date2
-  // date1 = new Date().getMilliseconds();
   qpo.gui.stop();
-  // date2 = new Date().getMilliseconds();
-  // console.log('Stopping the gui took' + date2 - date1 + ' ms.')
-  // console.log(date1);
   qpo.gui.animate({'opacity':0}, 2000, 'linear');
-  qpo.fadeOutGlow(qpo.glows, function(){
+  qpo.fadeOutGlow(qpo.glows, function(){ //clear GUI, reset arrays, and bring up the next screen
     qpo.gui.clear();
     c.clear();
     qpo.shots = [];
     qpo.bombs = [];
     qpo.units = [];
-    (result == "red") ? (qpo.ali.nn.backward(2)) : (qpo.ali.nn.backward(0)); //reward AI for winning, not losing
-    (result == "tie") ? (qpo.ali.nn.backward(1)) : (qpo.ali.nn.backward(0)); //reward it a little for tying
-    try{qpo.activeSession.update(result);} //add to the proper tally. Will throw error in tut mode.
+    (winner == "red") ? (qpo.ali.nn.backward(2)) : (qpo.ali.nn.backward(0)); //reward AI for winning, not losing
+    (winner == "tie") ? (qpo.ali.nn.backward(1)) : (qpo.ali.nn.backward(0)); //reward it a little for tying
+    try{qpo.activeSession.update(winner);} //add to the proper tally. Will throw error in tut mode.
     catch(e){;} //don't bother adding to the proper tally in tut mode.
-    if(qpo.trainingMode){ //If in training mode, decide whether to train another game.
-      qpo.trainingCounter++;
-      if (qpo.trainingCounter >= qpo.gamesToTrain){ // If game counter satisfied, check batch
-        qpo.batchCounter++;
-        // var newBatch = new qpo.Batch(qpo.activeSession);
-        // qpo.trainingData.push(newBatch);
-        qpo.trainingData.push(new qpo.Batch(qpo.activeSession));
-        console.log("we got here...");
-        if (qpo.batchCounter >= qpo.batchesToTrain){ // If batch counter satisfied, exit trainingMode
-          qpo.trainingMode = false;
-          qpo.menus["Match Complete"].open();
-          for (var i=0; i<qpo.batchesToTrain; i++){ // log each batch's data to console
-            console.log(qpo.trainingData[i]);
-          }
-        }
-        else { qpo.retrain(); }// If batch counter not exceeded, train another batch
+    if(qpo.trainingMode){qpo.activeGame.type='training'}
+    switch(qpo.activeGame.type){ //do the right thing depending on context (type) of game
+      case 'tut': { //set mode back to 'tut' and show the next tutorial scene
+        qpo.mode = 'tut';
+        qpo.tut.tutFuncs.enter();
+        break;
       }
-      else { qpo.startGame([8,4]); }// If game counter not satisfied, train another game
+      case 'training': { //If in training mode, decide whether to train another game.
+        qpo.trainingCounter++;
+        if (qpo.trainingCounter >= qpo.gamesToTrain){ // If game counter satisfied, check batch
+          qpo.batchCounter++;
+          // var newBatch = new qpo.Batch(qpo.activeSession);
+          // qpo.trainingData.push(newBatch);
+          qpo.trainingData.push(new qpo.Batch(qpo.activeSession));
+          console.log("we got here...");
+          if (qpo.batchCounter >= qpo.batchesToTrain){ // If batch counter satisfied, exit trainingMode
+            qpo.trainingMode = false;
+            qpo.menus["Match Complete"].open();
+            for (var i=0; i<qpo.batchesToTrain; i++){ // log each batch's data to console
+              console.log(qpo.trainingData[i]);
+            }
+          }
+          else { qpo.retrain(); }// If batch counter not exceeded, train another batch
+        }
+        else { qpo.startGame([8,4]); }// If game counter not satisfied, train another game
+        break;
+      }
+      case 'campaign': { //If in campaign mode, reopen the campaign menu, with the next mission highlighted.
+        qpo.menus["Campaign"].open(h);
+        break;
+      }
+      default: { //We're not in tutorial training, or campaign. Open the match complete menu
+        qpo.menus["Match Complete"].open();
+      }
     }
-    else if (qpo.activeGame.type == 'tut'){ //set mode back to 'tut' and show the next tutorial scene
-      qpo.mode = 'tut';
-      qpo.tut.tutFuncs.enter();
-    }
-    else{ qpo.menus["Match Complete"].open() } //we're not in tutorial or training. Generate the menus["endG"] GUI
   }, 2000);
 
   // qpo.activeGame.song.pause();
