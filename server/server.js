@@ -14,7 +14,21 @@ io.on('connection', function(socket){
     // io.emit('chat message', msg);
   // });
   console.log("A user connected: ", socket.id);
+
+  const upcomingMoves = [];
+
+  socket.on("blue move", function(data) {
+  	console.log("Server detected a move event! ", data);
+  	upcomingMoves.push(data);
+  	console.log("upcomingMoves is now: ", upcomingMoves);
+  });
+
 });
+
+/*// Emit socket.io events for each keypress
+              // Events are matched to key codes in socket-init.js
+              socket.emit(playerSocketEvents[event.keyCode]);
+              console.log("Trying to emit an event!");*/
 
 // console.log(http);
 // console.log(http.listen);

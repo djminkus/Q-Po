@@ -771,7 +771,10 @@ qpo.newTurn = function(){ // called every time game clock is divisible by 3
       }
     }
     ru.executeMove();
+    socket.emit("red executed");
     bu.executeMove();
+    socket.emit("blue executed");
+    console.log("Emitting blue action: ", bu.nextAction);
     bu.resetIcon(); //reset the icons for the player's team
     ru.updateLevel();
     bu.updateLevel();
@@ -1169,6 +1172,11 @@ $(window).keydown(function(event){
               qpo.blue.units[qpo.blueActiveUnit].order(moveStr);
               qpo.updateBlueAU(qpo.activeGame.po, "move"); //activate the new AU and board
               // controlPanel.accept(event);
+
+              //Emit an event to store the move data on the server
+              //The server will then emit an execute event when the timer runs out
+              socket.emit("blue move", playerSocketEvents[event.keyCode]); //See socket-init.js for keycode matching
+
               break;
             case 37:
             case 38:
