@@ -140,5 +140,8 @@ qpo.Game = function(q, po, type, playMusic, respawn, turns, ppt){ //"Game" class
     // console.log("playing game music...");
   }
 
+  //Give the game an owner(the socket who created it), for multiplayer
+  this.owner = socket.id;
+
   return this;
 }

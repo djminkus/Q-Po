@@ -1,3 +1,4 @@
+"use strict";
 var express = require('express'); //Require express for middleware use
 const app = express();
 var http = require('http').createServer(app);
@@ -16,11 +17,30 @@ io.on('connection', function(socket){
   console.log("A user connected: ", socket.id);
 
   const upcomingMoves = [];
+  let placedUnits;
 
   socket.on("blue move", function(data) {
   	console.log("Server detected a move event! ", data);
   	upcomingMoves.push(data);
-  	console.log("upcomingMoves is now: ", upcomingMoves);
+  });
+
+  socket.on("new game", function(data) {
+  	console.log("Server detected a new game!");
+  	io.emit("new game", data);
+  });
+
+  socket.on("unit placed", function(data) {
+  	console.log("Server detected new unit placed!", data);
+  	placedUnits = data;
+  	console.log("placedUnits is now: ", placedUnits);
+  });
+
+  socket.on("red executed", function(data) {
+  	console.log("Red executed a move: ", data);
+  });
+
+  socket.on("blue executed", function(data) {
+  	console.log("Blue executed a move: ", data);
   });
 
 });

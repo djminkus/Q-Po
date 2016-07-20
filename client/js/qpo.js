@@ -410,6 +410,10 @@ qpo.startGame = function(settings){ //draw the board/GUI, place units, and start
   qpo.mode = 'game';
 
   qpo.activeGame = new qpo.Game(settings[0], settings[1], settings[2], true, true, qpo.gameLength);
+  
+  //Emit a new game event with the activeGame object
+  socket.emit("new game", qpo.activeGame);
+  
   qpo.redDead = 0;
   qpo.blueDead = 0;
   qpo.shots=[];
@@ -614,7 +618,10 @@ qpo.placeUnits = function(){ //called at the start of each game (from startGame)
     qpo.red.units[i] = new qpo.Unit("red", qpo.guiDimens.columns-1-gridXs[i], qpo.guiDimens.rows-1-gridY[i],i);
     qpo.units.push(qpo.blue.units[i]);
     qpo.units.push(qpo.red.units[i]);
+    //Emit unit placed event (just one, because teams are symmetrical)
+    socket.emit("unit placed", {x: gridXs, y: gridY});
     qpo.blue.units[i].phys.attr({'opacity':0});
+
     qpo.red.units[i].phys.attr({'opacity':0});
 
     (function(ind){ //fade in all units
@@ -771,10 +778,9 @@ qpo.newTurn = function(){ // called every time game clock is divisible by 3
       }
     }
     ru.executeMove();
-    socket.emit("red executed");
+    socket.emit("red executed", ru.nextAction);
     bu.executeMove();
-    socket.emit("blue executed");
-    console.log("Emitting blue action: ", bu.nextAction);
+    socket.emit("blue executed", bu.nextAction);
     bu.resetIcon(); //reset the icons for the player's team
     ru.updateLevel();
     bu.updateLevel();
