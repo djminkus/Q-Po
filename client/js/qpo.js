@@ -152,7 +152,9 @@ qpo.setup = function(){ // set up global vars and stuff
     87:"moveUp",
     68:"moveRight",
     83:"moveDown",
-    88:"stay"
+    88:"stay",
+    32:'shoot',
+    66:'bomb'
   }
   qpo.COLOR_DICT = { //define colors using hex
     "blue": "#0055ff",
@@ -160,10 +162,10 @@ qpo.setup = function(){ // set up global vars and stuff
     "orange": "#ffbb66",
     "green": "#00bb55",
     "purple":"#bb00bb",
-    "grey": "#bbbbbb",
 
     "background": "#000000", //black is 0
-    "foreground": "#ffffff", //white is f
+    "grey": "#bbbbbb",
+    "foreground": "#ffffff" //white is f
   };
   qpo.moves = ["moveUp","moveDown","moveLeft","moveRight","shoot","bomb","stay"];
   qpo.difficPairings = [4, 6, 8, 10, 13, 16, 20]; //array index is po-1. Value at index is recommended q for said po.
@@ -530,8 +532,8 @@ qpo.Board = function(cols, rows, x, y, m){ //Board class constructor
       // .transform('t0,-1000');
   this.all.push(sideWalls);
 
-  var blueGoal = c.path('M'+this.lw+','+this.bw + 'L'+this.rw+','+this.bw).attr({'stroke':qpo.COLOR_DICT['blue']});
-  var redGoal = c.path('M'+this.lw +','+this.tw + 'L'+this.rw+','+this.tw).attr({'stroke':qpo.COLOR_DICT['red']});
+  var blueGoal = c.path('M'+this.lw+','+this.tw + 'L'+this.rw+','+this.tw).attr({'stroke':qpo.COLOR_DICT['blue']});
+  var redGoal = c.path('M'+this.lw +','+this.bw + 'L'+this.rw+','+this.bw).attr({'stroke':qpo.COLOR_DICT['red']});
   var goalLines = c.set().push(blueGoal, redGoal).attr({'stroke-width':3, 'opacity':1})
   this.all.push(goalLines);
   sideWalls.toFront();
@@ -1171,6 +1173,8 @@ $(window).keydown(function(event){
             case 87:
             case 68:
             case 83:
+            case 32:
+            case 66:
             case 88: //qweasdx detected (order)
               var moveStr = qpo.keyCodes[event.keyCode];
               // console.log('keypress detected: ' + event.keyCode + ', leading to moveStr' + qpo.keyCodes[event.keyCode]);

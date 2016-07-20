@@ -105,9 +105,9 @@ qpo.Menu = function(titleStr, itemList, parent, placeholder){ // A Menu contains
 
     qpo.makeMuteButton();
 
-    this.board = new qpo.Board(1, 7, 200, 120, 40);
-    qpo.board = this.board;
-    this.layer2 = c.set().push(this.board.all);
+    // this.board = new qpo.Board(1, 7, 200, 120, 40);
+    // qpo.board = this.board;
+    // this.layer2 = c.set().push(this.board.all);
 
     this.cl.render();
     // this.cl.select(h);
