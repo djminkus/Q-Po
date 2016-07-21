@@ -13,5 +13,5 @@ const playerSocketEvents = {
 
 socket.on("new game", function(data) {
 	console.log("A game started by user ", data.owner, " is already in progress");
-	alert("A game started by user ", data.owner, " is already in progress");
+	// alert("A game started by user ", data.owner, " is already in progress");
 });

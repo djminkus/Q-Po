@@ -167,6 +167,11 @@ qpo.Menu = function(titleStr, itemList, parent, placeholder){ // A Menu contains
           qpo.startGame(qpo.settings6v6multi, true, true, qpo.gameLength);
           break;
         }
+        //Spectator mode!
+        case 'Spectate': {
+          qpo.spectate();
+          break;
+        }
         default : { qpo.menus[status].open(); }
       }
     }.bind(this), time);
@@ -291,7 +296,8 @@ qpo.makeMenus = function(){ //Lay out the menu skeletons (without creating Rapha
   qpo.menus['Main Menu'] = new qpo.Menu('Main Menu', [
     new qpo.MenuOption(0,1,'Play', function(){}, 'Main Menu', true, 'moveRight', 'blue', 0),
     new qpo.MenuOption(0,3,'How To Play', function(){}, 'Main Menu', false, 'shoot', 'blue', 1),
-    new qpo.MenuOption(0,5,'Compete', function(){}, 'Main Menu', false, 'bomb', 'red', 2)
+    new qpo.MenuOption(0,5,'Compete', function(){}, 'Main Menu', false, 'bomb', 'red', 2),
+    new qpo.MenuOption(0,7, 'Spectate', function() {qpo.menus['Main Menu'].close('Spectate');}, 'Main Menu', false, 'stay', 'red',3)
   ], 'title');
   qpo.menus['Main Menu'].up = function(){qpo.menus['Main Menu'].close('title')};
 

@@ -1279,3 +1279,13 @@ qpo.endGame = function(result){
   // qpo.activeGame.song.currentTime=0;
   // qpo.menuMusic();
 }
+
+
+// //  //  //  // //
+// SPECTATOR MODE //
+// // //  //  //  //
+qpo.spectate = function() {
+  $.get("./api/activegames", null, function(res) {
+    console.log("Spectate got response: ", res);
+  });
+}

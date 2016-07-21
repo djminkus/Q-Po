@@ -4,11 +4,23 @@ const app = express();
 var http = require('http').createServer(app);
 var io = require('socket.io')(http); //IO is the server
 
+//For writing to temporary 'database' (JSON file)
+const fs = require("fs");
+
+//Temporary 'database'
+const db = require("./database.json");
+
+//Import router and force all requests through it
+const routes = require("./routes.js");
+app.use("/", routes);
+
 app.use(express.static(__dirname + "/../client")); //Serve static files
 
-app.get('/', function(req, res){
-  res.sendFile('./index.html');
-});
+
+//	//	//	//	// //
+//	SOCKET.IO CODE //
+//	//	//	//	// //
+
 
 io.on('connection', function(socket){
   // socket.on('chat message', function(msg){
@@ -16,6 +28,7 @@ io.on('connection', function(socket){
   // });
   console.log("A user connected: ", socket.id);
 
+  const activeGames = [];
   const upcomingMoves = [];
   let placedUnits;
 
@@ -26,7 +39,12 @@ io.on('connection', function(socket){
 
   socket.on("new game", function(data) {
   	console.log("Server detected a new game!");
+  	//Tell all users there's a new game
   	io.emit("new game", data);
+  	//Add the new game to activeGames
+  	activeGames.push(data);
+  	//Update the 'database' with active games
+  	fs.writeFile("database.json", JSON.stringify(activeGames), "utf8");
   });
 
   socket.on("unit placed", function(data) {
@@ -43,6 +61,22 @@ io.on('connection', function(socket){
   	console.log("Blue executed a move: ", data);
   });
 
+  socket.on("disconnect", function(data) {
+  	//Slicec off leading /# from id
+  	const name = socket.id.slice(2);
+  	//See if the disconnected user owned any active games
+	console.log("Looking for game owned by user ", name);
+  	for (let i=0; i<activeGames.length; i++) {
+  		if (activeGames[i].owner === name) {
+  			//Remove this index from the array
+  			activeGames.splice(i, 1);
+  			console.log("Tried to remove game. activeGames is now: ", activeGames);
+  		}else console.log("No games found for user ", name, ". Giving up");
+  	} 
+
+  	fs.writeFile("database.json", JSON.stringify(activeGames), "utf8");
+  });
+
 });
 
 /*// Emit socket.io events for each keypress
@@ -53,7 +87,10 @@ io.on('connection', function(socket){
 // console.log(http);
 // console.log(http.listen);
 
-http.listen(1024, function(){
+//To make sure there's a port when app is hosted
+const port = (process.env.PORT || 1024);
+
+http.listen(port, function(){
   console.log('listening on *:1024');
 });
 
