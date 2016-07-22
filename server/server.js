@@ -7,8 +7,14 @@ var io = require('socket.io')(http); //IO is the server
 //For writing to temporary 'database' (JSON file)
 const fs = require("fs");
 
-//Temporary 'database'
-const db = require("./database.json");
+//Temporary 'database'. 
+let db = require("./database.json");
+//Watch for changes to db, and reload file when they occur
+fs.watch("./database.json", (eventType, filename) => {
+	delete require.cache['./database.json'];
+	db = require("./database.json");
+	console.log("Change to db! server.js is updating file \n db is now: ", db);
+});
 
 //Import router and force all requests through it
 const routes = require("./routes.js");
@@ -44,6 +50,7 @@ io.on('connection', function(socket){
   	//Add the new game to activeGames
   	activeGames.push(data);
   	//Update the 'database' with active games
+  	console.log("Trying to write to db. activeGames is: ", activeGames);
   	fs.writeFile("database.json", JSON.stringify(activeGames), "utf8");
   });
 
@@ -67,14 +74,17 @@ io.on('connection', function(socket){
   	//See if the disconnected user owned any active games
 	console.log("Looking for game owned by user ", name);
   	for (let i=0; i<activeGames.length; i++) {
+  		console.log("i is ", i);
   		if (activeGames[i].owner === name) {
   			//Remove this index from the array
   			activeGames.splice(i, 1);
   			console.log("Tried to remove game. activeGames is now: ", activeGames);
-  		}else console.log("No games found for user ", name, ". Giving up");
+		  	fs.writeFile("database.json", JSON.stringify(activeGames), "utf8");
+  		} else {
+  			console.log("No games found for user ", name, ". Giving up");
+  		}
   	} 
 
-  	fs.writeFile("database.json", JSON.stringify(activeGames), "utf8");
   });
 
 });
