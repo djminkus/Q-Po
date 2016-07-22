@@ -4,13 +4,11 @@ const bodyParser = require("body-parser");
 const path = require("path");
 const fs = require("fs");
 
-let db = require("./database.json");
-
-fs.watch("./database.json", (eventType, filename) => {
+/*fs.watch("./database.json", (eventType, filename) => {
 	console.log("Change to db! routes.js is updating file \n db is now: ", db);
-	delete require.cache['./database.json'];
+	delete require.cache[require.resolve('./database.json')];
 	db = require("./database.json");
-});
+});*/
 
 const router = express.Router();
 const publicPath = path.resolve(__dirname + "/../client");
@@ -24,6 +22,8 @@ router.get('/', function(req, res){
 });
 
 router.get('/api/activegames', function(req, res) {
+	delete require.cache[require.resolve("./database.json")];
+	const db = require("./database.json");
 	res.send(db);
 });
 

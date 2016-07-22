@@ -10,11 +10,11 @@ const fs = require("fs");
 //Temporary 'database'. 
 let db = require("./database.json");
 //Watch for changes to db, and reload file when they occur
-fs.watch("./database.json", (eventType, filename) => {
-	delete require.cache['./database.json'];
+/*fs.watch("./database.json", (eventType, filename) => {
+	delete require.cache[require.resolve('./database.json')];
 	db = require("./database.json");
 	console.log("Change to db! server.js is updating file \n db is now: ", db);
-});
+});*/
 
 //Import router and force all requests through it
 const routes = require("./routes.js");
@@ -22,6 +22,8 @@ app.use("/", routes);
 
 app.use(express.static(__dirname + "/../client")); //Serve static files
 
+//Keep track of all active games
+const activeGames = [];
 
 //	//	//	//	// //
 //	SOCKET.IO CODE //
@@ -34,7 +36,6 @@ io.on('connection', function(socket){
   // });
   console.log("A user connected: ", socket.id);
 
-  const activeGames = [];
   const upcomingMoves = [];
   let placedUnits;
 
@@ -51,21 +52,28 @@ io.on('connection', function(socket){
   	activeGames.push(data);
   	//Update the 'database' with active games
   	console.log("Trying to write to db. activeGames is: ", activeGames);
-  	fs.writeFile("database.json", JSON.stringify(activeGames), "utf8");
+  	delete require.cache[require.resolve('./database.json')];
+  	
+  	fs.writeFile("database.json", JSON.stringify(activeGames), "utf8", (err) => {
+  		if (err) throw err;
+		db = require("./database.json");
+  	});
+
+
   });
 
   socket.on("unit placed", function(data) {
-  	console.log("Server detected new unit placed!", data);
+  	// console.log("Server detected new unit placed!", data);
   	placedUnits = data;
-  	console.log("placedUnits is now: ", placedUnits);
+  	// console.log("placedUnits is now: ", placedUnits);
   });
 
   socket.on("red executed", function(data) {
-  	console.log("Red executed a move: ", data);
+  	// console.log("Red executed a move: ", data);
   });
 
   socket.on("blue executed", function(data) {
-  	console.log("Blue executed a move: ", data);
+  	// console.log("Blue executed a move: ", data);
   });
 
   socket.on("disconnect", function(data) {
