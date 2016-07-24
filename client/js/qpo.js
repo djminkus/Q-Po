@@ -141,7 +141,7 @@ qpo.setup = function(){ // set up global vars and stuff
   qpo.settings2v2multi = [7,2,true];
   qpo.settings3v3multi = [8,3,true];
   qpo.settings4v4multi = [9,4,true];
-  qpo.code = 0; //status code for multipurpose use
+  // qpo.activeMission = new qpo.Mission([false, 0, false]); //placeholder mission
 
   // (DNA): STATIC DICTS N ARRAYS
   qpo.spawnTimers = [null, 1,2,2,2,3,3,3,4]; //index is po
@@ -177,6 +177,8 @@ qpo.setup = function(){ // set up global vars and stuff
   };
   qpo.userExpLevels = new Array();
   for(var i=0; i<100; i++){qpo.userExpLevels[i] = 100*i + Math.pow(2, i/5)}
+  qpo.missions = new Array();
+  // qpo.missions[0] = new qpo.Mission([false, 0, false]);
 
   // NEURAL STUFF:
   (qpo.trainingMode) ? (qpo.timeScale=0.05) : (qpo.timeScale=0.5) ;
@@ -515,18 +517,20 @@ qpo.Board = function(cols, rows, x, y, m){ //Board class constructor
   this.rw = this.lw + this.width;
   this.bw = this.tw + this.height;
 
-  var bulge = 25;
-  this.lw1 = this.lw - bulge;
-  this.rw1 = this.rw + bulge;
-  this.vm = (this.tw + this.bw)/2 //vertical middle
+  // var bulge = 25; //for curved sides experiment
+  // this.lw1 = this.lw - bulge;
+  // this.rw1 = this.rw + bulge;
+  // this.vm = (this.tw + this.bw)/2 //vertical middle
 
   qpo.guiDimens.columns = cols;
   qpo.guiDimens.rows = rows;
   qpo.guiCoords.gameBoard.width = this.mtr * qpo.guiDimens.columns;
   qpo.guiCoords.gameBoard.height = this.mtr * qpo.guiDimens.rows;
 
-  var leftWall = c.path('M'+this.lw+','+(this.tw-1) + 'Q'+this.lw1+','+this.vm+','+this.lw+','+(this.bw+1));
-  var rightWall = c.path('M'+this.rw+','+(this.tw-1) + 'Q'+this.rw1+','+this.vm+','+this.rw+','+(this.bw+1));
+  // var leftWall = c.path('M'+this.lw+','+(this.tw-1) + 'Q'+this.lw1+','+this.vm+','+this.lw+','+(this.bw+1));
+  // var rightWall = c.path('M'+this.rw+','+(this.tw-1) + 'Q'+this.rw1+','+this.vm+','+this.rw+','+(this.bw+1));
+  var leftWall = c.path('M'+this.lw+','+(this.tw-1) + 'V'+(this.bw+1));
+  var rightWall = c.path('M'+this.rw+','+(this.tw-1) + 'V'+(this.bw+1));
   var sideWalls = c.set(leftWall, rightWall)
       .attr({'stroke-width':3, 'stroke':qpo.COLOR_DICT['foreground'], 'opacity':1})
       // .transform('t0,-1000');

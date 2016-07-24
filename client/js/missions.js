@@ -1,43 +1,35 @@
-qpo.Mission = function(snippets){ //incomplete and unused class
-  // snippets is an array of strings
-  // More to come
-  this.snippets = snippets;
-  this.textEls = c.set();
-  for (var i=0; i<snippets.length; i++){ //create text els from snippets
-    this.textEls.push(c.text(300, 40+i*25, this.snippets[i]).attr({qpoText:25}).hide());
+qpo.Mission = function(args){ //incomplete and unused class
+  //args: [array of 2 strings, int, function]
+  this.snippets = args[0] || ['',''];
+  this.number = args[1] || -1; //mission number
+  this.specifics = args[2] || function(){}; //a function to be executed when mission is begun
+
+  this.begin = function(){
+    this.textEls = c.set();
+    for (var i=0; i<this.snippets.length; i++){ //create text els from snippets
+      this.textEls.push(c.text(300, 40+i*25, this.snippets[i]).attr({qpoText:25}).hide());
+    }
+    qpo.gui.push(this.textEls);
+    qpo.mode = 'game';
+    this.specifics.call(this);
+    qpo.activeMission = this;
   }
-  this.end = function(){qpo.endGame('blue')}
-  qpo.activeMission = this;
+  this.end = function(){
+    qpo.endGame('blue');
+  }
+
   return this;
 }
 
-qpo.missions = [
-  function(){ //MISSION 1:
-    var mt = [ // mission text strings.
-      'Use w/a/s/d to move the blue unit',
-      'across the enemy goal line.'
-    ]
-    qpo.mode = 'game';
-    qpo.code = 1;
-    qpo.timeScale = .45;
-
+qpo.missions[1] = new qpo.Mission([['Use w/a/s/d to move the blue unit', 'across the enemy goal line.'],
+    1, function(){ //specifics for mission 1:
+    // qpo.timeScale = .45;
     qpo.activeGame = new qpo.Game(5,1,'campaign',false,false);
-    qpo.shots=[];
-    qpo.bombs=[];
 
     var q = qpo.activeGame.q
     qpo.drawGUI(5, 1, 0.0, 50)
     qpo.timer.text.remove()
     qpo.scoreboard.all.remove()
-
-    mts = [ //mission text Raph els
-      c.text(300, 40, mt[0]).attr({qpoText:25}).hide(),
-      c.text(300, 75, mt[1]).attr({qpoText:25}).hide()
-    ];
-    var mte = c.set(mts[0], mts[1]);
-    // mte.attr({'opacity':})
-    qpo.gui.push(mte)
-    // qpo.blink(mte, 3000*qpo.timeScale);
 
     setTimeout(function(){ // Spawn a red and blue unit
       qpo.blue.units[0] = new qpo.Unit("blue",2,1,0);
@@ -48,11 +40,11 @@ qpo.missions = [
       qpo.units.push(qpo.red.units[0]);
       qpo.red.units[0].phys.attr({'opacity':0});
       qpo.fadeIn(qpo.red.units[0].phys, 1000, function(){
-        qpo.fadeIn(mte, 1000);
+        qpo.fadeIn(this.textEls, 1000);
       }.bind(this), function(){
         // qpo.blink(mts[0]); qpo.blink(mts[1])
       }.bind(this));
-    }, 1500);
+    }.bind(this), 1500);
 
     var newTurn = function(){ // called every time game clock is divisible by 3
       // qpo.activeGame.turnNumber++;
@@ -84,23 +76,6 @@ qpo.missions = [
       qpo.timer.pie.animate({segment: [qpo.guiCoords.turnTimer.x, qpo.guiCoords.turnTimer.y, qpo.guiCoords.turnTimer.r, -90, -90]}, 3000*qpo.timeScale);
       qpo.collisionDetector = setInterval(function(){qpo.detectCollisions(qpo.activeGame.po)}, 50);
     }, 4500);
-
-    console.log('Mission 1 begun.');
-    qpo.activeMission = this;
-
-    this.end = function(){
-      qpo.endGame('blue', 1);
-    } //end the mission
-
-    return this;
-  },
-  function(){ //MISSION 2:
-
-  },
-  function(){ //MISSION 3:
-
-  },
-  function(){ //MISSION 4:
-
-  }
-]
+  }])
+qpo.missions[2] = new qpo.Mission([false, 2, function(){}])
+qpo.missions[3] = new qpo.Mission([false, 3, function(){}])

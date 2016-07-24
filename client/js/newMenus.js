@@ -105,9 +105,9 @@ qpo.Menu = function(titleStr, itemList, parent, placeholder){ // A Menu contains
 
     qpo.makeMuteButton();
 
-    // this.board = new qpo.Board(1, 7, 200, 120, 40);
-    // qpo.board = this.board;
-    // this.layer2 = c.set().push(this.board.all);
+    this.board = new qpo.Board(1, 7, 200, 120, 40);
+    qpo.board = this.board;
+    this.layer2 = c.set().push(this.board.all);
 
     this.cl.render();
     // this.cl.select(h);
@@ -140,19 +140,19 @@ qpo.Menu = function(titleStr, itemList, parent, placeholder){ // A Menu contains
           break;
         }
         case 'Mission 1': { //start a mission
-          qpo.missions[0]();
+          qpo.missions[1].begin();
           break;
         }
         case 'Mission 2': { //start a mission
-          qpo.missions[1]();
+          qpo.missions[2].begin();
           break;
         }
         case 'Mission 3': { //start a mission
-          qpo.missions[2]();
+          qpo.missions[3].begin();
           break;
         }
         case 'Mission 4': { //start a mission
-          qpo.missions[3]();
+          qpo.missions[4].begin();
           break;
         }
         case '2-Po': {
@@ -360,6 +360,7 @@ qpo.makeMenus = function(){ //Lay out the menu skeletons (without creating Rapha
 qpo.displayTitleScreen = function(){ //Called whenever title screen is displayed
   qpo.activeMenu = "title";
   qpo.mode = "menu";
+  qpo.missions[0] = new qpo.Mission([false,0,false])
 
   //1ST LAYER (background blackness)
   this.blackness = c.rect(0,0,c.width,c.height).attr({"fill":"black"});
