@@ -360,7 +360,7 @@ qpo.makeMenus = function(){ //Lay out the menu skeletons (without creating Rapha
 qpo.displayTitleScreen = function(){ //Called whenever title screen is displayed
   qpo.activeMenu = "title";
   qpo.mode = "menu";
-  qpo.missions[0] = new qpo.Mission([false,0,false])
+  qpo.activeMission = qpo.missions[0] = new qpo.Mission([false,0,false])
 
   //1ST LAYER (background blackness)
   this.blackness = c.rect(0,0,c.width,c.height).attr({"fill":"black"});

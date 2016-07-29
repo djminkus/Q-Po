@@ -1,4 +1,4 @@
-qpo.Mission = function(args){ //incomplete and unused class
+qpo.Mission = function(args){
   //args: [array of 2 strings, int, function]
   this.snippets = args[0] || ['',''];
   this.number = args[1] || -1; //mission number
@@ -15,6 +15,8 @@ qpo.Mission = function(args){ //incomplete and unused class
     qpo.activeMission = this;
   }
   this.end = function(){
+    this.textEls.remove();
+    qpo.gui.push(c.text(300,70, "Well done.").attr({qpoText:35}))
     qpo.endGame('blue');
   }
 
@@ -40,10 +42,12 @@ qpo.missions[1] = new qpo.Mission([['Use w/a/s/d to move the blue unit', 'across
       qpo.units.push(qpo.red.units[0]);
       qpo.red.units[0].phys.attr({'opacity':0});
       qpo.fadeIn(qpo.red.units[0].phys, 1000, function(){
-        qpo.fadeIn(this.textEls, 1000);
-      }.bind(this), function(){
-        // qpo.blink(mts[0]); qpo.blink(mts[1])
-      }.bind(this));
+        qpo.fadeIn(qpo.activeMission.textEls, 1000);
+      }, function(){
+        // qpo.activeMission.textEls.show()
+        // qpo.activeMission.textEls.toFront()
+        // qpo.blink(qpo.activeMission.textEls);
+      });
     }.bind(this), 1500);
 
     var newTurn = function(){ // called every time game clock is divisible by 3

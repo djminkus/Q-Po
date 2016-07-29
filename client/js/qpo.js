@@ -125,7 +125,7 @@ qpo.setup = function(){ // set up global vars and stuff
   qpo.playMusic = false;
   qpo.trainingMode = false;
   qpo.waitTime = 100; //ms between moves
-  qpo.gameLength = 45;
+  qpo.gameLength = 30;
   qpo.unitStroke = 3.5;
   qpo.bombStroke = 3;
   qpo.iconStroke = 2;
@@ -278,6 +278,7 @@ qpo.setup = function(){ // set up global vars and stuff
     path.attr({'path':pathStr});
   }
   qpo.blink = function(raph, time){ //make something's opacity go to 0, then come back to 1
+    raph.show();
     var anim1 = Raphael.animation({'opacity':0}, (time || 1000), '<', function(){raph.animate(anim2)});
     var anim2 = Raphael.animation({'opacity':1}, (time || 1000), '>', function(){raph.animate(anim1)});
     raph.animate(anim1);
@@ -701,8 +702,8 @@ qpo.Timer = function(yAdj){ //draw the turn timer and push to gui
 qpo.drawGUI = function(q, po, xAdj, yAdj){ //create the turn timer (pie), board, and control panel.
   var xAdj = xAdj || 0;
   var yAdj = yAdj || 0;
-  qpo.gui.push(c.rect(0, 0, qpo.guiDimens.gpWidth, qpo.guiDimens.gpHeight) //background
-    .attr({"fill":qpo.COLOR_DICT['background']}));
+  // qpo.gui.push(c.rect(0, 0, qpo.guiDimens.gpWidth, qpo.guiDimens.gpHeight) //background
+  //   .attr({"fill":qpo.COLOR_DICT['background']}));
   qpo.activeGame.board = new qpo.Board(q, q, 25+xAdj, 75+yAdj); // make the board (with animation if game starting)
   qpo.board = qpo.activeGame.board; //ugh messy
   qpo.timer = new qpo.Timer(yAdj);
