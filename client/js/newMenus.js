@@ -122,15 +122,15 @@ qpo.Menu = function(titleStr, itemList, parent, placeholder){ // A Menu contains
   }
 
   this.parent = qpo.menus[parent] || 'title';
-  this.up = function(){ this.close('parent'); }
+  this.up = function(){ this.close({'destination':'parent'}); }
 
-  this.close = function(status, time){ //clear the canvas and open the next screen
+  this.close = function(obj, time){ //clear the canvas and open the next screen
     qpo.ignoreInput = true;
     qpo.fadeOutGlow(qpo.glows, function(){qpo.ignoreInput = false;}, time);
     qpo.fadeOut(this.all, function(){
       c.clear();
       this.all = null; //remove reference to raphs too
-      switch(status){
+      switch(obj.destination){
         case 'title': { //display title screen
           qpo.titleScreen = new qpo.displayTitleScreen();
           break;
@@ -139,47 +139,18 @@ qpo.Menu = function(titleStr, itemList, parent, placeholder){ // A Menu contains
           this.parent.open();
           break;
         }
-        case 'Mission 1': { //start a mission
-          qpo.missions[1].begin();
+        case 'mission' : { //start a mission
+          qpo.missions[obj.missionNum].begin();
           break;
         }
-        case 'Mission 2': { //start a mission
-          qpo.missions[2].begin();
+        case 'game' : { //start a game
+          qpo.activeGame = new qpo.Game({'q':obj.q, 'po': obj.po, 'type':obj.type});
           break;
         }
-        case 'Mission 3': { //start a mission
-          qpo.missions[3].begin();
-          break;
+        default : {
+          try{qpo.menus[obj].open();}
+          catch(e){console.log(obj, qpo.menus[obj])}
         }
-        case 'Mission 4': { //start a mission
-          qpo.missions[4].begin();
-          break;
-        }
-        case '2-Po': {
-          qpo.startGame(qpo.settings2v2, true, true, qpo.gameLength);
-          break;
-        }
-        case '3-Po': {
-          qpo.startGame(qpo.settings3v3, true, true, qpo.gameLength);
-          break;
-        }
-        case '4-Po': {
-          qpo.startGame(qpo.settings4v4, true, true, qpo.gameLength);
-          break;
-        }
-        case '2-Po-M': {
-          qpo.startGame(qpo.settings2v2multi, true, true, qpo.gameLength);
-          break;
-        }
-        case '3-Po-M': {
-          qpo.startGame(qpo.settings3v3multi, true, true, qpo.gameLength);
-          break;
-        }
-        case '4-Po-M': {
-          qpo.startGame(qpo.settings4v4multi, true, true, qpo.gameLength);
-          break;
-        }
-        default : { qpo.menus[status].open(); }
       }
     }.bind(this), time);
   }.bind(this);
@@ -322,7 +293,10 @@ qpo.makeMenus = function(){ //Lay out the menu skeletons (without creating Rapha
     new qpo.MenuOption(0,3,'Mission 3', function(){}, 'Campaign', false, 'stay', 'blue', 2),
     new qpo.MenuOption(0,4,'Mission 4', function(){}, 'Campaign', false, 'stay', 'blue', 3)
   ], 'Main Menu');
-  qpo.menus['Campaign'].cl.list[0].action = function(){ qpo.menus['Campaign'].close('Mission 1', 1000); }
+  qpo.menus['Campaign'].cl.list[0].action = function(){ qpo.menus['Campaign'].close({
+    'destination':'mission',
+    'missionNum':1
+  }, 1000); }
   // qpo.menus['Campaign'].cl.list[1].action = function(){ qpo.menus['Campaign'].close('Mission 2', 1000); }
   // qpo.menus['Campaign'].cl.list[2].action = function(){ qpo.menus['Campaign'].close('Mission 3', 1000); }
   // qpo.menus['Campaign'].cl.list[3].action = function(){ qpo.menus['Campaign'].close('Mission 4', 1000); }
@@ -332,30 +306,48 @@ qpo.makeMenus = function(){ //Lay out the menu skeletons (without creating Rapha
     new qpo.MenuOption(0,3,'3-Po', function(){}, 'vs. Computer', false, 'stay', 'blue', 1),
     new qpo.MenuOption(0,5,'4-Po', function(){}, 'vs. Computer', false, 'stay', 'blue', 2)
   ], 'Main Menu');
-  qpo.menus['vs. Computer'].cl.list[0].action = function(){ qpo.menus['vs. Computer'].close('2-Po', 1000); }
-  qpo.menus['vs. Computer'].cl.list[1].action = function(){ qpo.menus['vs. Computer'].close('3-Po', 1000); }
-  qpo.menus['vs. Computer'].cl.list[2].action = function(){ qpo.menus['vs. Computer'].close('4-Po', 1000); }
+  qpo.menus['vs. Computer'].cl.list[0].action = function(){ qpo.menus['vs. Computer'].close({
+    'destination':'game',
+    'type':'single', 'q':7, 'po':2
+  }, 1000); }
+  qpo.menus['vs. Computer'].cl.list[1].action = function(){ qpo.menus['vs. Computer'].close({
+    'destination':'game',
+    'type':'single', 'q':8, 'po':3
+  }, 1000); }
+  qpo.menus['vs. Computer'].cl.list[2].action = function(){ qpo.menus['vs. Computer'].close({
+    'destination':'game',
+    'type':'single', 'q':9, 'po':4
+  }, 1000); }
 
   qpo.menus['Multiplayer'] = new qpo.Menu('Multiplayer', [
     new qpo.MenuOption(0,1,'2-Po', function(){}, 'Multiplayer', true, 'stay', 'blue', 0),
     new qpo.MenuOption(0,3,'3-Po', function(){}, 'Multiplayer', false, 'stay', 'blue', 1),
     new qpo.MenuOption(0,5,'4-Po', function(){}, 'Multiplayer', false, 'stay', 'blue', 2)
   ], 'Main Menu');
-  qpo.menus['Multiplayer'].cl.list[0].action = function(){ qpo.menus['Multiplayer'].close('2-Po-M', 1000); }
-  qpo.menus['Multiplayer'].cl.list[1].action = function(){ qpo.menus['Multiplayer'].close('3-Po-M', 1000); }
-  qpo.menus['Multiplayer'].cl.list[2].action = function(){ qpo.menus['Multiplayer'].close('4-Po-M', 1000); }
+  qpo.menus['Multiplayer'].cl.list[0].action = function(){ qpo.menus['Multiplayer'].close({
+    'destination':'game',
+    'type':'multi', 'q':7, 'po':2
+  }, 1000); }
+  qpo.menus['Multiplayer'].cl.list[1].action = function(){ qpo.menus['Multiplayer'].close({
+    'destination':'game',
+    'type':'multi', 'q':8, 'po':3
+  }, 1000); }
+  qpo.menus['Multiplayer'].cl.list[2].action = function(){ qpo.menus['Multiplayer'].close({
+    'destination':'game',
+    'type':'multi', 'q':9, 'po':4
+  }, 1000); }
 
   qpo.menus['Settings'] = new qpo.Menu('Settings', [
     new qpo.MenuOption(0,1,'coming', function(){}, 'Settings', true, 'stay', 'blue', 0),
     new qpo.MenuOption(0,3,'soon', function(){}, 'Settings', false, 'stay', 'blue', 1)
   ], 'Main Menu', false);
-  qpo.menus['Settings'].cl.list[0].action = function(){ qpo.menus['Settings'].close('parent'); }
-  qpo.menus['Settings'].cl.list[1].action = function(){ qpo.menus['Settings'].close('parent'); }
+  qpo.menus['Settings'].cl.list[0].action = function(){ qpo.menus['Settings'].close({'destination':'parent'}); }
+  qpo.menus['Settings'].cl.list[1].action = function(){ qpo.menus['Settings'].close({'destination':'parent'}); }
 
   qpo.menus['Match Complete'] = new qpo.Menu('Match Complete',[
     new qpo.MenuOption(0,1, 'Main Menu', function(){}, 'Match Complete', true, 'stay', 'blue', 0)
   ], 'Main Menu');
-  qpo.menus['Match Complete'].cl.list[0].action = function(){ qpo.menus['Match Complete'].close('parent'); }
+  qpo.menus['Match Complete'].cl.list[0].action = function(){ qpo.menus['Match Complete'].close({'destination':'parent'}); }
 }
 qpo.displayTitleScreen = function(){ //Called whenever title screen is displayed
   qpo.activeMenu = "title";
@@ -367,7 +359,7 @@ qpo.displayTitleScreen = function(){ //Called whenever title screen is displayed
   this.layer1 = c.set().push(this.blackness);
 
   // qpo.makeMuteButton();
-  qpo.activeGame = new qpo.Game(11, 3, false, false, true); //needed for menus.
+  // qpo.activeGame = new qpo.Game(11, 3, false, false, true); //needed for menus. UNACCEPTABLE.
 
   //2ND LAYER (foreground) : Logo
   this.logo = c.image('../client/images/logo.png', (300-386/2), -50, 386, 386)

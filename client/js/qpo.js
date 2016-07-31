@@ -120,28 +120,16 @@ qpo.setup = function(){ // set up global vars and stuff
   // };
 
   // TOP-LEVEL SETTINGS:
-  qpo.bar = // Bar, as in musical measure -- A time pixel, per se.
-  qpo.timeScale = 0.5; // Bigger means slower; 1 is original 3-seconds-per-turn
+  qpo.timeScale = 0.5; // Bigger means longer turns; 1 is original 3-seconds-per-turn
   qpo.playMusic = false;
   qpo.trainingMode = false;
   qpo.waitTime = 100; //ms between moves
-  qpo.gameLength = 30;
   qpo.unitStroke = 3.5;
   qpo.bombStroke = 3;
   qpo.iconStroke = 2;
   qpo.pinchAmount = 20; //pixels for pinch animaton
   qpo.SHOT_LENGTH = 0.5; //ratio of shot length to unit length
   qpo.SHOT_WIDTH = 0.1; //ratio of shot width to unit length
-  qpo.defaultQ = 7;
-  qpo.defaultPo = 2;
-  qpo.defaultSettings = [qpo.defaultQ, qpo.defaultPo, false]; //q, po, multi
-  qpo.settings2v2 = [7,2,false];
-  qpo.settings3v3 = [8,3,false];
-  qpo.settings4v4 = [9,4,false];
-  qpo.settings2v2multi = [7,2,true];
-  qpo.settings3v3multi = [8,3,true];
-  qpo.settings4v4multi = [9,4,true];
-  // qpo.activeMission = new qpo.Mission([false, 0, false]); //placeholder mission
 
   // (DNA): STATIC DICTS N ARRAYS
   qpo.spawnTimers = [null, 1,2,2,2,3,3,3,4]; //index is po
@@ -168,7 +156,6 @@ qpo.setup = function(){ // set up global vars and stuff
     "foreground": "#ffffff" //white is f
   };
   qpo.moves = ["moveUp","moveDown","moveLeft","moveRight","shoot","bomb","stay"];
-  qpo.difficPairings = [4, 6, 8, 10, 13, 16, 20]; //array index is po-1. Value at index is recommended q for said po.
   qpo.dirMap = {
     37: 'left',
     38: 'up',
@@ -413,33 +400,6 @@ qpo.setup = function(){ // set up global vars and stuff
   }
 }();
 
-qpo.startGame = function(settings){ //draw the board/GUI, place units, and start the game.
-  //settings are [q, po, multi, music, respawn, turns]
-
-  // qpo.menuSong.pause();
-  // qpo.menuSong.currentTime = 0 ;
-  // clearInterval(qpo.menuSongInterval);
-  qpo.mode = 'game';
-
-  qpo.activeGame = new qpo.Game(settings[0], settings[1], settings[2], true, true, qpo.gameLength);
-  qpo.shots=[];
-  qpo.bombs=[];
-
-  qpo.drawGUI(qpo.activeGame.q, qpo.activeGame.po);
-  setTimeout(function(){ // wait 1500 ms, then placeUnits() and set initial state
-    qpo.placeUnits(); // puts the units on the board
-    qpo.activeGame.state = qpo.activeGame.getState();
-  }, 1500);
-
-  setTimeout(function(){ //Set up the newTurn interval, the pie animation, and the collision detection
-    qpo.turnStarter = setInterval(qpo.newTurn, 3000*qpo.timeScale);
-    qpo.timer.pie.animate({segment: [qpo.guiCoords.turnTimer.x, qpo.guiCoords.turnTimer.y, qpo.guiCoords.turnTimer.r, -90, -90]}, 3000*qpo.timeScale);
-    qpo.collisionDetector = setInterval(function(){qpo.detectCollisions(qpo.activeGame.po)}, 50);
-  }, 7500);
-
-  console.log('NEW GAME');
-}
-
 qpo.findSpawn = function(color){
   //CHOOSE A ROW.
   var foundSpawn;
@@ -682,9 +642,10 @@ qpo.Scoreboard = function(yAdj){ //draw the scoreboard and push to gui
 qpo.Timer = function(yAdj){ //draw the turn timer and push to gui
   var t = qpo.guiCoords.turnTimer; //t.x, t.y, t.r are x center, y center, and radius of timer
   t.y += yAdj
-  this.value = qpo.activeGame.lastTurn;
+  var STUPID = 30;
+  this.value = STUPID || qpo.activeGame.turns;
   this.pie = c.path().attr({segment: [t.x, t.y, t.r, -90, 269],"stroke":"none",'opacity':0});
-  this.text = c.text(t.x, t.y, qpo.activeGame.lastTurn).attr({qpoText:[30,qpo.COLOR_DICT['foreground']]});
+  this.text = c.text(t.x, t.y, STUPID || qpo.activeGame.turns).attr({qpoText:[30,qpo.COLOR_DICT['foreground']]});
   this.all = c.set(this.pie,this.text).attr({'opacity':0})
   if (qpo.mode == 'game') {setTimeout(function(){ qpo.fadeIn(this.all, 1500)}.bind(this), 3000) }
   else { this.all.attr({'opacity':1}) }
@@ -699,21 +660,9 @@ qpo.Timer = function(yAdj){ //draw the turn timer and push to gui
   return this;
 }
 
-qpo.drawGUI = function(q, po, xAdj, yAdj){ //create the turn timer (pie), board, and control panel.
-  var xAdj = xAdj || 0;
-  var yAdj = yAdj || 0;
-  // qpo.gui.push(c.rect(0, 0, qpo.guiDimens.gpWidth, qpo.guiDimens.gpHeight) //background
-  //   .attr({"fill":qpo.COLOR_DICT['background']}));
-  qpo.activeGame.board = new qpo.Board(q, q, 25+xAdj, 75+yAdj); // make the board (with animation if game starting)
-  qpo.board = qpo.activeGame.board; //ugh messy
-  qpo.timer = new qpo.Timer(yAdj);
-  qpo.scoreboard = new qpo.Scoreboard(yAdj);
-}
-
 //INCREMENT FUNCTIONS (no new Raph elements created)
 qpo.newTurn = function(){ // called every time game clock is divisible by 3
-  // qpo.activeGame.turnNumber++;
-  qpo.activeGame.incrementTurn();
+  qpo.activeGame.turnNumber++;
   qpo.timer.update();
   qpo.moment = new Date();
 
@@ -792,7 +741,7 @@ qpo.newTurn = function(){ // called every time game clock is divisible by 3
     bu.updateLevel();
   }
 
-  if(qpo.activeGame.turnNumber == qpo.activeGame.lastTurn-1){ //stop allowing units to shoot and bomb
+  if(qpo.activeGame.turnNumber == qpo.activeGame.turns-1){ //stop allowing units to shoot and bomb
     // TODO: Stop allowing units to shoot and bomb.
     //Stop counting down numbers on the timer.
     //Start checking whether all shots and bombs are off the board. If so, end the game.
@@ -802,7 +751,7 @@ qpo.newTurn = function(){ // called every time game clock is divisible by 3
     qpo.timer.pie.attr({segment: [qpo.guiCoords.turnTimer.x, qpo.guiCoords.turnTimer.y, qpo.guiCoords.turnTimer.r, -90, 269]});
     qpo.timer.pie.animate({segment: [qpo.guiCoords.turnTimer.x, qpo.guiCoords.turnTimer.y, qpo.guiCoords.turnTimer.r, -90, -90]}, 3000*qpo.timeScale);
   }
-  if (qpo.activeGame.turnNumber == qpo.activeGame.lastTurn){ //End the game, if it's time.
+  if (qpo.activeGame.turnNumber == qpo.activeGame.turns){ //End the game, if it's time.
     if (qpo.activeGame.isEnding == false){ //find the winner and store to gameResult
       for(var i=0; i<qpo.blue.units.length; i++){qpo.blue.units[i].deactivate()}
       var gameResult;

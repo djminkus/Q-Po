@@ -415,8 +415,9 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
       this.phys.attr({'opacity':1, 'transform':this.trans()});
     }.bind(this), 2000);
     if(qpo.mode == "game"){ //deal with scoreboard, AI, spawn, control panel, and ending game
-      qpo[this.team].addPoint();
-      switch(this.team){ // update scoreboard, prep to reward AI
+      if(this.team=='blue'){qpo.red.addPoint()}
+      else{qpo.blue.addPoint()}
+      switch(this.team){ //prep to reward AI, and update blue AU if necessary
         case qpo.otherTeam: //enemy team ("red" until server implementation)
           qpo.redRewardQueue.push(1); //is this backwards?
           break;
@@ -424,14 +425,9 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
           var number = this.num;
           qpo.redRewardQueue.push(-1); //is this backwards?
           if (this.active){qpo.updateBlueAU(qpo.activeGame.po);}
-          // controlPanel.disable();
           break;
       }
-      if (qpo.scoreboard.blueScore >= qpo.activeGame.scoreToWin  //if score limit reached, disable respawn
-        || qpo.scoreboard.redScore >= qpo.activeGame.scoreToWin){
-        qpo.activeGame.respawnEnabled = false;
-      }
-      if (qpo.activeGame.respawnEnabled) { this.nextAction = 'recharge' }
+      if (qpo.activeGame.type != 'elimination') { this.nextAction = 'recharge' }
       else if (qpo.scoreboard.redScore >= qpo.activeGame.scoreToWin // otherwise, end the game, if score limit reached.
         || qpo.scoreboard.blueScore >= qpo.activeGame.scoreToWin && qpo.activeGame.isEnding == false){
         var gameResult;
