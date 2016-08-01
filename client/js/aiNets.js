@@ -38,7 +38,7 @@ qpo.convertStateToInputs = function(state){
   var yMid = (gameBoard.topWall + gameBoard.bottomWall) / 2;
   var xInd;
   var yInd;
-  for(var i=0; i<16; i++){ //0-15 (unit qpo-grid coords go here)
+  for(var i=0; i<16; i++){ //0-15 (unit coords on game board go here)
     // All of these (x and y) range from 0 to qpo.activeGame.q when unit is
     //   alive, and -1 when unit is dead. So, -1 to 8.
     arr[i] = state[i] - gridAdj;
@@ -87,26 +87,24 @@ qpo.sixty = {
 
 var freshStart = false;
 
-qpo.openingCode = function(){
-  if(freshStart){
-    // console.log(localStorage['aliNN'])
+qpo.openingCode = function(){ //get an AI net ready, either from storage or fresh
+  if(freshStart){ //delete Ali from local storage.
     localStorage['aliNN']=null;
-    console.log(localStorage['aliNN'] + ", ali was deleted");
-  }; //delete ali from local storage.
-  try {
+    console.log(localStorage['aliNN'] + ", Ali was deleted");
+  };
+  try { //retrieve saved AI or generate new one
     qpo.ali = { //The OG qpo AI
       "nn" : null,
       "team" : "red"
     };
-    // qpo.ali.nn = new convnetjs.Net();
     qpo.ali.nn = new deepqlearn.Brain(num_inputs, num_actions, opt);
-    if(localStorage['aliNN'] !== "null"){ //retrieves saved network from local storage
+    if(localStorage['aliNN'] !== "null"){ //retrieve saved network from local storage
       // console.log("generating Ali's net from localStorage");
       qpo.ali.nn.value_net.fromJSON(JSON.parse(localStorage['aliNN']));
       // (JSON.stringify(qpo.ali.nn) == localStorage['aliCopy']) ? (console.log("ali successfully reconstructed.")) : console.log("ali reconstruction failed.");
       // (JSON.stringify(qpo.ali.nn.value_net.toJSON()) == localStorage['aliCopy2']) ? (console.log("ali value net successfully reconstructed.")) : console.log("ali value net reconstruction failed.");
     }
-    else {
+    else { //make Ali from scratch.
       console.log("no net found in localStorage. making new one."); //no net found in localStorage
       var brain = new deepqlearn.Brain(num_inputs, num_actions, opt); // start fresh
       // console.log(brain);
@@ -116,22 +114,18 @@ qpo.openingCode = function(){
       };
     }
   }
-  catch(err){
-    console.log(err);
-  }
+  catch(err){ console.log(err); }
   return null;
 };
 window.onload = qpo.openingCode;
 
-qpo.closingCode = function(){
-  try{
+qpo.closingCode = function(){ //save the net
+  try{ //save the AI net to local storage
     localStorage['aliNN'] = JSON.stringify(qpo.ali.nn.value_net.toJSON()); //stores network to local storage for persistence
     localStorage['aliCopy'] = JSON.stringify(qpo.ali.nn);
     localStorage['aliCopy2'] = JSON.stringify(qpo.ali.nn.value_net.toJSON());
   }
-  catch(err){
-    console.log("UH-OH. looks like there's no network to store.")
-  }
+  catch(err){ console.log("uh-oh. Looks like there's no network to store.") }
   return null;
 };
 window.onbeforeunload = qpo.closingCode;

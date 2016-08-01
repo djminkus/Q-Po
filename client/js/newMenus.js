@@ -1,7 +1,7 @@
 //Set up the menu objects and open the title screen.
 
 qpo.font = 'Orbitron';
-switch(qpo.font){
+switch(qpo.font){ //for easy font switching
   case 'Righteous':{
     WebFontConfig = { google: { families: [ 'Righteous::latin' ] } };
     break;
@@ -70,7 +70,6 @@ c.customAttributes.qpoText = function(size, fill){ //style text white with Open 
     // "font-family":"sans-serif"
   };
 }
-
 qpo.xtext = function(x, y, str, size, color){ //make a Raphael text el with its left end at x and centered vertically on y
   var size = size || 10;
   var color = color || qpo.COLOR_DICT['foreground'];
@@ -134,7 +133,8 @@ qpo.Menu = function(titleStr, itemList, parent, placeholder){ // A Menu contains
   this.up = function(){ this.close('parent'); }
 
   this.close = function(status, time){ //clear the canvas and open the next screen
-    qpo.fadeOutGlow(qpo.glows, function(){}, time);
+    qpo.ignoreInput = true;
+    qpo.fadeOutGlow(qpo.glows, function(){qpo.ignoreInput = false;}, time);
     qpo.fadeOut(this.all, function(){
       c.clear();
       this.all = null; //remove reference to raphs too
@@ -159,6 +159,19 @@ qpo.Menu = function(titleStr, itemList, parent, placeholder){ // A Menu contains
           qpo.startGame(qpo.settings6v6, true, true, qpo.gameLength);
           break;
         }
+        case '2v2m': {
+          qpo.startGame(qpo.settings2v2multi, true, true, qpo.gameLength);
+          break;
+        }
+        case '6v6m': {
+          qpo.startGame(qpo.settings6v6multi, true, true, qpo.gameLength);
+          break;
+        }
+        //Spectator mode!
+        case 'Spectate': {
+          qpo.spectate();
+          break;
+        }
         default : { qpo.menus[status].open(); }
       }
     }.bind(this), time);
@@ -166,40 +179,50 @@ qpo.Menu = function(titleStr, itemList, parent, placeholder){ // A Menu contains
 
   return this;
 }
-
 qpo.CursorList = function(list, initialCursorPosition){ // A list with a "selected" or "active" item
+  // Methods break unless each item in "list" has a "render()" method
+
   list===null ? this.list = new Array() : this.list=list ;
   this.length = this.list.length;
   this.cursorPosition = initialCursorPosition || 0;
   this.selectedItem = this.list[this.cursorPosition];
 
-  this.render = function(){ // generate the raphs
+  this.select = function(index){
+    this.selectedItem.deactivate();
+    this.cursorPosition = index;
+    this.selectedItem = this.list[this.cursorPosition];
+    this.selectedItem.activate();
+  }
+
+  this.rendered = false;
+
+  this.render = function(){ // Generate the raphs.
     // console.log('CursorList rendered'); //success
     for (var i=0; i<this.length; i++){ this.list[i].render(); } //render each item in the list
     try{this.selectedItem.activate()}
-    catch(err){console.log('placeholder menu.')};
+    catch(err){console.log('placeholder menu, or unexpected error')};
+    this.rendered = true;
   }.bind(this);
 
+  this.addItem = function(item){
+    this.list.push(item)
+    if(this.rendered){item.render()}
+  }
+
   this.next = function(){
-    this.selectedItem.deactivate();
-    this.cursorPosition++;
-    if(this.cursorPosition >= this.list.length){this.cursorPosition = 0}; //loop back to start
-    this.selectedItem = this.list[this.cursorPosition];
-    this.selectedItem.activate();
+    if(this.cursorPosition>=this.list.length-1){this.select(0)}
+    else{this.select(this.cursorPosition+1)}
   }.bind(this); // <-- THIS is when to use .bind() (function's identifier passed to another object)
   this.previous = function(){
-    this.selectedItem.deactivate();
-    this.cursorPosition--;
-    if(this.cursorPosition == -1){this.cursorPosition = this.list.length-1}; //loop back to start
-    this.selectedItem = this.list[this.cursorPosition];
-    this.selectedItem.activate();
+    if(this.cursorPosition==0){this.select(this.list.length-1)}
+    else{this.select(this.cursorPosition-1)}
   }.bind(this);
 
   return this;
 }
-
-qpo.MenuOption = function(gx, gy, textStr, action, menu, active, order, color){ // AKA UnitButton
+qpo.MenuOption = function(gx, gy, textStr, action, menu, active, order, color, index){ // AKA UnitButton
   //pass in a spawn point, some text, and a function to execute when this option is chosen
+  this.index = index;
   this.color = color || 'blue';
   qpo.guiDimens.squareSize = 50;
   this.gx = gx;
@@ -209,6 +232,8 @@ qpo.MenuOption = function(gx, gy, textStr, action, menu, active, order, color){ 
   this.active = active || false;
 
   this.render = function(){ //do all the stuff that creates or changes Raph els
+    this.menu = qpo.menus[menu]; //the menu object that it belongs to
+
     this.unit = new qpo.Unit(this.color, this.gx, this.gy); // arg 'num' gets set to 0
     if(order){this.unit.setIcon(order)}
 
@@ -230,10 +255,19 @@ qpo.MenuOption = function(gx, gy, textStr, action, menu, active, order, color){ 
       this.unit.deactivate();
       this.active = false;
     }
+
+    this.raphs.hover(function(){
+      this.raphs.attr({'cursor':'crosshair'});
+      if(!this.active){this.menu.cl.select(this.index)}
+    },
+      function(){ this.raphs.attr({'cursor':'default'}); },
+    this, this);
+    this.raphs.click(function(){this.action()}.bind(this));
+
   }
 
   this.action = action; //a function
-  this.menu = menu; //the menu object that it belongs to
+
   return this;
 }
 
@@ -267,15 +301,18 @@ qpo.makeMenus = function(){ //Lay out the menu skeletons (without creating Rapha
   qpo.menus['Main Menu'].up = function(){qpo.menus['Main Menu'].close('title')};
 
   qpo.menus['Game Setup'] = new qpo.Menu('Game Setup', [
-    new qpo.MenuOption(0,1,'2v2', function(){}, 'Game Setup', true),
-    new qpo.MenuOption(0,3,'4v4', function(){}, 'Game Setup', false, 'shoot'),
-    new qpo.MenuOption(0,5,'6v6', function(){}, 'Game Setup', false, 'bomb', 'red')
+    new qpo.MenuOption(0,1,'2v2', function(){}, 'Game Setup', true, 'stay', 'blue', 0),
+    new qpo.MenuOption(0,3,'4v4', function(){}, 'Game Setup', false, 'shoot', 'blue', 1),
+    new qpo.MenuOption(0,5,'6v6', function(){}, 'Game Setup', false, 'bomb', 'red', 2)
   ], 'Main Menu');
   qpo.menus['How To Play'] = new qpo.Menu('How To Play', null, 'Main Menu', true);
-  qpo.menus['Compete'] = new qpo.Menu('Compete', null, 'Main Menu', true);
+  qpo.menus['Compete'] = new qpo.Menu('Compete', [
+    new qpo.MenuOption(0,1,'2v2', function(){}, 'Compete', true, 'stay', 'blue', 0),
+    new qpo.MenuOption(0,3,'6v6', function(){}, 'Compete', false, 'stay', 'blue', 1)
+  ], 'Main Menu', false);
 
   qpo.menus['Match Complete'] = new qpo.Menu('Match Complete',[
-    new qpo.MenuOption(0,1, 'Main Menu', function(){}, 'Match Complete', true)
+    new qpo.MenuOption(0,1, 'Main Menu', function(){}, 'Match Complete', true, 'stay', 'blue', 0)
   ], 'Main Menu');
 
   //customize the "How To Play" menu:
@@ -363,10 +400,12 @@ qpo.makeMenus = function(){ //Lay out the menu skeletons (without creating Rapha
         }
 
         var upperPanel, title;
-        menu.title = title = c.text(c.width/2, 60, 'How To Play').attr({qpoText:[qpo.menus['How To Play'].TITLE_SIZE, qpo.COLOR_DICT['background']]});
-        menu.upperPanel = upperPanel = qpo.upperPanel(menu.title);
+        menu.title = title = c.text(c.width/2, 60, 'How To Play').attr({qpoText:[qpo.menus['How To Play'].TITLE_SIZE, qpo.COLOR_DICT['foreground']]});
+        // menu.upperPanel = upperPanel = qpo.upperPanel(menu.title);
 
-        menu.all.push(set, upperPanel, title);
+        menu.all.push(set,
+          //  upperPanel,
+           title);
         qpo.fadeIn(menu.all);
 
         return result;
@@ -382,6 +421,9 @@ qpo.makeMenus = function(){ //Lay out the menu skeletons (without creating Rapha
   qpo.menus['Game Setup'].cl.list[1].action = function(){ qpo.menus['Game Setup'].close('4v4', 1000); }
   qpo.menus['Game Setup'].cl.list[2].action = function(){ qpo.menus['Game Setup'].close('6v6', 1000); }
 
+  qpo.menus['Compete'].cl.list[0].action = function(){ qpo.menus['Compete'].close('2v2m', 1000); }
+  qpo.menus['Compete'].cl.list[1].action = function(){ qpo.menus['Compete'].close('6v6m', 1000); }
+
   qpo.menus['Match Complete'].cl.list[0].action = function(){ qpo.menus['Match Complete'].close('parent'); }
 
   // qpo.menus['Multiplayer'] =  new qpo.Menu('Multiplayer', null, 'Main Menu');
@@ -389,7 +431,6 @@ qpo.makeMenus = function(){ //Lay out the menu skeletons (without creating Rapha
   // qpo.menus['Match Results'] = new qpo.Menu('Match Results', null, 'Main Menu');
   // qpo.menus['Demo'] = new qpo.Menu('Demo', null, 'Main Menu'); //TODO: add 1-Po, 4-Po, and 7-Po buttons
 }
-
 qpo.displayTitleScreen = function(){ //Called whenever title screen is displayed
   qpo.activeMenu = "title";
   // qpo.menus["title"] = this;
@@ -402,7 +443,7 @@ qpo.displayTitleScreen = function(){ //Called whenever title screen is displayed
   qpo.makeMuteButton();
   qpo.activeGame = new qpo.Game(11, 3, false, false, true); //just to define the unit size
 
-  //2ND LAYER (foreground) : board, then units that spell "Q-Po", then prompt
+  //2ND LAYER (foreground) : board, then units that spell "Q-Po"
   var UNIT_LENGTH = qpo.guiDimens.squareSize;
   var adj = -5;
   var grid_start = 2;
@@ -501,6 +542,7 @@ qpo.displayTitleScreen = function(){ //Called whenever title screen is displayed
   return this;
 }
 
-//CREATE TITLE SCREEN:
-qpo.titleScreen = new qpo.displayTitleScreen();
+//CREATE TITLE SCREEN AND MENUS:
+qpo.titleScreen = new qpo.displayTitleScreen(); // ******
 qpo.makeMenus();
+qpo.user = localStorage['player'] || new qpo.Player(null, 'epicGuest', 'human', null);

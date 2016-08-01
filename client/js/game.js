@@ -1,36 +1,45 @@
-// var song = new Audio("./music/qpo.mp3")            //  neil's first iteration
-// var song = new Audio("./music/gameMode.mp3")        //uncomment for gameMode (second version)
-// var song = new Audio("./music/underwaterStars.mp3")  //uncomment for underwaterStars
-
-qpo.Game = function(q, po, type, playMusic, respawn, turns){ //"Game" class. Instantiated every time a new round is called.
-  this.po = po; //# of units per team. Min 1, max 7.
+qpo.Game = function(q, po, type, playMusic, respawn, turns, ppt){ //"Game" class.
+  //q is board size, po is units per team, ppt is players per team
+  qpo.guiDimens.squareSize = 350/q;   //aim to keep width of board at 7*50 (350). So, qpo.guiDimens.squareSize = 350/q.
+  qpo.bombSize = 2 * qpo.guiDimens.squareSize;
+  qpo.currentSettings = [q,po,type,playMusic,respawn,turns];
   qpo.timeScale = (function(){ //adjust timeScale based on po.
     var adj = 0.25; //adjustment
     var factor = 1/5;
     return (adj + po*factor);
   })(); //0.45, 0.65, 0.85, 1.05, 1.25, etc
-  qpo.guiDimens.squareSize = 350/q;   //aim to keep width of board at 7*50 (350). So, qpo.guiDimens.squareSize = 350/q.
-  qpo.bombSize = 2 * qpo.guiDimens.squareSize;
-  qpo.currentSettings = [q,po,type,playMusic,respawn,turns];
-  this.scaling = qpo.guiDimens.squareSize/50;
 
+  this.po = po; //# of units per team. Min 1, max 7.
+  this.respawnEnabled = respawn;
   this.q = (q || qpo.difficPairings[po-1]); //size of board. (q x q)
-  this.type = type; //tutorial, single, multi
-  this.turnNumber = 0;
+  this.type = type; //What kind of game is this? (tutorial, single, multi)
+  this.ppt = ppt || 1; //players per team
+  this.lastTurn = (turns || 40); //How many turns does this game consist of?
+  this.teams = { //instantiate red and blue teams
+    'red': new qpo.Team('red'),
+    'blue': new qpo.Team('blue')
+  }
+  qpo.red = this.teams.red; //add a convenient pointer
+  qpo.blue = this.teams.blue;
+  this.players = (new Array()).push(qpo.user);
+
+  this.turnNumber = 0; //How far through this game are we?
   this.incrementTurn = function(){this.turnNumber++;};
-  this.lastTurn = (turns || 40);
+
+  this.scaling = qpo.guiDimens.squareSize/50; // Visual scaling
+
   this.isEnding = false;
   this.upcomingSpawns = new Array();
+
   var exponent = 0.8;
   var factor = 12;
   var correction = 2;
-  var scoringFormula = function(e,f,c,also){
+  var scoringFormula = function(e,f,c,also){ // find the score limit
     var result = Math.pow(also,e) * f - c // po^e * factor - correction
     result *= this.lastTurn/60; //multiply by num turns divided by 60
     return Math.floor(result);;
   }; //pass po as also when calling
   this.scoreToWin = scoringFormula(exponent,factor,correction,po); // 10, 18, 26, 34, 41, 48, 54, 61 for 60-turn game
-  this.respawnEnabled = respawn;
   if (respawn == false){this.scoreToWin = this.po;}
 
   this.gui = c.set();
@@ -51,17 +60,17 @@ qpo.Game = function(q, po, type, playMusic, respawn, turns){ //"Game" class. Ins
     //  We'll format the array properly later. Let's start with the raw values.
     for (var i=0; i<po; i++){
       // 16 qpo-grid coords of units (4 per po--red/blue x/y):
-      if(qpo.blueUnits[i].alive){ //0-7: blue x,y
-        arr[2*i] = qpo.blueUnits[i].x; //values from 0 to (q-1)
-        arr[2*i + 1] = qpo.blueUnits[i].y; //principle: keep coords of same obj together
+      if(qpo.blue.units[i].alive){ //0-7: blue x,y
+        arr[2*i] = qpo.blue.units[i].x; //values from 0 to (q-1)
+        arr[2*i + 1] = qpo.blue.units[i].y; //principle: keep coords of same obj together
       }
       else { // -1 if dead
         arr[2*i] = -1;
         arr[2*i + 1] = -1;
       }
-      if(qpo.redUnits[i].alive){ //8-15: red x,y
-        arr[2*qpo.activeGame.po + 2*i] = qpo.redUnits[i].x;
-        arr[2*qpo.activeGame.po + 2*i + 1] = qpo.redUnits[i].y;
+      if(qpo.red.units[i].alive){ //8-15: red x,y
+        arr[2*qpo.activeGame.po + 2*i] = qpo.red.units[i].x;
+        arr[2*qpo.activeGame.po + 2*i + 1] = qpo.red.units[i].y;
       }
       else { // -1 if dead
         arr[2*qpo.activeGame.po + 2*i] = -1;
@@ -130,6 +139,9 @@ qpo.Game = function(q, po, type, playMusic, respawn, turns){ //"Game" class. Ins
     // this.song.play();
     // console.log("playing game music...");
   }
+
+  //Give the game an owner(the socket who created it), for multiplayer
+  this.owner = socket.id;
 
   return this;
 }

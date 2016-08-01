@@ -1,8 +1,10 @@
 var express = require('express'); //Import express separately for later use
+
 const app = express();
 var http = require('http').createServer(app);
 var io = require('socket.io')(http); //IO is the server
 
+<<<<<<< HEAD
 const activeRooms = require("./rooms.js");
 const activeUsers = require("./users.js");
 
@@ -11,16 +13,44 @@ app.use(express.static(__dirname + "./../client")); //Serve client folder
 app.get('/', function(req, res){
   res.sendFile('./index.html');
 });
+=======
+//For writing to temporary 'database' (JSON file)
+const fs = require("fs");
+
+//Temporary 'database'.
+let db = require("./database.json");
+//Watch for changes to db, and reload file when they occur
+/*fs.watch("./database.json", (eventType, filename) => {
+	delete require.cache[require.resolve('./database.json')];
+	db = require("./database.json");
+	console.log("Change to db! server.js is updating file \n db is now: ", db);
+});*/
+
+//Import router and force all requests through it
+const routes = require("./routes.js");
+app.use("/", routes);
+
+app.use(express.static(__dirname + "/../client")); //Serve static files
+
+//Keep track of all active games
+const activeGames = [];
+
+//	//	//	//	// //
+//	SOCKET.IO CODE //
+//	//	//	//	// //
+
+>>>>>>> 22af507f93412db10b8c86eb5cec94c3dc11edd6
 
 
 io.on('connection', function(socket){
   // socket.on('chat message', function(msg){
     // io.emit('chat message', msg);
   // });
+<<<<<<< HEAD
   console.log("a user connected");
 
   const newUser = {
-  	id: socket.id  
+  	id: socket.id
   };
 
 
@@ -34,14 +64,86 @@ io.on('connection', function(socket){
 	socket.on("disconnect", function(data) {
 		console.log("User disconnected: ", data);
 	})
-	
+
+=======
+  console.log("A user connected: ", socket.id);
+
+  const upcomingMoves = [];
+  let placedUnits;
+
+  socket.on("blue move", function(data) {
+  	console.log("Server detected a move event! ", data);
+  	upcomingMoves.push(data);
+  });
+
+  socket.on("new game", function(data) {
+  	console.log("Server detected a new game!");
+  	//Tell all users there's a new game
+  	io.emit("new game", data);
+  	//Add the new game to activeGames
+  	activeGames.push(data);
+  	//Update the 'database' with active games
+  	console.log("Trying to write to db. activeGames is: ", activeGames);
+  	delete require.cache[require.resolve('./database.json')];
+
+  	fs.writeFile("database.json", JSON.stringify(activeGames), "utf8", (err) => {
+  		if (err) throw err;
+		db = require("./database.json");
+  	});
+
+
+  });
+
+  socket.on("unit placed", function(data) {
+  	// console.log("Server detected new unit placed!", data);
+  	placedUnits = data;
+  	// console.log("placedUnits is now: ", placedUnits);
+  });
+
+  socket.on("red executed", function(data) {
+  	// console.log("Red executed a move: ", data);
+  });
+
+  socket.on("blue executed", function(data) {
+  	// console.log("Blue executed a move: ", data);
+  });
+
+  socket.on("disconnect", function(data) {
+  	//Slicec off leading /# from id
+  	const name = socket.id.slice(2);
+  	//See if the disconnected user owned any active games
+	console.log("Looking for game owned by user ", name);
+  	for (let i=0; i<activeGames.length; i++) {
+  		console.log("i is ", i);
+  		if (activeGames[i].owner === name) {
+  			//Remove this index from the array
+  			activeGames.splice(i, 1);
+  			console.log("Tried to remove game. activeGames is now: ", activeGames);
+		  	fs.writeFile("database.json", JSON.stringify(activeGames), "utf8");
+  		} else {
+  			console.log("No games found for user ", name, ". Giving up");
+  		}
+  	}
+
+  });
+>>>>>>> 22af507f93412db10b8c86eb5cec94c3dc11edd6
 
 });
+
+/*// Emit socket.io events for each keypress
+              // Events are matched to key codes in socket-init.js
+              socket.emit(playerSocketEvents[event.keyCode]);
+              console.log("Trying to emit an event!");*/
 
 // console.log(http);
 // console.log(http.listen);
 
+<<<<<<< HEAD
 const port = (process.env.PORT || 1024); //Set port to work with hosting services
+=======
+//To make sure there's a port when app is hosted
+const port = (process.env.PORT || 1024);
+>>>>>>> 22af507f93412db10b8c86eb5cec94c3dc11edd6
 
 http.listen(port, function(){
   console.log('listening on *:1024');

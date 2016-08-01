@@ -8,60 +8,6 @@
 	  <link rel="stylesheet" type="text/css" href="css/bootstrap.min.css"></link>
     <link href='http://fonts.googleapis.com/css?family=Open+Sans:300,400' rel='stylesheet' type='text/css'></link>
 
-    <script type="text/javascript">
-      // get the Open Sans font:
-      // var openSans = false;
-      // if (openSans){
-      //   WebFontConfig = { google: { families: [ 'Open+Sans:300,400:latin' ] } };
-      //   (function() {
-      //     var wf = document.createElement('script');
-      //     wf.src = ('https:' == document.location.protocol ? 'https' : 'http') +
-      //       '://ajax.googleapis.com/ajax/libs/webfont/1/webfont.js';
-      //     wf.type = 'text/javascript';
-      //     wf.async = 'true';
-      //     var s = document.getElementsByTagName('script')[0];
-      //     s.parentNode.insertBefore(wf, s);
-      //   })();
-      // }
-
-      // var font = 'Orbitron';
-      // switch(font){
-      //   case 'Poppins':{
-      //     WebFontConfig = { google: { families: [ 'Poppins:400,300,500,600,700:latin' ] } };
-      //     break;
-      //   }
-      //   case 'Oxygen':{
-      //     WebFontConfig = { google: { families: [ 'Oxygen:300,400,700:latin' ] } };
-      //     break;
-      //   }
-      //   case 'Varela':{
-      //     WebFontConfig = { google: { families: [ 'Varela+Round::latin' ] } };
-      //     break;
-      //   }
-      //   case 'Questrial':{
-      //     WebFontConfig = { google: { families: [ 'Questrial::latin' ] } };
-      //     break;
-      //   }
-      //   case 'Orbitron':{
-      //     WebFontConfig = { google: { families: [ 'Orbitron:400,500,700,900:latin' ] } };
-      //     break;
-      //   }
-      //   case 'Open Sans':{
-      //     WebFontConfig = { google: { families: [ 'Open+Sans:300,400:latin' ] } };
-      //     break;
-      //   }
-      // }
-      //
-      // (function() {
-      //   var wf = document.createElement('script');
-      //   wf.src = 'https://ajax.googleapis.com/ajax/libs/webfont/1/webfont.js';
-      //   wf.type = 'text/javascript';
-      //   wf.async = 'true';
-      //   var s = document.getElementsByTagName('script')[0];
-      //   s.parentNode.insertBefore(wf, s);
-      // })();
-    </script>
-
   </head>
 
   <body>
@@ -98,6 +44,8 @@
 
     <!-- get the libraries -->
     <!-- <script type="text/javascript" src="js/libs/require.js"></script> -->
+
+    <!-- Socket.io stuff -->
     <script type="text/javascript" src="js/libs/socket.io.js"></script>
 
     <!-- Initialize Socket.io -->
@@ -113,18 +61,18 @@
 
     <!-- get the game code -->
     <script type="text/javascript" src="js/qpo.js"></script>
+    <script type="text/javascript" src="js/player.js"></script>
+    <script type="text/javascript" src="js/team.js"></script>
     <script type="text/javascript" src="js/game.js"></script>
     <script type="text/javascript" src="js/unit.js"></script>
     <script type="text/javascript" src="js/bomb.js"></script>
-    <!-- <script type="text/javascript" src="js/menus.js"></script> -->
-    <script type="text/javascript" src="js/newMenus.js"></script>
     <script type="text/javascript" src="js/session.js"></script>
     <script type="text/javascript" src="js/ai.js"></script>
     <script type="text/javascript" src="js/aiNets.js"></script>
     <script type="text/javascript" src="js/batch.js"></script>
     <script type="text/javascript" src="js/client.js"></script>
     <script type="text/javascript" src="js/tut.js"></script>
-
+    <script type="text/javascript" src="js/newMenus.js"></script>
 
 
   </body>
