@@ -585,7 +585,7 @@ qpo.placeUnits = function(){ //called at the start of each game (from startGame)
     gridY.push(row);
     gridXs.push(column);
   };
-  for (var i=0; i<qpo.activeGame.po; i++) { // Make a new unit at the spot
+  for (var i=0; i<qpo.activeGame.po; i++) { // Make a new unit at the spot & another at the opposing spot
     chooseSpots(i);
     qpo.blue.units[i] = new qpo.Unit("blue",gridXs[i],gridY[i],i);
     qpo.red.units[i] = new qpo.Unit("red", qpo.guiDimens.columns-1-gridXs[i], qpo.guiDimens.rows-1-gridY[i],i);
@@ -594,7 +594,7 @@ qpo.placeUnits = function(){ //called at the start of each game (from startGame)
     qpo.blue.units[i].phys.attr({'opacity':0});
     qpo.red.units[i].phys.attr({'opacity':0});
 
-    (function(ind){ //fade in all units
+    (function(ind){ //fade in the new units over 1000 ms
       qpo.fadeIn(qpo.blue.units[ind].phys, 1000);
       qpo.fadeIn(qpo.red.units[ind].phys, 1000);
     })(i); //closure for loop scope
@@ -661,117 +661,6 @@ qpo.Timer = function(yAdj){ //draw the turn timer and push to gui
 }
 
 //INCREMENT FUNCTIONS (no new Raph elements created)
-qpo.newTurn = function(){ // called every time game clock is divisible by 3
-  qpo.activeGame.turnNumber++;
-  qpo.timer.update();
-  qpo.moment = new Date();
-
-  //// AI SECTION
-  // Record reward events that happened this turn:
-  qpo.sixty.list[qpo.sixty.cursor] = qpo.redRewardQueue.reduce(qpo.add,0);
-  qpo.sixty.cursor = (qpo.sixty.cursor == 59) ? 0 : (qpo.sixty.cursor + 1); //cycle the cursor
-  qpo.redRewardQueue = [];
-  // Each turn, reward AI for favorable events, and get an action for each ai-controlled unit:
-  try{qpo.ali.nn.backward(qpo.sixty.list.reduce(qpo.add,0));} // try to reward
-  catch(err){console.log("can't train without having acted.");} // but will fail if no actions have been taken
-  // Manage the game state variables and get input array for nn:
-  qpo.activeGame.prevState = qpo.activeGame.state;
-  qpo.activeGame.state = qpo.activeGame.getState();
-  var input = qpo.convertStateToInputs(qpo.activeGame.state);
-
-  //// MOVE EXECUTION SECTION
-  qpo.snap(); //snap all units into their correct positions prior to executing new moves
-  var po = qpo.activeGame.po; //for convenience
-  var ru = null; //red unit, for convenience
-  var bu = null; //blue unit, for convenience
-  for (var i=0; i<po; i++){ //Generate AI moves & execute all moves
-    ru = qpo.activeGame.teams.red.units[i];
-    bu = qpo.activeGame.teams.blue.units[i];
-
-    if (!qpo.multiplayer){ // Generate AI moves
-      if(ru.alive){ //Generate a move from random, rigid, or neural AI
-        switch(qpo.aiType){
-          case "random": {
-            ru.nextAction = qpo.moves[Math.round(Math.random()*6)];
-            break;
-          }
-          case "rigid": {
-            ru.nextAction = findMove(qpo.red.units[i]);
-            break;
-          }
-          case "neural": {
-            input[217] = i-0.5-(po/2); //generate a zero-mean input representing chosen unit
-            var action = qpo.ali.nn.forward(input); // Have the AI net generate a move (integer)
-            ru.nextAction = qpo.actions[action]; //get the proper string
-            break;
-          }
-          default: {
-            console.log("this was unexpected");
-            break;
-          }
-        }
-      }
-      if(qpo.trainingMode && bu.alive){ // In training mode, generate a move for the blue unit, too.
-        switch(qpo.trainerOpponent){
-          case "random": {
-            bu.nextAction = qpo.moves[Math.round(Math.random()*6)];
-            break;
-          }
-          case "rigid": {
-            bu.nextAction = findMove(qpo.blue.units[i]);
-            break;
-          }
-          case "neural": {
-            input[217] = i-0.5-(po/2); //generate a zero-mean input representing chosen unit
-            var action = qpo.ali.nn.forward(input); // Have the AI net generate a move
-            bu.nextAction = qpo.actions[action]; //get the proper string
-            break;
-          }
-          default: {
-            console.log("this was unexpected");
-            break;
-          }
-        }
-      }
-    }
-    ru.executeMove();
-    bu.executeMove();
-    bu.resetIcon(); //reset the icons for the player's team
-    ru.updateLevel();
-    bu.updateLevel();
-  }
-
-  if(qpo.activeGame.turnNumber == qpo.activeGame.turns-1){ //stop allowing units to shoot and bomb
-    // TODO: Stop allowing units to shoot and bomb.
-    //Stop counting down numbers on the timer.
-    //Start checking whether all shots and bombs are off the board. If so, end the game.
-    for(var i=0; i<qpo.blue.units.length; i++){qpo.blue.units[i].deactivate()}
-  }
-  if (!qpo.trainingMode){ //animate the pie, but not in training mode
-    qpo.timer.pie.attr({segment: [qpo.guiCoords.turnTimer.x, qpo.guiCoords.turnTimer.y, qpo.guiCoords.turnTimer.r, -90, 269]});
-    qpo.timer.pie.animate({segment: [qpo.guiCoords.turnTimer.x, qpo.guiCoords.turnTimer.y, qpo.guiCoords.turnTimer.r, -90, -90]}, 3000*qpo.timeScale);
-  }
-  if (qpo.activeGame.turnNumber == qpo.activeGame.turns){ //End the game, if it's time.
-    if (qpo.activeGame.isEnding == false){ //find the winner and store to gameResult
-      for(var i=0; i<qpo.blue.units.length; i++){qpo.blue.units[i].deactivate()}
-      var gameResult;
-      qpo.blueActiveUnit = 50;
-      qpo.redActiveUnit = 50;
-      if (qpo.scoreboard.redScore == qpo.scoreboard.blueScore) { gameResult = "tie"; }
-      else if (qpo.scoreboard.redScore > qpo.scoreboard.blueScore) { gameResult = "red"; }
-      else { gameResult = "blue"; }
-      qpo.activeGame.isEnding = true;
-      setTimeout(function(){qpo.endGame(gameResult);}, 3000*qpo.timeScale);
-    }
-  }
-}
-qpo.snap = function(){ //correct unit positions just before the start of each turn
-  for (var i=0; i<qpo.activeGame.po; i++){
-    if(qpo.blue.units[i].alive){ qpo.blue.units[i].snap(); }
-    if(qpo.red.units[i].alive){ qpo.red.units[i].snap(); }
-  }
-};
-
 qpo.detectCollisions = function(ts){ //ts is teamSize, aka po
   // called every 10 ms once game has begun
   var splicers = []; //used for destroying references to shots once they're gone

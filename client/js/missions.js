@@ -10,7 +10,7 @@ qpo.Mission = function(args){
       this.textEls.push(c.text(300, 40+i*25, this.snippets[i]).attr({qpoText:25}).hide());
     }
     qpo.gui.push(this.textEls);
-    qpo.fadeIn(this.textEls, 2500);
+    setTimeout(function(){qpo.fadeIn(this.textEls, 2500)}.bind(this), 1000);
     qpo.mode = 'game';
     this.specifics.call(this);
     qpo.activeMission = this;
@@ -29,13 +29,16 @@ qpo.missions[1] = new qpo.Mission([['Use w/a/s/d to move the blue unit', 'across
     // qpo.timeScale = .45;
     qpo.activeGame = new qpo.Game({'type': 'campaign', 'q':5, 'po':1, 'customScript': function(){
       qpo.activeGame.yAdj = 50;
-      qpo.newTurn = function(){ // called every time game clock is divisible by 3
+      qpo.activeGame.newTurn = function(){ //Don't have the AI generate moves for this mission.
         qpo.activeGame.turnNumber++;
         qpo.timer.update();
         qpo.moment = new Date();
 
         //// MOVE EXECUTION SECTION
-        qpo.snap(); //snap all units into their correct positions prior to executing new moves
+        for (var i=0; i<qpo.activeGame.po; i++){ //snap all units into their correct positions prior to executing new moves
+          if(qpo.blue.units[i].alive){ qpo.blue.units[i].snap(); }
+          if(qpo.red.units[i].alive){ qpo.red.units[i].snap(); }
+        }
         var po = qpo.activeGame.po; //for convenience
         var ru = null; //red unit, for convenience
         var bu = null; //blue unit, for convenience

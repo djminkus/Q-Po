@@ -8,7 +8,8 @@ qpo.Game = function(args){ //"Game" class.
   this.ppt = args.ppt || 1; //players per team
   this.customScript = args.customScript || function(){};
 
-  qpo.currentSettings = {'q':this.q, 'po': this.po, 'type':this.type, 'turns':this.turns, 'ppt': this.ppt};
+  qpo.currentSettings = {'q':this.q, 'po': this.po, 'type':this.type,
+    'turns':this.turns, 'ppt': this.ppt, 'customScript':this.customScript};
 
   qpo.guiDimens.squareSize = 350/this.q;   //aim to keep width of board at 7*50 (350). So, qpo.guiDimens.squareSize = 350/q.
   qpo.bombSize = 2 * qpo.guiDimens.squareSize;
@@ -68,7 +69,7 @@ qpo.Game = function(args){ //"Game" class.
 
       var zero23; //  var that will range from 0-23.
       var one70; // var that will range from 0-70, in threes.
-      for (var j=0; j<6; j++){ //16-87: shots x,y
+      for (var j=0; j<6; j++){ //16-87: shots x,y, directionality
         //Get x/y coords and directionality of shot for all 24 (3*2*po) possible
         // shots, resulting in 72 (3*3*2*po) new additions
         //2 teams per po, 3 shots per team
@@ -124,9 +125,117 @@ qpo.Game = function(args){ //"Game" class.
     qpo.scoreboard = new qpo.Scoreboard(yAdj);
   }
 
+  this.newTurn = function(){ //Generate and execute moves. End the game, if the turn limit has been reached.
+    this.turnNumber++;
+    qpo.timer.update();
+    qpo.moment = new Date();
+
+    //// AI SECTION
+    // Record reward events that happened this turn:
+    qpo.sixty.list[qpo.sixty.cursor] = qpo.redRewardQueue.reduce(qpo.add,0);
+    qpo.sixty.cursor = (qpo.sixty.cursor == 59) ? 0 : (qpo.sixty.cursor + 1); //cycle the cursor
+    qpo.redRewardQueue = [];
+    // Each turn, reward AI for favorable events, and get an action for each ai-controlled unit:
+    try{qpo.ali.nn.backward(qpo.sixty.list.reduce(qpo.add,0));} // try to reward
+    catch(err){console.log("can't train without having acted.");} // but will fail if no actions have been taken
+    // Manage the game state variables and get input array for nn:
+    this.prevState = this.state;
+    this.state = this.getState();
+    var input = qpo.convertStateToInputs(this.state);
+
+    //// MOVE EXECUTION SECTION
+    for (var i=0; i<this.po; i++){ //snap all units into their correct positions prior to executing new moves
+      if(qpo.blue.units[i].alive){ qpo.blue.units[i].snap(); }
+      if(qpo.red.units[i].alive){ qpo.red.units[i].snap(); }
+    }
+    var po = this.po; //for convenience
+    var ru = null; //red unit, for convenience
+    var bu = null; //blue unit, for convenience
+    for (var i=0; i<po; i++){ //Generate AI moves & execute all moves
+      ru = this.teams.red.units[i];
+      bu = this.teams.blue.units[i];
+
+      if (!qpo.multiplayer){ // Generate AI moves
+        if(ru.alive){ //Generate a move from random, rigid, or neural AI
+          switch(qpo.aiType){
+            case "random": {
+              ru.nextAction = qpo.moves[Math.round(Math.random()*6)];
+              break;
+            }
+            case "rigid": {
+              ru.nextAction = findMove(qpo.red.units[i]);
+              break;
+            }
+            case "neural": {
+              input[217] = i-0.5-(po/2); //generate a zero-mean input representing chosen unit
+              var action = qpo.ali.nn.forward(input); // Have the AI net generate a move (integer)
+              ru.nextAction = qpo.actions[action]; //get the proper string
+              break;
+            }
+            default: {
+              console.log("this was unexpected");
+              break;
+            }
+          }
+        }
+        if(qpo.trainingMode && bu.alive){ // In training mode, generate a move for the blue unit, too.
+          switch(qpo.trainerOpponent){
+            case "random": {
+              bu.nextAction = qpo.moves[Math.round(Math.random()*6)];
+              break;
+            }
+            case "rigid": {
+              bu.nextAction = findMove(qpo.blue.units[i]);
+              break;
+            }
+            case "neural": {
+              input[217] = i-0.5-(po/2); //generate a zero-mean input representing chosen unit
+              var action = qpo.ali.nn.forward(input); // Have the AI net generate a move
+              bu.nextAction = qpo.actions[action]; //get the proper string
+              break;
+            }
+            default: {
+              console.log("this was unexpected");
+              break;
+            }
+          }
+        }
+      }
+      ru.executeMove();
+      bu.executeMove();
+      bu.resetIcon(); //reset the icons for the player's team
+      ru.updateLevel();
+      bu.updateLevel();
+    }
+
+    if(this.turnNumber == this.turns-1){ //stop allowing units to shoot and bomb
+      // TODO: Stop allowing units to shoot and bomb.
+      //Stop counting down numbers on the timer.
+      //Start checking whether all shots and bombs are off the board. If so, end the game.
+      for(var i=0; i<qpo.blue.units.length; i++){qpo.blue.units[i].deactivate()}
+    }
+    if (!qpo.trainingMode){ //animate the pie, but not in training mode
+      qpo.timer.pie.attr({segment: [qpo.guiCoords.turnTimer.x, qpo.guiCoords.turnTimer.y, qpo.guiCoords.turnTimer.r, -90, 269]});
+      qpo.timer.pie.animate({segment: [qpo.guiCoords.turnTimer.x, qpo.guiCoords.turnTimer.y, qpo.guiCoords.turnTimer.r, -90, -90]}, 3000*qpo.timeScale);
+    }
+    if (this.turnNumber == this.turns){ //End the game, if it's time.
+      if (this.isEnding == false){ //find the winner and store to gameResult
+        for(var i=0; i<qpo.blue.units.length; i++){qpo.blue.units[i].deactivate()}
+        var gameResult;
+        qpo.blueActiveUnit = 50;
+        qpo.redActiveUnit = 50;
+        if (qpo.scoreboard.redScore == qpo.scoreboard.blueScore) { gameResult = "tie"; }
+        else if (qpo.scoreboard.redScore > qpo.scoreboard.blueScore) { gameResult = "red"; }
+        else { gameResult = "blue"; }
+        this.isEnding = true;
+        setTimeout(function(){qpo.endGame(gameResult);}, 3000*qpo.timeScale);
+      }
+    }
+  }
+
   this.start = function(){
     if(qpo.playMusic == true){ // stop menu song and play game song. (implement when game song acquired)
-      try { qpo.activeGame.song.remove(); } //try removing the previously existing song
+      try { this.song.remove(); } //try removing the previously existing song
       catch(err) { ; } //if error is thrown, probably doesn't exist, do nothing
       //MAKE MUSIC:
       // qpo.menuSong.pause();
@@ -146,10 +255,10 @@ qpo.Game = function(args){ //"Game" class.
     }.bind(this), 1500);
 
     setTimeout(function(){ //Set up the newTurn interval, the pie animation, and the collision detection
-      qpo.turnStarter = setInterval(qpo.newTurn, 3000*qpo.timeScale);
+      qpo.turnStarter = setInterval(this.newTurn, 3000*qpo.timeScale);
       qpo.timer.pie.animate({segment: [qpo.guiCoords.turnTimer.x, qpo.guiCoords.turnTimer.y, qpo.guiCoords.turnTimer.r, -90, -90]}, 3000*qpo.timeScale);
       qpo.collisionDetector = setInterval(function(){qpo.detectCollisions(qpo.activeGame.po)}, 50);
-    }, 7500);
+    }.bind(this), 7500);
 
     console.log('NEW GAME');
   }

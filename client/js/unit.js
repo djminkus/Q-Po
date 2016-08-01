@@ -356,7 +356,7 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
     else{ // do normal game mode stuff
       this.spawnTimer = qpo.spawnTimers[qpo.activeGame.po];
       if (this.team==qpo.playerTeam){this.showSpawnIcon()}
-      if(qpo.mode == "game"){ //deal with scoreboard, AI, spawn, control panel, and ending game
+      if(qpo.mode == "game"){ //deal with scoreboard, AI, spawn, and ending game
         qpo[this.team].addPoint();
         switch(this.team){ // update scoreboard, prep to reward AI
           case qpo.otherTeam: //enemy team ("red" until server implementation)
@@ -371,7 +371,7 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
           || qpo.scoreboard.redScore >= qpo.activeGame.scoreToWin){
           qpo.activeGame.respawnEnabled = false;
         }
-        if (qpo.activeGame.respawnEnabled) { this.nextAction = 'recharge'; } //start counting down spawn timer
+        if (qpo.activeGame.type != 'elimination') { this.nextAction = 'recharge'; } //start counting down spawn timer
         else if (qpo.scoreboard.redScore >= qpo.activeGame.scoreToWin // otherwise, end the game, if score limit reached.
           || qpo.scoreboard.blueScore >= qpo.activeGame.scoreToWin && qpo.activeGame.isEnding == false){
           var gameResult;
@@ -414,7 +414,7 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
       this.y = -1;
       this.phys.attr({'opacity':1, 'transform':this.trans()});
     }.bind(this), 2000);
-    if(qpo.mode == "game"){ //deal with scoreboard, AI, spawn, control panel, and ending game
+    if(qpo.mode == "game"){ //deal with scoreboard, AI, spawn, and ending game
       if(this.team=='blue'){qpo.red.addPoint()}
       else{qpo.blue.addPoint()}
       switch(this.team){ //prep to reward AI, and update blue AU if necessary
