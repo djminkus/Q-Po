@@ -374,20 +374,20 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
         if (qpo.activeGame.type != 'elimination') { this.nextAction = 'recharge'; } //start counting down spawn timer
         else if (qpo.scoreboard.redScore >= qpo.activeGame.scoreToWin // otherwise, end the game, if score limit reached.
           || qpo.scoreboard.blueScore >= qpo.activeGame.scoreToWin && qpo.activeGame.isEnding == false){
-          var gameResult;
-          setTimeout(function(){ //set gameResult to "tie","blue",or "red" (after 20 ms to account for performance issues)
+          var winner;
+          setTimeout(function(){ //set winner to "tie","blue",or "red" (after 20 ms to account for performance issues)
             if(qpo.scoreboard.redScore==qpo.scoreboard.blueScore){
-              gameResult = "tie";
+              winner = "tie";
             } else if (qpo.scoreboard.blueScore > qpo.scoreboard.redScore) {
-              gameResult = "blue";
+              winner = "blue";
             } else {
-              gameResult = "red";
+              winner = "red";
             }
           }, 2000*qpo.timeScale);
           qpo.blueActiveUnit = -1;
           qpo.redActiveUnit = -1;
           qpo.activeGame.isEnding = true;
-          setTimeout(function(){endGame(gameResult);}, 2000*qpo.timeScale);
+          setTimeout(function(){qpo.activeGame.end(winner);}, 2000*qpo.timeScale);
         }
       }
     }
@@ -430,20 +430,20 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
       if (qpo.activeGame.type != 'elimination') { this.nextAction = 'recharge' }
       else if (qpo.scoreboard.redScore >= qpo.activeGame.scoreToWin // otherwise, end the game, if score limit reached.
         || qpo.scoreboard.blueScore >= qpo.activeGame.scoreToWin && qpo.activeGame.isEnding == false){
-        var gameResult;
-        setTimeout(function(){ //set gameResult to "tie","blue",or "red" (after 20 ms to account for performance issues)
+        var winner;
+        setTimeout(function(){ //set winner to "tie","blue",or "red" (after 20 ms to account for performance issues)
           if(qpo.scoreboard.redScore==qpo.scoreboard.blueScore){
-            gameResult = "tie";
+            winner = "tie";
           } else if (qpo.scoreboard.blueScore > qpo.scoreboard.redScore) {
-            gameResult = "blue";
+            winner = "blue";
           } else {
-            gameResult = "red";
+            winner = "red";
           }
         }, 2000*qpo.timeScale);
         qpo.blueActiveUnit = -1;
         qpo.redActiveUnit = -1;
         qpo.activeGame.isEnding = true;
-        setTimeout(function(){endGame(gameResult);}, 2000*qpo.timeScale);
+        setTimeout(function(){qpo.activeGame.end(winner);}, 2000*qpo.timeScale);
       }
     }
   }

@@ -174,7 +174,7 @@ qpo.setup = function(){ // set up global vars and stuff
   qpo.gamesToTrain = 30; // games per batch
   qpo.batchesToTrain = 3; // batches to train
   qpo.trainingData = new Array(); // store sessions (win/loss data)
-  qpo.aiTypes = ["neural","rigid","random"];
+  qpo.aiTypes = ["neural","rigid","random", 'null'];
   qpo.aiType = qpo.aiTypes[0]; // controls source of red's moves in singlePlayer
   qpo.trainerOpponent = qpo.aiTypes[2]; // controls source of blue's moves in training mode
   qpo.retrain = function(){ // get ready to train another batch.
@@ -628,7 +628,7 @@ qpo.Scoreboard = function(yAdj){ //draw the scoreboard and push to gui
   this.blueScoreText = c.text(470,100+yAdj, "0").attr({qpoText: [25, qpo.COLOR_DICT["blue"]]});
   this.blueSection = c.set().push(this.blueScoreText);
 
-  this.update = function(color){
+  this.update = function(color){ //update display from qpo.red.points and qpo.blue.points.
     this.redScoreText.attr({"text":qpo.red.points});
     this.blueScoreText.attr({"text":qpo.blue.points});
   }
@@ -1068,62 +1068,3 @@ $(window).keydown(function(event){
       ;
   }
 });
-
-qpo.endGame = function(winner, h){
-  var h = h || 0;
-  clearInterval(qpo.clockUpdater);
-  clearInterval(qpo.collisionDetector);
-  clearInterval(qpo.turnStarter);
-  qpo.gui.stop();
-  qpo.gui.animate({'opacity':0}, 2000, 'linear');
-  qpo.fadeOutGlow(qpo.glows, function(){ //clear GUI, reset arrays, and bring up the next screen
-    qpo.gui.clear();
-    c.clear();
-    qpo.shots = [];
-    qpo.bombs = [];
-    qpo.units = [];
-    (winner == "red") ? (qpo.ali.nn.backward(2)) : (qpo.ali.nn.backward(0)); //reward AI for winning, not losing
-    (winner == "tie") ? (qpo.ali.nn.backward(1)) : (qpo.ali.nn.backward(0)); //reward it a little for tying
-    try{qpo.activeSession.update(winner);} //add to the proper tally. Will throw error in tut mode.
-    catch(e){;} //don't bother adding to the proper tally in tut mode.
-    if(qpo.trainingMode){qpo.activeGame.type='training'}
-    switch(qpo.activeGame.type){ //do the right thing depending on context (type) of game
-      case 'tut': { //set mode back to 'tut' and show the next tutorial scene
-        qpo.mode = 'tut';
-        qpo.tut.tutFuncs.enter();
-        break;
-      }
-      case 'training': { //If in training mode, decide whether to train another game.
-        qpo.trainingCounter++;
-        if (qpo.trainingCounter >= qpo.gamesToTrain){ // If game counter satisfied, check batch
-          qpo.batchCounter++;
-          // var newBatch = new qpo.Batch(qpo.activeSession);
-          // qpo.trainingData.push(newBatch);
-          qpo.trainingData.push(new qpo.Batch(qpo.activeSession));
-          console.log("we got here...");
-          if (qpo.batchCounter >= qpo.batchesToTrain){ // If batch counter satisfied, exit trainingMode
-            qpo.trainingMode = false;
-            qpo.menus["Match Complete"].open();
-            for (var i=0; i<qpo.batchesToTrain; i++){ // log each batch's data to console
-              console.log(qpo.trainingData[i]);
-            }
-          }
-          else { qpo.retrain(); }// If batch counter not exceeded, train another batch
-        }
-        else { qpo.startGame([8,4]); }// If game counter not satisfied, train another game
-        break;
-      }
-      case 'campaign': { //If in campaign mode, reopen the campaign menu, with the next mission highlighted.
-        qpo.menus["Campaign"].open(h);
-        break;
-      }
-      default: { //We're not in tutorial training, or campaign. Open the match complete menu
-        qpo.menus["Match Complete"].open();
-      }
-    }
-  }, 2000);
-
-  // qpo.activeGame.song.pause();
-  // qpo.activeGame.song.currentTime=0;
-  // qpo.menuMusic();
-}
