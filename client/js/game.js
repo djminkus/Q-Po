@@ -119,17 +119,15 @@ qpo.Game = function(args){ //"Game" class.
     return arr;
   };
 
-  this.drawGUI = function(xAdj, yAdj){ //create the turn timer and board
+  this.drawGUI = function(xAdj, yAdj){ //create the board and scoreboard
     var xAdj = xAdj || 0;
     var yAdj = yAdj || 0;
-    qpo.board = this.board = new qpo.Board(this.q, this.q, 25+xAdj, 75+yAdj); // make the board (with animation if game starting)
-    qpo.timer = new qpo.Timer(yAdj);
+    qpo.board = this.board = new qpo.Board(this.q, this.q, 125+xAdj, 90+yAdj); // make the board (with animation if game starting)
     qpo.scoreboard = new qpo.Scoreboard(yAdj);
   }
 
   this.newTurn = function(){ //Generate and execute moves. End the game, if the turn limit has been reached.
     this.turnNumber++;
-    qpo.timer.update();
     qpo.moment = new Date();
 
     //// AI SECTION
@@ -216,14 +214,10 @@ qpo.Game = function(args){ //"Game" class.
 
     if(this.turnNumber == this.turns-1){ //stop allowing units to shoot and bomb
       // TODO: Stop allowing units to shoot and bomb.
-      //Stop counting down numbers on the timer.
       //Start checking whether all shots and bombs are off the board. If so, end the game.
       for(var i=0; i<qpo.blue.units.length; i++){qpo.blue.units[i].deactivate()}
     }
-    if (!qpo.trainingMode){ //animate the pie, but not in training mode
-      qpo.timer.pie.attr({segment: [qpo.guiCoords.turnTimer.x, qpo.guiCoords.turnTimer.y, qpo.guiCoords.turnTimer.r, -90, 269]});
-      qpo.timer.pie.animate({segment: [qpo.guiCoords.turnTimer.x, qpo.guiCoords.turnTimer.y, qpo.guiCoords.turnTimer.r, -90, -90]}, 3000*qpo.timeScale);
-    }
+    this.board.moveWalls()
     if (this.turnNumber == this.turns){ //End the game, if it's time.
       if (this.isEnding == false){ //find the winner and store to winner
         for(var i=0; i<qpo.blue.units.length; i++){qpo.blue.units[i].deactivate()}
@@ -260,9 +254,9 @@ qpo.Game = function(args){ //"Game" class.
       this.state = this.getState();
     }.bind(this), 1500);
 
-    setTimeout(function(){ //Set up the newTurn interval, the pie animation, and the collision detection
+    setTimeout(function(){ //Set up the newTurn interval, wall motion, and the collision detection
       qpo.turnStarter = setInterval(this.newTurn.bind(this), 3000*qpo.timeScale);
-      qpo.timer.pie.animate({segment: [qpo.guiCoords.turnTimer.x, qpo.guiCoords.turnTimer.y, qpo.guiCoords.turnTimer.r, -90, -90]}, 3000*qpo.timeScale);
+      this.board.moveWalls();
       qpo.collisionDetector = setInterval(function(){qpo.detectCollisions(qpo.activeGame.po)}, 50);
     }.bind(this), 7500);
 

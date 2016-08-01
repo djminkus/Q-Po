@@ -281,7 +281,7 @@ qpo.makeMenus = function(){ //Lay out the menu skeletons (without creating Rapha
     new qpo.MenuOption(0,3,'Multiplayer', function(){}, 'Main Menu', false, 'stay', 'blue', 2),
     new qpo.MenuOption(0,5,'Settings', function(){}, 'Main Menu', false, 'stay', 'blue', 3)
   ], 'title');
-  qpo.menus['Main Menu'].up = function(){qpo.menus['Main Menu'].close('title')};
+  qpo.menus['Main Menu'].up = function(){qpo.menus['Main Menu'].close({'destination':'title'})};
   qpo.menus['Main Menu'].cl.list[0].action = function(){ qpo.menus['Main Menu'].close('Campaign'); }
   qpo.menus['Main Menu'].cl.list[1].action = function(){ qpo.menus['Main Menu'].close('vs. Computer'); }
   qpo.menus['Main Menu'].cl.list[2].action = function(){ qpo.menus['Main Menu'].close('Multiplayer'); }

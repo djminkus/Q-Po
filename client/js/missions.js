@@ -29,11 +29,10 @@ qpo.missions[1] = new qpo.Mission([['Use w/a/s/d to move the blue unit', 'across
 
     qpo.activeGame = new qpo.Game({'type': 'campaign', 'q':5, 'po':1, 'customScript': function(){
       qpo.aiType = 'null';
-      qpo.activeGame.yAdj = 50;
+      qpo.activeGame.yAdj = 20;
     } } );
 
     var q = qpo.activeGame.q
-    qpo.timer.text.remove();
     qpo.scoreboard.all.remove();
   }]
 );

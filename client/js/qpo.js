@@ -66,19 +66,6 @@ qpo = new Object();
 console.log("RESET " + Date());
 var c = new Raphael("raphContainer", 600, 600); //create the Raphael canvas
 
-c.customAttributes.segment = function (x, y, r, a1, a2) { //for pie timer
-  var flag = (a2 - a1) > 180,
-  color = (a2 - a1 + 120) / (360*5)  ;
-  a1 = (a1 % 360) * Math.PI / 180;
-  a2 = (a2 % 360) * Math.PI / 180;
-  return {
-    path: [["M", x, y], ["l", r * Math.cos(a1), r * Math.sin(a1)], ["A", r, r, 0, +flag, 1, x + r * Math.cos(a2), y + r * Math.sin(a2)], ["z"]],
-    stroke: "hsb(" + color + ", .75, .8)",
-    'stroke-width': 2 //,
-    // fill: "hsb(" + color + ", .75, .8)"
-  };
-};
-
 var songURL = "./music/timekeeper.mp3"
 qpo = {
   /* WEBSOCKET THINGS (NOT SOCKET.IO)
@@ -490,12 +477,28 @@ qpo.Board = function(cols, rows, x, y, m){ //Board class constructor
 
   // var leftWall = c.path('M'+this.lw+','+(this.tw-1) + 'Q'+this.lw1+','+this.vm+','+this.lw+','+(this.bw+1));
   // var rightWall = c.path('M'+this.rw+','+(this.tw-1) + 'Q'+this.rw1+','+this.vm+','+this.rw+','+(this.bw+1));
-  var leftWall = c.path('M'+this.lw+','+(this.tw-1) + 'V'+(this.bw+1));
-  var rightWall = c.path('M'+this.rw+','+(this.tw-1) + 'V'+(this.bw+1));
-  var sideWalls = c.set(leftWall, rightWall)
+  this.leftWall = c.path('M'+this.lw+','+(this.tw-1) + 'V'+(this.bw+1));
+  this.rightWall = c.path('M'+this.rw+','+(this.tw-1) + 'V'+(this.bw+1));
+  var sideWalls = c.set(this.leftWall, this.rightWall)
       .attr({'stroke-width':3, 'stroke':qpo.COLOR_DICT['foreground'], 'opacity':1})
       // .transform('t0,-1000');
   this.all.push(sideWalls);
+  this.moveWalls = function(){
+    var amt = 20;
+    var easing = 'bounce';
+    var lwAnim = Raphael.animation({
+      '0%'  : {'transform' : ''},
+      '50%' : {'transform' : 't-'+amt+',0'},
+      '100%': {'transform' : ''},
+    }, 3000*qpo.timeScale, easing) //left wall animation
+    var rwAnim = Raphael.animation({
+      '0%'  : {'transform' : ''},
+      '50%' : {'transform' : 't'+amt+',0'},
+      '100%': {'transform' : ''},
+    }, 3000*qpo.timeScale, easing)
+    this.leftWall.animate(lwAnim);
+    this.rightWall.animate(rwAnim);
+  }
 
   var blueGoal = c.path('M'+this.lw+','+this.tw + 'L'+this.rw+','+this.tw).attr({'stroke':qpo.COLOR_DICT['blue']});
   var redGoal = c.path('M'+this.lw +','+this.bw + 'L'+this.rw+','+this.bw).attr({'stroke':qpo.COLOR_DICT['red']});
@@ -621,11 +624,13 @@ qpo.placeUnits = function(){ //called at the start of each game (from startGame)
 qpo.Scoreboard = function(yAdj){ //draw the scoreboard and push to gui
   this.redScore = 0;
   this.blueScore = 0;
+  var y = 50;
+  var xOff = 50;
 
-  this.redScoreText = c.text(430,100+yAdj, "0").attr({qpoText: [25, qpo.COLOR_DICT["red"]]});
+  this.redScoreText = c.text(300-xOff, y+yAdj, "0").attr({qpoText: [25, qpo.COLOR_DICT["red"]]});
   this.redSection = c.set().push(this.redScoreText);
 
-  this.blueScoreText = c.text(470,100+yAdj, "0").attr({qpoText: [25, qpo.COLOR_DICT["blue"]]});
+  this.blueScoreText = c.text(300+xOff, y+yAdj, "0").attr({qpoText: [25, qpo.COLOR_DICT["blue"]]});
   this.blueSection = c.set().push(this.blueScoreText);
 
   this.update = function(color){ //update display from qpo.red.points and qpo.blue.points.
@@ -639,26 +644,6 @@ qpo.Scoreboard = function(yAdj){ //draw the scoreboard and push to gui
   qpo.gui.push(this.all);
   return this;
 };
-qpo.Timer = function(yAdj){ //draw the turn timer and push to gui
-  var t = qpo.guiCoords.turnTimer; //t.x, t.y, t.r are x center, y center, and radius of timer
-  t.y += yAdj
-  var STUPID = 30;
-  this.value = STUPID || qpo.activeGame.turns;
-  this.pie = c.path().attr({segment: [t.x, t.y, t.r, -90, 269],"stroke":"none",'opacity':0});
-  this.text = c.text(t.x, t.y, STUPID || qpo.activeGame.turns).attr({qpoText:[30,qpo.COLOR_DICT['foreground']]});
-  this.all = c.set(this.pie,this.text).attr({'opacity':0})
-  if (qpo.mode == 'game') {setTimeout(function(){ qpo.fadeIn(this.all, 1500)}.bind(this), 3000) }
-  else { this.all.attr({'opacity':1}) }
-  // this.all.attr({'opacity':0});
-  this.update = function(){ //Count down the digits (called @ end of every turn)
-    if(this.value>0){
-      this.value--;
-      this.text.attr({"text":this.value});
-    }
-  }.bind(this);
-  qpo.gui.push(this.all);
-  return this;
-}
 
 //INCREMENT FUNCTIONS (no new Raph elements created)
 qpo.detectCollisions = function(ts){ //ts is teamSize, aka po
