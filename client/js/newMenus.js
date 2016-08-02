@@ -117,7 +117,7 @@ qpo.Menu = function(titleStr, itemList, parent, placeholder){ // A Menu contains
 
     this.all = c.set().push(this.layer1, this.layer2);
     for(var i=0; i < this.cl.length; i++){ this.all.push(this.cl.list[i].raphs); }
-    qpo.fadeIn(this.all);
+    qpo.fadeIn(this.all, 500);
     qpo.fadeInGlow(qpo.glows);
   }
 

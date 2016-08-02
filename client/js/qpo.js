@@ -110,6 +110,7 @@ qpo.setup = function(){ // set up global vars and stuff
   qpo.timeScale = 0.5; // Bigger means longer turns; 1 is original 3-seconds-per-turn
   qpo.playMusic = false;
   qpo.trainingMode = false;
+  qpo.flashLengths = {'flash':1200, 'deflash':200}
   qpo.waitTime = 100; //ms between moves
   qpo.unitStroke = 3.5;
   qpo.bombStroke = 3;
@@ -268,9 +269,12 @@ qpo.setup = function(){ // set up global vars and stuff
       extra();
     }.bind(set), TIME);
   };
-  qpo.fadeIn = function(set, time, extra){ //fade in a Raph set and do something after it's been faded in
+  qpo.fadeIn = function(set, time, extra, excluded){ //fade in a Raph set and do something after it's been faded in
     var TIME = time || 500; //ms
     var func = extra || function(){};
+    // debugger;
+    if(excluded){var check=set.exclude(excluded); console.log(excluded, check)}
+    // debugger;
     set.attr({'opacity':0});
     set.show();
     var anim = Raphael.animation({'opacity':1}, TIME);
@@ -454,11 +458,11 @@ qpo.Board = function(cols, rows, x, y, m){ //Board class constructor
   this.mtr = m || qpo.guiDimens.squareSize; //mtr for meter, or unit size (in pixels)--the length quantum of q-po.
   qpo.guiDimens.squareSize = this.mtr; //make sure they agree
 
-  this.rows = rows;
-  this.cols = cols;
+  this.rows = qpo.guiDimens.rows = rows;
+  this.cols = qpo.guiDimens.columns = cols;
 
-  this.width = cols * this.mtr;
-  this.height = rows * this.mtr;
+  this.width = qpo.guiCoords.gameBoard.width = cols * this.mtr;
+  this.height = qpo.guiCoords.gameBoard.height = rows * this.mtr;
 
   this.lw = x || qpo.guiCoords.gameBoard.leftWall;
   this.tw = y || qpo.guiCoords.gameBoard.topWall;
@@ -470,17 +474,29 @@ qpo.Board = function(cols, rows, x, y, m){ //Board class constructor
   // this.rw1 = this.rw + bulge;
   // this.vm = (this.tw + this.bw)/2 //vertical middle
 
-  qpo.guiDimens.columns = cols;
-  qpo.guiDimens.rows = rows;
-  qpo.guiCoords.gameBoard.width = this.mtr * qpo.guiDimens.columns;
-  qpo.guiCoords.gameBoard.height = this.mtr * qpo.guiDimens.rows;
+  this.surface = c.rect(this.lw, this.tw, this.width, this.height).attr({
+    'fill':qpo.COLOR_DICT['foreground'],
+    'stroke-width':0,
+    'opacity':0
+  });
+  this.all.push(this.surface);
+  if(qpo.mode == 'menu'){this.surface.attr({'transform':'t-1000,-1000'})}
+
+  var vo = 20; //vertical offset
+  var ho = 20; //horizontal offset
+  // var i = 10; //intermediate value
+  this.leftZ = c.path('M'+this.lw+','+this.tw+  'l-'+ho+','+vo+  'v'+(this.height-2*vo)+'l'+ho+','+vo+'z')
+  this.rightZ = c.path('M'+this.rw+','+this.tw+  'l'+ho+','+vo+  'v'+(this.height-2*vo)+'l-'+ho+','+vo+'z')
+  this.zs = c.set(this.leftZ, this.rightZ).attr({'stroke':qpo.COLOR_DICT['foreground'],
+    'fill': qpo.COLOR_DICT['foreground'], 'opacity':0});
+  this.all.push(this.zs);
 
   // var leftWall = c.path('M'+this.lw+','+(this.tw-1) + 'Q'+this.lw1+','+this.vm+','+this.lw+','+(this.bw+1));
   // var rightWall = c.path('M'+this.rw+','+(this.tw-1) + 'Q'+this.rw1+','+this.vm+','+this.rw+','+(this.bw+1));
   this.leftWall = c.path('M'+this.lw+','+(this.tw-1) + 'V'+(this.bw+1));
   this.rightWall = c.path('M'+this.rw+','+(this.tw-1) + 'V'+(this.bw+1));
   var sideWalls = c.set(this.leftWall, this.rightWall)
-      .attr({'stroke-width':3, 'stroke':qpo.COLOR_DICT['foreground'], 'opacity':1})
+      .attr({'stroke-width':3, 'stroke':qpo.COLOR_DICT['background'], 'opacity':1})
       // .transform('t0,-1000');
   this.all.push(sideWalls);
   this.moveWalls = function(){
@@ -489,12 +505,12 @@ qpo.Board = function(cols, rows, x, y, m){ //Board class constructor
     var lwAnim = Raphael.animation({
       '0%'  : {'transform' : ''},
       '50%' : {'transform' : 't-'+amt+',0'},
-      '100%': {'transform' : ''},
+      '100%': {'transform' : ''}
     }, 3000*qpo.timeScale, easing) //left wall animation
     var rwAnim = Raphael.animation({
       '0%'  : {'transform' : ''},
       '50%' : {'transform' : 't'+amt+',0'},
-      '100%': {'transform' : ''},
+      '100%': {'transform' : ''}
     }, 3000*qpo.timeScale, easing)
     this.leftWall.animate(lwAnim);
     this.rightWall.animate(rwAnim);
@@ -504,7 +520,7 @@ qpo.Board = function(cols, rows, x, y, m){ //Board class constructor
   var redGoal = c.path('M'+this.lw +','+this.bw + 'L'+this.rw+','+this.bw).attr({'stroke':qpo.COLOR_DICT['red']});
   var goalLines = c.set().push(blueGoal, redGoal).attr({'stroke-width':3, 'opacity':1})
   this.all.push(goalLines);
-  sideWalls.toFront();
+  // sideWalls.toFront();
 
   var blueGlow = blueGoal.glow({'color':qpo.COLOR_DICT['blue']})
   var redGlow = redGoal.glow({'color':qpo.COLOR_DICT['red']})
@@ -524,18 +540,30 @@ qpo.Board = function(cols, rows, x, y, m){ //Board class constructor
   }
   this.dots.attr({'fill':qpo.COLOR_DICT['foreground'], 'stroke-width':0, 'opacity':0});
   this.all.push(this.dots);
+  this.dnz = c.set(this.dots, this.zs)
 
   if(qpo.mode=='game'){ //slide the walls in from off-screen
-    sideWalls.transform('t0,-700');
+    sideWalls.transform('t0,-900');
     goalLines.transform('t-700,0');
     this.outline.animate({'transform':''}, 1000, '');
     setTimeout(function(){ //fade in dots and show glows
-      qpo.fadeIn(this.dots, 1000);
+      qpo.fadeIn(this.dnz, 1000);
       setTimeout(function(){qpo.glows.show()}, 2000);
     }.bind(this), 500);
   }
-  else{ qpo.glows.show() } //show glows immediately if not animating board
+  else{ qpo.glows.show(); }
   qpo.gui.push(this.all);
+
+  this.deflash = function(first){
+    first ? (false) : (this.surface.animate({
+      '0%'  :{'opacity' : 1},
+      '100%':{'opacity' : 0}
+    }, qpo.flashLengths.deflash))
+    this.zs.attr({'opacity':0});
+    this.zs.animate({'opacity' : 1}, qpo.flashLengths.flash, '<')
+   }
+  this.flash = function(){ this.surface.animate({'opacity' : 1}, qpo.flashLengths.flash, 'backIn') }
+
   return this; //return the constructed Board object
 }
 

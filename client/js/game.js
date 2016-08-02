@@ -217,7 +217,9 @@ qpo.Game = function(args){ //"Game" class.
       //Start checking whether all shots and bombs are off the board. If so, end the game.
       for(var i=0; i<qpo.blue.units.length; i++){qpo.blue.units[i].deactivate()}
     }
-    this.board.moveWalls()
+    // this.board.moveWalls()
+    this.board.deflash(false);
+    // setTimeout(function(){this.board.flash()}.bind(this), 3000*qpo.timeScale-qpo.flashLengths.flash);
     if (this.turnNumber == this.turns){ //End the game, if it's time.
       if (this.isEnding == false){ //find the winner and store to winner
         for(var i=0; i<qpo.blue.units.length; i++){qpo.blue.units[i].deactivate()}
@@ -256,7 +258,9 @@ qpo.Game = function(args){ //"Game" class.
 
     setTimeout(function(){ //Set up the newTurn interval, wall motion, and the collision detection
       qpo.turnStarter = setInterval(this.newTurn.bind(this), 3000*qpo.timeScale);
-      this.board.moveWalls();
+      // this.board.moveWalls();
+      this.board.deflash(true)
+      // setTimeout(function(){this.board.flash()}.bind(this), 3000*qpo.timeScale-qpo.flashLengths.flash);
       qpo.collisionDetector = setInterval(function(){qpo.detectCollisions(qpo.activeGame.po)}, 50);
     }.bind(this), 7500);
 
