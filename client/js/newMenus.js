@@ -361,16 +361,39 @@ qpo.displayTitleScreen = function(){ //Called whenever title screen is displayed
   // qpo.makeMuteButton();
   // qpo.activeGame = new qpo.Game(11, 3, false, false, true); //needed for menus. UNACCEPTABLE.
 
-  //2ND LAYER (foreground) : Logo
-  this.logo = c.image('../client/images/logo.png', (300-386/2), -50, 386, 386)
-    .attr({'tooltip':"hi"});
-  this.layer2 = c.set().push(this.logo);
+  //2ND LAYER (foreground) :
+  this.bits = c.set()
+  var colors = [qpo.COLOR_DICT['green'], qpo.COLOR_DICT['purple']]
+  for (var i=0; i<23; i++){ //generate some pixelly starlike things.
+    var size = 13 * Math.random()
+    var time = 43*size
 
-  //3rd layer (prompt)
-  this.promptt = c.text(qpo.guiDimens.gpWidth/2, qpo.guiDimens.gpHeight/2, "Press enter to start")
-    .attr({qpoText:[32,qpo.COLOR_DICT["orange"]], "opacity":1});
+    var ind = Math.floor(2*Math.random())
+    var color1 = colors[ind]
+    var color2;
+    ind ? (color2 = colors[ind-1]): (color2 = colors[ind+1])
+
+    var x = c.width*Math.random()
+    var y = c.height*Math.random()
+
+    var newBit1 = c.rect(x, y, size, size).attr({'fill':color1})
+    qpo.blink(newBit1, time)
+    var newBit2 = c.circle(c.width-x, c.height-y, size/Math.sqrt(2)).attr({'fill':color2})
+    qpo.blink(newBit2, time)
+
+    this.bits.push(newBit1, newBit2)
+  }
+  this.bits.attr({'stroke':'none'});
+  this.layer2 = c.set().push(this.bits);
+
+  //3rd layer (title and prompt)
+  var m = 100;
+  this.board = new qpo.Board(2,1, c.width/2-m, c.height/2 - m*3/2, m);
+  this.title = c.text(c.width/2, c.height/2-m, 'Q-Po').attr({qpoText:64})
+  this.promptt = c.text(c.width/2, c.height/2+100, "Press enter to start")
+    .attr({qpoText:[32, qpo.COLOR_DICT["orange"]]});
   qpo.blink(this.promptt);
-  this.layer3 = c.set().push(this.promptt);
+  this.layer3 = c.set().push(this.board.all, this.title, this.promptt);
 
   this.all = c.set();
   this.all.push(this.layer1, this.layer2, this.layer3);

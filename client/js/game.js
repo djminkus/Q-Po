@@ -1,5 +1,6 @@
 qpo.Game = function(args){ //"Game" class.
   //{q, po, type, turns, ppt, customScript}
+  qpo.mode = 'game';
 
   this.q = args.q || 7;
   this.po = args.po || 3;

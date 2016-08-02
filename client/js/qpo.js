@@ -474,6 +474,13 @@ qpo.Board = function(cols, rows, x, y, m){ //Board class constructor
   // this.rw1 = this.rw + bulge;
   // this.vm = (this.tw + this.bw)/2 //vertical middle
 
+  var vo = 20; //vertical offset
+  var ho = 20; //horizontal offset
+
+  this.background = c.rect(this.lw-ho, this.tw-5, this.width+ho*2, this.height+10)
+    .attr({'fill':qpo.COLOR_DICT['background'], 'stroke-width':0});
+  this.all.push(this.background)
+
   this.surface = c.rect(this.lw, this.tw, this.width, this.height).attr({
     'fill':qpo.COLOR_DICT['foreground'],
     'stroke-width':0,
@@ -482,8 +489,6 @@ qpo.Board = function(cols, rows, x, y, m){ //Board class constructor
   this.all.push(this.surface);
   if(qpo.mode == 'menu'){this.surface.attr({'transform':'t-1000,-1000'})}
 
-  var vo = 20; //vertical offset
-  var ho = 20; //horizontal offset
   // var i = 10; //intermediate value
   this.leftZ = c.path('M'+this.lw+','+this.tw+  'l-'+ho+','+vo+  'v'+(this.height-2*vo)+'l'+ho+','+vo+'z')
   this.rightZ = c.path('M'+this.rw+','+this.tw+  'l'+ho+','+vo+  'v'+(this.height-2*vo)+'l-'+ho+','+vo+'z')
@@ -516,8 +521,8 @@ qpo.Board = function(cols, rows, x, y, m){ //Board class constructor
     this.rightWall.animate(rwAnim);
   }
 
-  var blueGoal = c.path('M'+this.lw+','+this.tw + 'L'+this.rw+','+this.tw).attr({'stroke':qpo.COLOR_DICT['blue']});
-  var redGoal = c.path('M'+this.lw +','+this.bw + 'L'+this.rw+','+this.bw).attr({'stroke':qpo.COLOR_DICT['red']});
+  var blueGoal = c.path('M'+this.lw+','+(this.tw-3) + 'H'+this.rw).attr({'stroke':qpo.COLOR_DICT['blue']});
+  var redGoal = c.path('M'+this.lw +','+(this.bw+3) + 'H'+this.rw).attr({'stroke':qpo.COLOR_DICT['red']});
   var goalLines = c.set().push(blueGoal, redGoal).attr({'stroke-width':3, 'opacity':1})
   this.all.push(goalLines);
   // sideWalls.toFront();
@@ -1017,7 +1022,7 @@ $(window).keydown(function(event){
       break;
     case "game":
       try { //try to respond to the keypress appropriately
-        if (qpo.blue.units[qpo.blueActiveUnit].spawnTimer>0){ //If active unit is dead and not spawning next turn, try moving to another unit (as a fallback:)
+        if (qpo.blue.units[qpo.blueActiveUnit].spawnTimer>-1){ //If active unit is dead and not spawning next turn, try moving to another unit (as a fallback:)
           event.preventDefault();
           qpo.updateBlueAU(qpo.activeGame.po, "dead");
         }

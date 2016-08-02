@@ -352,7 +352,7 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
     this.alive = false;
     this.willScore = false;
     this.deactivate();
-    if(qpo.activeMission.number==1){ qpo.activeMission.end() } //Code 1 = Campaign mode. End mission.
+    if(qpo.mode == 'campaign' && qpo.activeMission.number==1){ qpo.activeMission.end() }
     else{ // do normal game mode stuff
       this.spawnTimer = qpo.spawnTimers[qpo.activeGame.po];
       if (this.team==qpo.playerTeam){this.showSpawnIcon()}
