@@ -1,11 +1,11 @@
 qpo.Team = function(color){
   this.color = color || null; // 'red' or 'blue' (related: qpo.playerColor, qpo.unit.team)
-  this.units = new Array(); //list of this team's units (to replace qpo.blue.units and qpo.red.units)
-  this.players = new Array(); //list of this team's players
+  this.units = new Array(); //list of this team's units
+  this.players = new Array(); //list of players on this team
   this.points = 0;
 
-  this.addPoint = function(){
-    this.points++;
+  this.addPoint = function(howMany){ //give this team a point and update the scoreboard
+    howMany ? (this.points+=howMany) : (this.points++)
     qpo.scoreboard.update();
   }
 

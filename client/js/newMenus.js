@@ -42,22 +42,6 @@ switch(qpo.font){ //for easy font switching
 qpo.activeMenuOptAtts = {'fill':qpo.COLOR_DICT['orange'], 'opacity':1}
 qpo.inactiveMenuOptAtts = {'fill':'grey', 'opacity':1}
 
-qpo.upr = 5; //upper panel corner radius
-qpo.upperPanel = function(titleEl){ //return the top white panel Raph
-  var box = titleEl.getBBox();
-  var xMargin = 20; //Left-right
-  var topMargin = 60;
-  var botMargin = 10; //bottom
-  var panelWidth = box.width + 2 * xMargin;
-  var panelHeight = box.height + botMargin + topMargin;
-  var panel = c.rect(box.x - xMargin, box.y - topMargin, panelWidth, panelHeight, qpo.upr)
-    .insertBefore(titleEl)
-    .attr({'fill':qpo.COLOR_DICT['foreground'],'stroke':'none'});
-  titleEl.attr({'fill': qpo.COLOR_DICT['background']})
-  // qpo.glows.push(panel.glow({'color':qpo.COLOR_DICT['foreground']}))
-  return panel;
-}
-
 c.customAttributes.qpoText = function(size, fill){ //style text white with Open Sans family and "size" font-size.
   return {
     "font-size": size,
@@ -100,7 +84,6 @@ qpo.Menu = function(titleStr, itemList, parent, placeholder){ // A Menu contains
 
     this.background = c.rect(0,0, c.width, c.height).attr({'fill':qpo.COLOR_DICT['background']});
     this.title = c.text(c.width/2, 60, this.titleStr).attr({qpoText:[this.TITLE_SIZE, qpo.COLOR_DICT['foreground']]});
-    // this.upperPanel = qpo.upperPanel(this.title);
     this.layer1 = c.set().push(this.background, this.title, this.upperPanel);
 
     qpo.makeMuteButton();
@@ -245,7 +228,6 @@ qpo.MenuOption = function(gx, gy, textStr, action, menu, active, order, color, i
       function(){ this.raphs.attr({'cursor':'default'}); },
     this, this);
     this.raphs.click(function(){this.action()}.bind(this));
-
   }
 
   this.action = action; //a function
@@ -418,4 +400,4 @@ qpo.displayTitleScreen = function(){ //Called whenever title screen is displayed
 //CREATE TITLE SCREEN AND MENUS:
 qpo.titleScreen = new qpo.displayTitleScreen(); // ******
 qpo.makeMenus();
-qpo.user = localStorage['player'] || new qpo.Player(null, 'epicGuest', 'human', null);
+qpo.user = localStorage['user'] || new qpo.User('epicGuest');

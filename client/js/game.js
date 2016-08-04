@@ -26,7 +26,11 @@ qpo.Game = function(args){ //"Game" class.
   }
   qpo.red = this.teams.red; //add a convenient pointer
   qpo.blue = this.teams.blue;
-  this.players = (new Array()).push(qpo.user);
+  if(this.type=='single'){
+    //
+  }
+
+  this.players = (new Array()).push(qpo.user.toPlayer());
 
   this.turnNumber = 0; //How far through this game are we?
 
@@ -129,6 +133,14 @@ qpo.Game = function(args){ //"Game" class.
 
   this.newTurn = function(){ //Generate and execute moves. End the game, if the turn limit has been reached.
     this.turnNumber++;
+    switch(this.turns-this.turnNumber){ //on special turns, notify.
+      case 10:{this.board.notify('10'); break;}
+      case 5:{this.board.notify('5', qpo.COLOR_DICT['orange']); break;}
+      case 3:{this.board.notify('3', qpo.COLOR_DICT['red']); break;}
+      case 2:{this.board.notify('2', qpo.COLOR_DICT['red']); break;}
+      case 1:{this.board.notify('1', qpo.COLOR_DICT['red']); break;}
+    }
+
     qpo.moment = new Date();
 
     //// AI SECTION

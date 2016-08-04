@@ -20,7 +20,7 @@ qpo.shotAtts = {
   'stroke-width':2
 }
 qpo.scr = 2 //shot corner radius
-qpo.levelTurns = [2,3,5,8] //qpo.levelTurns[level-1] gives how many turns it takes to get to that level from previous level
+qpo.levelTurns = [3,5,8,13] //qpo.levelTurns[level-1] gives how many turns it takes to get to that level from previous level
 qpo.levelSAs = ['.', '..-', '-', ''] //stroke-dasharrays for each level
 
 qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
@@ -41,7 +41,7 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
   this.tx = function(){return (mtr*this.x);}.bind(this); //raphael transform, x value
   this.ty = function(){return (mtr*this.y);}.bind(this); //raphael transform, y value
   this.trans = function(){return ('t'+this.tx()+','+this.ty())};
-  this.search = function(dir){
+  this.search = function(dir){ //find the first unit in direction dir
     // console.log('search begun at ind ' + this.num);
     var ind = this.num; //index (num) of found unit
     var row = this.y; //row being searched
@@ -155,13 +155,29 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
     // console.log('search complete, found index ' + ind)
   }
 
+  this.coatingType='none'; //'none', 'shield', 'plasma', 'antimatter'
+  this.applyCoating = function(which){
+    this.coatingType = which;
+    switch(which){
+      case 'shield': {
+        break;
+      }
+      case 'plasma': {
+        break;
+      }
+      case 'antimatter': {
+        break;
+      }
+    }
+  }
+
   this.nx = null; //next x
   this.ny = null; //nexy y
   this.ntx = function(){return mtr*this.nx}; //next transform x
   this.nty = function(){return mtr*this.ny}; //next transform x
   this.ntrans = function(){return ('t'+this.ntx()+','+this.nty())};
 
-  this.rect = c.rect(lw,tw,mtr,mtr).attr({
+  this.rect = c.rect(lw, tw, mtr, mtr).attr({
       "fill":qpo.COLOR_DICT[color],
       'fill-opacity': 0.10,
       "opacity":1,
@@ -180,34 +196,52 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
     if (newLevel < 1){this.level = 1} //don't allow level to go below 1
     else if (newLevel > 4){this.level = 4} //don't allow level to go above 4
     else{ this.level = newLevel }
-    this.rect.attr({'stroke-dasharray':qpo.levelSAs[this.level-1]});
+
     this.turnsToNextLevel = qpo.levelTurns[this.level-1];
-    switch(this.level){ //unused for now
-      case 1: {
-        // this.rect.attr({'stroke-dasharray':'.'});
-        break;
-      }
-      case 2: {
-        // this.rect.attr({'stroke-dasharray':'..-'});
-        break;
-      }
+
+    this.rect.attr({'stroke-dasharray':qpo.levelSAs[this.level-1]});
+    // this.rect.attr({'stroke-width':this.level});
+    if(qpo.mode == 'game' && this.team == qpo.playerTeam){
+      // this.team == qpo.user.player.team ? (this.notify('Lv. up!')) : (false)
+      // if(!qpo.user.player.team){debugger}
+      // this.notify('Lv. up!');
+    }
+
+    switch(this.level){ //apply shield or plasma coating (lvs. 3, 4)
       case 3: {
-        // this.rect.attr({'stroke-dasharray':'-'});
+        this.applyCoating('shield')
         break;
       }
       case 4: {
-        // this.rect.attr({'stroke-dasharray':''})
+        this.applyCoating('plasma')
         break;
       }
-      default: {console.log('this was unexpected.')}
+      default:{ break; }
     }
   }
-  this.levelUp = function(){ this.setLevel(this.level+1) };
+  this.levelUp = function(){
+    var newLevel = this.level+1
+    this.setLevel(newLevel)
+    if(this.team==qpo.playerTeam){ //notify the player of their levelup.
+      var puncs = [null, '.', '.', '!', '!!']
+      this.notify("Lv. "+newLevel+puncs[newLevel])
+    }
+  };
   this.levelDown = function(){ this.setLevel(this.level-1) };
   this.resetLevel = function(){ this.setLevel(1) };
   this.updateLevel = function(){
     this.turnsToNextLevel--;
     if (this.turnsToNextLevel<0){this.levelUp()}
+  }
+
+  this.notify = function(str){
+    if(this.team == qpo.playerTeam){
+      var notification = c.text(this.rect.getBBox().x+this.mtr/2, this.rect.getBBox().y-15, str).attr({qpoText:[20, qpo.COLOR_DICT[this.team]]})
+      qpo.gui.push(notification)
+      var time = 2000
+      notification.animate({'opacity':0}, 2000)
+      setTimeout(function(){notification.remove()}.bind(this), 2000)
+    }
   }
 
   this.num = num || 0; //which unit is it? (# on team)
@@ -511,16 +545,6 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
   }
   this.bomb = function(){
     this.movingForward = false;
-    var bomb;
-    bomb = new qpo.Bomb(this);
-    bomb.next();
-    if(qpo.mode=="menu"){ //put the bomb's phys in the correct layer
-      bomb.phys.toBack();
-      try{qpo.menus.main.blackness.toBack();}
-      catch(e){}
-      try{qpo.menus.title.blackness.toBack();}
-      catch(e){}
-    }
     switch(this.team){ //record the move (in qpo.activeGame.record)
       case "blue": {
         qpo.activeGame.record.blueMoves.push(5);
@@ -531,7 +555,21 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
         break;
       }
       default: {
-        "this was unexpected";
+        console.log("this was unexpected")
+      }
+    }
+
+    if(this.level<2){this.notify('Level too low.')} //units below level 2 can't bomb.
+    else{ //fire a bomb
+      var bomb;
+      bomb = new qpo.Bomb(this);
+      bomb.next();
+      if(qpo.mode=="menu"){ //put the bomb's phys in the correct layer
+        bomb.phys.toBack();
+        try{qpo.menus.main.blackness.toBack();}
+        catch(e){}
+        try{qpo.menus.title.blackness.toBack();}
+        catch(e){}
       }
     }
   }
@@ -633,7 +671,7 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
 
   this.executeMove = function(){
     this.actions[this.nextAction]();
-    if (this.alive){this.nextAction = 'stay';}
+    if(this.alive){this.nextAction = 'stay';}
   }
   this.nextSpawn = -1; //turn number of this unit's next spawn
 

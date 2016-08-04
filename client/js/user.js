@@ -12,5 +12,12 @@ qpo.User = function(handle, il, ir, ix){
   this.rankDown = function(){this.rank--}
   this.addExp = function(amt){this.exp += amt}
 
+  this.player = null;
+  this.toPlayer = function(unitList){ //returns a newly created Player object
+    var player = new qpo.Player(unitList, this.handle)
+    this.player = player;
+    return player;
+  }
+
   return this;
 }

@@ -107,7 +107,7 @@ qpo.setup = function(){ // set up global vars and stuff
   // };
 
   // TOP-LEVEL SETTINGS:
-  qpo.timeScale = 0.5; // Bigger means longer turns; 1 is original 3-seconds-per-turn
+  qpo.timeScale = 0.75; // Bigger means longer turns/slower gameplay; 1 is original 3-seconds-per-turn
   qpo.playMusic = false;
   qpo.trainingMode = false;
   qpo.flashLengths = {'flash':1200, 'deflash':200}
@@ -156,7 +156,7 @@ qpo.setup = function(){ // set up global vars and stuff
   // qpo.missions[0] = new qpo.Mission([false, 0, false]);
 
   // NEURAL STUFF:
-  (qpo.trainingMode) ? (qpo.timeScale=0.05) : (qpo.timeScale=0.5) ;
+  (qpo.trainingMode) ? (qpo.timeScale=0.05) : (false) ;
   qpo.trainingCounter = 0;
   qpo.batchCounter = 0;
   qpo.gamesToTrain = 30; // games per batch
@@ -468,11 +468,22 @@ qpo.Board = function(cols, rows, x, y, m){ //Board class constructor
   this.tw = y || qpo.guiCoords.gameBoard.topWall;
   this.rw = this.lw + this.width;
   this.bw = this.tw + this.height;
+  this.centerX = this.lw + this.width/2
+  this.centerY = this.tw + this.height/2
 
   // var bulge = 25; //for curved sides experiment
   // this.lw1 = this.lw - bulge;
   // this.rw1 = this.rw + bulge;
   // this.vm = (this.tw + this.bw)/2 //vertical middle
+
+  this.notify = function(str, color){
+    var color = color || qpo.COLOR_DICT['foreground']
+    var notification = c.text(this.centerX, this.centerY, str).attr({qpoText:[40, color]})
+    qpo.gui.push(notification)
+    var time = 2000
+    notification.animate({'opacity':0}, 2000)
+    setTimeout(function(){notification.remove()}.bind(this), 2000)
+  }
 
   var vo = 20; //vertical offset
   var ho = 20; //horizontal offset
@@ -657,8 +668,8 @@ qpo.placeUnits = function(){ //called at the start of each game (from startGame)
 qpo.Scoreboard = function(yAdj){ //draw the scoreboard and push to gui
   this.redScore = 0;
   this.blueScore = 0;
-  var y = 50;
-  var xOff = 50;
+  var y = 30;
+  var xOff = 100;
 
   this.redScoreText = c.text(300-xOff, y+yAdj, "0").attr({qpoText: [25, qpo.COLOR_DICT["red"]]});
   this.redSection = c.set().push(this.redScoreText);
@@ -853,6 +864,7 @@ qpo.detectCollisions = function(ts){ //ts is teamSize, aka po
         else{ //Other wall. Stop and snap
           qpo.blue.units[i].phys.stop();
           qpo.blue.units[i].snap();
+          console.log('unit snapped due to wall hit')
         }
       }
 
