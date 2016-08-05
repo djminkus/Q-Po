@@ -1284,8 +1284,104 @@ qpo.endGame = function(result){
 // //  //  //  // //
 // SPECTATOR MODE //
 // // //  //  //  //
-qpo.spectate = function() {
-  $.get("./api/activegames", null, function(res) {
-    console.log("Spectate got response: ", res);
+qpo.getSpectatables = function() {
+  const activeGamesArray = [];
+
+  const promise = new Promise(function(resolve, reject) {
+    $.get("./api/activegames", null, function(res) {
+      console.log("Spectate got response: ", res);
+
+
+        
+        //Push response items to global array for easy access
+        for(var i=0; i<res.length; i++) {
+          activeGamesArray.push(res[i]);
+        }
+
+        resolve(res);
+
+      });
+
   });
+
+  return promise;
+}
+
+qpo.makeSpectateOptions = function(games) {
+  console.log("makeSpectateOptions has games: ", games);
+
+  const promise = new Promise(function(resolve, reject) {
+
+    const options = [];
+
+    var currentGame;
+
+
+    for(var i=0; i<games.length; i++) {
+
+      currentGame = games[i];
+      console.log("currentGame is ", currentGame);
+
+      /*var newOpt = new qpo.MenuOption(1,1, 
+            "Test", 
+            function(){qpo.spectateGame(currentGame)}, 
+              'Spectate', bool, 'bomb', 'red', 1);
+      console.log("newOpt is: ", newOpt);*/
+
+      var bool = false;
+
+      if (i=0) bool = true;
+
+      if (i % 2) {
+        console.log("makeSpectateOptions: i is ", i, "! pushing a red");
+        options.push(
+          new qpo.MenuOption(0,1, 
+            games[i].owner, 
+            function(){qpo.spectateGame(games[i])}, 
+              'Spectate', bool, 'bomb', 'red', 0)
+        );
+        console.log("pushed ", options[options.length]);
+      } else {
+        console.log("makeSpectateOptions: i is ", i, "! pushing a blue. Games is: ", games);
+        options.push(
+          new qpo.MenuOption(0,1, 
+            games[i].owner, 
+            function(){qpo.spectateGame(games[i])}, 
+              'Spectate', bool, 'moveRight', 'blue', 0)
+        );
+      }
+    }
+
+    //Create Spectate menu
+    if (games.length > 0) {
+      console.log("There were games!");
+      qpo.menus['Spectate'] = new qpo.Menu('Spectator Mode', options, 'Main Menu');
+    } else {
+      console.log("No games: ", games);
+      qpo.menus['Spectate'] = new qpo.Menu('No Games Available. Start your own!',
+        [
+          new qpo.MenuOption(0,1,'Back', function() {qpo.menus['Spectate'].close('Main Menu')},
+            'Spectate', true, 'moveLeft', 'blue', 0)
+        ]);
+    }
+
+    resolve(qpo.menus['Spectate']);
+
+  });
+
+
+  return promise;
+}
+
+qpo.spectateGame = function(game) {
+  const settings = [];
+
+  if (game.po === 2) { // replicate settings
+    settings[1] = 2;  // ... etc
+  }
+  //Then receive info on unit placement, etc from server
+
+  // This could all also be done in qpo.startGame if we
+  // modify it to accept a copyFrom parameter
+  qpo.startGame(game);
 }
