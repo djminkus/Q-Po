@@ -112,7 +112,7 @@ qpo.setup = function(){ // set up global vars and stuff
   qpo.trainingMode = false;
   qpo.flashLengths = {'flash':1200, 'deflash':200}
   qpo.waitTime = 100; //ms between moves
-  qpo.unitStroke = 3.5;
+  qpo.unitStroke = 3;
   qpo.bombStroke = 3;
   qpo.iconStroke = 2;
   qpo.pinchAmount = 20; //pixels for pinch animaton
@@ -136,8 +136,9 @@ qpo.setup = function(){ // set up global vars and stuff
     "blue": "#0055ff",
     "red": "#e00000",
     "orange": "#ffbb66",
-    "green": "#00bb55",
-    "purple":"#bb00bb",
+    "green": "#00bb55", // shot color
+    "purple":"#bb00bb", // bomb/plasma color
+    'light blue':'#5588ff', // antimatter color
 
     "background": "#000000", //black is 0
     "grey": "#bbbbbb",
@@ -478,7 +479,7 @@ qpo.Board = function(cols, rows, x, y, m){ //Board class constructor
 
   this.notify = function(str, color){
     var color = color || qpo.COLOR_DICT['foreground']
-    var notification = c.text(this.centerX, this.centerY, str).attr({qpoText:[40, color]})
+    var notification = c.text(this.centerX, this.centerY, str).attr({qpoText:[72, color]})
     qpo.gui.push(notification)
     var time = 2000
     notification.animate({'opacity':0}, 2000)
@@ -699,7 +700,8 @@ qpo.detectCollisions = function(ts){ //ts is teamSize, aka po
   // for each unit, check for collisions with units on the other team
   // TODO (MAYBE): shots --> shots
   for (var i=0; i<qpo.shots.length; i++) { //iterate over shots
-    var shotBox = qpo.shots[i].getBBox();
+    var shot = qpo.shots[i]
+    var shotBox = shot.getBBox();
     var sBOS = shotBox.y2;
     var nBOS = shotBox.y;
     var eBOS = shotBox.x2;
@@ -718,24 +720,30 @@ qpo.detectCollisions = function(ts){ //ts is teamSize, aka po
       tell them they're hidden (Element.data("hidden",true))
       and remove them from their respective arrays
       */
-      var unitBox = qpo.units[j].rect.getBBox();
+      var unit = qpo.units[j]
+      var unitBox = unit.phys.getBBox();
 
       var nBOU = unitBox.y;
       var wBOU = unitBox.x;
-      var sBOU = nBOU + qpo.guiDimens.squareSize;
-      var eBOU = wBOU + qpo.guiDimens.squareSize;
+      var sBOU = unitBox.y2;
+      var eBOU = unitBox.x2;
 
       if( (( nBOU < nBOS && nBOS < sBOU ) || //vertical overlap
           ( nBOU < sBOS && sBOS < sBOU )) &&
           (( wBOU < wBOS && wBOS < eBOU ) || //horizontal overlap
           ( wBOU < eBOS && eBOS < eBOU )) &&
-          !(qpo.shots[i].data("hidden")) &&
-          (qpo.units[j].alive)) {
-        qpo.shots[i].hide(); //make the shot disappear
-        qpo.units[j].kill();
-        qpo.shots[i].data("hidden",true);
+          !(shot.data("hidden")) &&
+          (unit.alive)) {
+        shot.hide(); //make the shot disappear
+        switch(unit.coating.data('type')){ //kill unit or remove coating
+          case 'none' : { unit.kill(); shot.data('unit').kills++; break;}
+          case 'shield':
+          case 'plasma':
+          case 'antimatter': { unit.applyCoating('none'); break;}
+          default: {console.log('SOMETHING WEIRD HAPPENED')}
+        }
+        shot.data("hidden",true);
         splicers.push(i);
-        // console.log('shot ' + i + ' hit a unit');
       }
     }//end iterating over units within shots
     if (qpo.bombs.length > 0){ //iterate over bombs within shots (if bombs exist)
@@ -774,21 +782,19 @@ qpo.detectCollisions = function(ts){ //ts is teamSize, aka po
         var nBOB = bombBox.y;
         var eBOB = bombBox.x2;
         var wBOB = bombBox.x;
-        //if an unexploded bomb hits a wall, explode it:
-        if ( !(qpo.bombs[i].exploded) && (sBOB>425 || nBOB<75)){
-          qpo.bombs[i].explode();
-          //console.log("bomb " + i +" hit a wall");
-        }
+
+        if ( !(qpo.bombs[i].exploded) && (sBOB>qpo.board.bw || nBOB<qpo.board.tw)){ qpo.bombs[i].explode(); }
         for (var j=0; j<qpo.units.length; j++) { //iterate over units within bombs
 
           // When a bomb and a unit collide, kill the unit
           //   and check if the bomb is exploded. If the bomb
           //   is not exploded, explode it.
 
-          var nBOU = qpo.units[j].rect.getBBox().y;
-          var wBOU = qpo.units[j].rect.getBBox().x;
-          var sBOU = nBOU + qpo.guiDimens.squareSize;
-          var eBOU = wBOU + qpo.guiDimens.squareSize;
+          var unitBox = qpo.units[j].phys.getBBox()
+          var nBOU = unitBox.y;
+          var wBOU = unitBox.x;
+          var sBOU = unitBox.y2;
+          var eBOU = unitBox.x2;
 
           if( (( nBOU < nBOB && nBOB < sBOU ) || //vertical overlap
               ( nBOU < sBOB && sBOB < sBOU ) ||
@@ -800,10 +806,7 @@ qpo.detectCollisions = function(ts){ //ts is teamSize, aka po
               ( wBOB < eBOU && eBOU < eBOB )) &&
               (qpo.units[j].alive)) {
             qpo.units[j].kill();
-            // console.log("bomb " + i + " hit unit " + j);
-            if ( !(qpo.bombs[i].exploded)){
-              qpo.bombs[i].explode();
-            }
+            if ( !(qpo.bombs[i].exploded)){ qpo.bombs[i].explode(); }
           }
         }//end iterating over units within bombs
         for (var j=0; j<qpo.bombs.length; j++) { //iterate over bombs within bombs
@@ -840,11 +843,13 @@ qpo.detectCollisions = function(ts){ //ts is teamSize, aka po
   //  units of opposite colors.
   for (var i=0; i<ts; i++){ //iterate over blue team of units
     //Get the blue unit's borders
+    var bu
     if(qpo.blue.units[i].alive){ //detect some collisions
-      var nBOU = qpo.blue.units[i].rect.getBBox().y + 1; //make it 1 pixel smaller than it really is, to fix collisions glitch
-      var wBOU = qpo.blue.units[i].rect.getBBox().x + 1;
-      var sBOU = nBOU + qpo.guiDimens.squareSize - 2;
-      var eBOU = wBOU + qpo.guiDimens.squareSize - 2;
+      var box = qpo.blue.units[i].rect.getBBox();
+      var nBOU = box.y
+      var wBOU = box.x
+      var sBOU = box.y2
+      var eBOU = box.x2
 
       //if the blue unit has hit a wall, stop the unit and place it snugly on the wall.
       if( nBOU < qpo.board.tw ||
@@ -870,10 +875,11 @@ qpo.detectCollisions = function(ts){ //ts is teamSize, aka po
 
       if(qpo.red.units[i].alive){ //wall detection red
         //get the red unit's borders:
-        var nBOUr = qpo.red.units[i].rect.getBBox().y + 1 ;
-        var wBOUr = qpo.red.units[i].rect.getBBox().x + 1 ;
-        var sBOUr = nBOUr + qpo.guiDimens.squareSize - 2;
-        var eBOUr = wBOUr + qpo.guiDimens.squareSize - 2;
+        var boxr = qpo.red.units[i].rect.getBBox()
+        var nBOUr = boxr.y + 1
+        var wBOUr = boxr.x + 1
+        var sBOUr = boxr.y2 - 1
+        var eBOUr = boxr.x2 - 1
 
         //if the red unit has hit a wall, stop the unit and place it snugly on the wall.
         if (nBOUr < qpo.board.tw || wBOUr < qpo.board.lw ||
@@ -952,10 +958,9 @@ qpo.sendMoveToServer = function(moveStr){
 
 //LISTEN FOR INPUT
 $(window).keydown(function(event){
-  switch(event.keyCode){ //prevent defaults for backspace/delete and enter
+  switch(event.keyCode){ //prevent defaults for backspace/delete, spacebar, and enter
     case 8: //backspace/delete
-      event.preventDefault();
-      break;
+    case 32: //spacebar
     case 13: //enter
       event.preventDefault();
       break;
@@ -966,10 +971,11 @@ $(window).keydown(function(event){
   switch(qpo.mode){ //do the right thing based on what type of screen the user is in (menu, game, tutorial, etc)
     case "menu":
       switch(event.keyCode){
-        case 8: //backspace/delete: return to the previous menu
+        case 8: // backspace/delete: return to the previous menu
           if (qpo.activeMenu != "title") {qpo.menus[qpo.activeMenu].up();}
           break;
-        case 13: //enter
+        case 32: // spacebar (fall through to enter/return)
+        case 13: // enter/return
           try {qpo.menus[qpo.activeMenu].cl.selectedItem.action();}
           catch(err){;} //do nothing if there is no activeButton
           if(qpo.activeMenu == "title"){qpo.titleScreen.close()}
@@ -1046,7 +1052,7 @@ $(window).keydown(function(event){
             case 87:
             case 68:
             case 83:
-            case 32:
+            case 32: // (spacebar)
             case 66:
             case 88: //qweasdx detected (order)
               var moveStr = qpo.keyCodes[event.keyCode];

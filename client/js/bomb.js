@@ -61,8 +61,8 @@ qpo.Bomb = function(su){ //su = source unit
         'fill-opacity': 1
       },
       "100%": {
-        "y":cy+7*qpo.guiDimens.squareSize/50,
-        "x":cx+7*qpo.guiDimens.squareSize/50,
+        "y":cy,
+        "x":cx,
         "width":0,
         "height":0,
         'opacity':0,
@@ -75,18 +75,30 @@ qpo.Bomb = function(su){ //su = source unit
     }.bind(this));
     this.phys.animate(anim);
   }
-  this.next = function(){ //make the bomb count down or explode
+  this.next = function(){ //each turn make the bomb either explode, or move and count down.
     if (this.timer == 0){
       this.explode();
     } else if (this.timer > 0 ){
       var bombAnim;
+      var side = this.phys.attr('width') // also 'height'
+      var shrinkageFactor = .7; //factor by which unexploded bomb shrinks each turn
+      var shrinkageAmt = (1-shrinkageFactor) * side //amount of shrinkage, in pixels
       switch(this.team){
         case "blue":
-          bombAnim = Raphael.animation({"y":this.phys.attr('y') + 0.98 * qpo.guiDimens.squareSize},
-            3000*qpo.timeScale, qpo.bombEasing, function(){this.next()}.bind(this) );
+          bombAnim = Raphael.animation({
+            "y":this.phys.attr('y') + 0.98 * qpo.guiDimens.squareSize,
+            'x':this.phys.attr('x') + shrinkageAmt/2,
+            "width": side * shrinkageFactor,
+            "height": side * shrinkageFactor
+          }, 3000*qpo.timeScale, qpo.bombEasing, function(){this.next()}.bind(this) );
           break;
         case "red":
-          bombAnim = Raphael.animation({"y":this.phys.attr('y') - 0.98*qpo.guiDimens.squareSize}, 3000*qpo.timeScale, function(){this.next()}.bind(this) );
+          bombAnim = Raphael.animation({
+            "y":this.phys.attr('y') - 0.98*qpo.guiDimens.squareSize,
+            'x':this.phys.attr('x') + shrinkageAmt/2,
+            "width": side * shrinkageFactor,
+            "height": side * shrinkageFactor
+          }, 3000*qpo.timeScale, function(){this.next()}.bind(this) );
           break;
       }
       this.phys.animate(bombAnim);

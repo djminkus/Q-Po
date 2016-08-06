@@ -271,7 +271,6 @@ qpo.Game = function(args){ //"Game" class.
 
     setTimeout(function(){ //Set up the newTurn interval, wall motion, and the collision detection
       qpo.turnStarter = setInterval(this.newTurn.bind(this), 3000*qpo.timeScale);
-      // this.board.moveWalls();
       this.board.deflash(true)
       // setTimeout(function(){this.board.flash()}.bind(this), 3000*qpo.timeScale-qpo.flashLengths.flash);
       qpo.collisionDetector = setInterval(function(){qpo.detectCollisions(qpo.activeGame.po)}, 50);

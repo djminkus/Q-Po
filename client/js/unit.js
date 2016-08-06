@@ -21,7 +21,7 @@ qpo.shotAtts = {
 }
 qpo.scr = 2 //shot corner radius
 qpo.levelTurns = [3,5,8,13] //qpo.levelTurns[level-1] gives how many turns it takes to get to that level from previous level
-qpo.levelSAs = ['.', '..-', '-', ''] //stroke-dasharrays for each level
+qpo.levelSAs = ['.', '-.', '-', ''] //stroke-dasharrays for each level
 
 qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
   // color is 'blue' or 'red' -- "Which team is the unit on?"
@@ -31,9 +31,12 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
 
   var mtr = qpo.guiDimens.squareSize; //mtr for meter, like, a unit of length
   this.mtr = mtr;
+  this.inner = mtr - 6;
 
   var lw = qpo.board.lw; //left wall, for convenience
   var tw = qpo.board.tw; //top wall
+  var xo = lw+3 //x origin of inner rect (this.rect)
+  var yo = tw+3 //y origin of inner rect
 
   this.team = color; //"red" or "blue"
   this.x = gx; // grid position. (column number, 0 to q-1)
@@ -155,29 +158,13 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
     // console.log('search complete, found index ' + ind)
   }
 
-  this.coatingType='none'; //'none', 'shield', 'plasma', 'antimatter'
-  this.applyCoating = function(which){
-    this.coatingType = which;
-    switch(which){
-      case 'shield': {
-        break;
-      }
-      case 'plasma': {
-        break;
-      }
-      case 'antimatter': {
-        break;
-      }
-    }
-  }
-
   this.nx = null; //next x
   this.ny = null; //nexy y
   this.ntx = function(){return mtr*this.nx}; //next transform x
   this.nty = function(){return mtr*this.ny}; //next transform x
   this.ntrans = function(){return ('t'+this.ntx()+','+this.nty())};
 
-  this.rect = c.rect(lw, tw, mtr, mtr).attr({
+  this.rect = c.rect(lw+3, tw+3, this.inner, this.inner).attr({
       "fill":qpo.COLOR_DICT[color],
       'fill-opacity': 0.10,
       "opacity":1,
@@ -187,8 +174,23 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
       'stroke-dasharray': qpo.levelSAs[0]
     });
   this.icon = c.circle(lw + mtr/2, tw + mtr/2).attr(qpo.circleAtts(color));
-  this.phys = c.set(this.rect, this.icon);
+  // this.coatingType='none'; //'none', 'shield', 'plasma', 'antimatter'
+  this.coating = c.rect(lw,tw,mtr,mtr)
+    .attr({'fill':'none', 'stroke-width':2, 'stroke':'none'})
+    .data('type','none')
+  this.phys = c.set(this.rect, this.icon, this.coating);
   this.snap = function(){this.phys.attr({'transform':this.trans()});} //.bind(this) if glitchy
+
+  this.applyCoating = function(which){
+    this.coating.data('type', which);
+    switch(which){ //change the color of the coating
+      case 'none' : { this.coating.attr({'stroke':'none'}); break;}
+      case 'shield': { this.coating.attr({'stroke':qpo.COLOR_DICT['green']}); break;}
+      case 'plasma': { this.coating.attr({'stroke':qpo.COLOR_DICT['purple']}); break;}
+      case 'antimatter': { this.coating.attr({'stroke':qpo.COLOR_DICT['light blue']}); break;}
+      default: {console.log('SOMETHING WEIRD HAPPENED')}
+    }
+  }
 
   this.level = 1;
   this.turnsToNextLevel = qpo.levelTurns[0];
@@ -208,14 +210,9 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
     }
 
     switch(this.level){ //apply shield or plasma coating (lvs. 3, 4)
-      case 3: {
-        this.applyCoating('shield')
-        break;
-      }
-      case 4: {
-        this.applyCoating('plasma')
-        break;
-      }
+      case 1: {this.applyCoating('none'); break;}
+      case 3: { this.applyCoating('shield'); break;}
+      case 4: {this.applyCoating('plasma'); break;}
       default:{ break; }
     }
   }
@@ -297,11 +294,14 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
   //METHODS
   var easingType = '>';
   this.order = function(order){ // Set the unit's icon, deactivate the unit, and add order to queue.
-    this.setIcon(order);
-    this.deactivate();
-    // qpo.blueMovesQueue[qpo.blueActiveUnit] = order;
-    this.nextAction = order;
-    if (!this.alive || this.willScore){ this.icon.hide();}
+    if(order == 'bomb' && this.level == 1){false} //lv. 1 units can't bomb.
+    else { // anything else goes.
+      this.setIcon(order);
+      this.deactivate();
+      // qpo.blueMovesQueue[qpo.blueActiveUnit] = order;
+      this.nextAction = order;
+      if (!this.alive || this.willScore){ this.icon.hide();}
+    }
   }
   this.setIcon = function(order){
     this.phys.exclude(this.icon);
@@ -385,9 +385,10 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
     // console.log('scored via ' + why + ' on turn ' + qpo.activeGame.turnNumber);
     this.alive = false;
     this.willScore = false;
+    this.scores++;
     this.deactivate();
-    if(qpo.mode == 'campaign' && qpo.activeMission.number==1){ qpo.activeMission.end() }
-    else{ // do normal game mode stuff
+    if(qpo.activeGame.type == 'campaign' && qpo.activeMission.number==1){ qpo.activeMission.end() }
+    else{ // set spawn timer, show spawn icon, update scoreboard, end game if necessary
       this.spawnTimer = qpo.spawnTimers[qpo.activeGame.po];
       if (this.team==qpo.playerTeam){this.showSpawnIcon()}
       if(qpo.mode == "game"){ //deal with scoreboard, AI, spawn, and ending game
@@ -434,14 +435,17 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
     }.bind(this), 2000*qpo.timeScale)
   }
   this.kill = function(){
+    this.deaths++;
     this.alive = false;
     this.willScore = false;
     this.deactivate();
+    this.applyCoating('none');
     this.spawnTimer = qpo.spawnTimers[qpo.activeGame.po];
     if(this.team==qpo.playerTeam){ this.showSpawnIcon(); }
     this.icon.attr({'opacity':0});
+    this.phys.stop();
     this.phys.animate({ "opacity":0 }, 2000*qpo.timeScale);
-    this.rect.animate({ 'height':0, 'width':0 }, 2000*qpo.timeScale)
+    this.rect.animate({ 'height':0, 'width':0 , 'x':lw+mtr/2, 'y':tw+mtr/2}, 2000*qpo.timeScale)
     setTimeout(function(){ //hide the visage and move it "off the board"
       this.phys.hide();
       this.x = -1;
@@ -577,14 +581,14 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
     this.movingForward = false;
     var width = 4;
     var height = 20;
-    var speed = 4; // in units per turn
+    var speed = 4; // in boxes per turn
     var lw = qpo.board.lw;
     var tw = qpo.board.tw;
     var shot, anim;
     switch(this.team){ //create the shot and the correct animation based on if the unit is moving forward
       case "blue":
         shot = c.rect(lw+this.x*mtr + mtr*(25-width/2)/50,
-                      tw+this.y*mtr + this.rect.attr('height') + 2*mtr/50,
+                      tw+this.y*mtr + mtr + 2*mtr/50,
                       mtr*width/50, mtr*2/50, qpo.scr);
         anim = Raphael.animation({"height":height*mtr/50}, 500*qpo.timeScale,
           function(){ shot.animate({"y": shot.attr('y') + speed*mtr*qpo.activeGame.q},
@@ -617,6 +621,7 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
     }
     shot.attr(qpo.shotAtts);
     shot.data("team",this.team); //make it remember which team fired it
+    shot.data('unit',this) //and even which unit fired it
     shot.animate(anim);
     qpo.gui.push(shot);
     qpo.shots.push(shot);
@@ -656,11 +661,10 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
     var spawnLoc = qpo.findSpawn(this.team); //get the [row, column] for the spawn (loc is location)
     this.x = spawnLoc[1]; //update the grid positions, for qpo.snap
     this.y = spawnLoc[0]; //update the grid positions, for qpo.snap
-    console.log(this.team + ' unit spawned at ' + this.x + ',' + this.y);
     this.snap();
     this.phys.show();
     this.phys.attr({'opacity':1});
-    this.rect.attr({ 'height':this.mtr, 'width':this.mtr });
+    this.rect.attr({ 'height':this.inner, 'width':this.inner, 'x': xo, 'y':yo});
     if(this.spawnIconSet){this.spawnIconSet.hide();}
     this.alive = true;
   };
@@ -668,6 +672,10 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
     this.spawnTimer--;
     if(this.spawnTimer==0){this.nextAction='spawn'};
   }
+
+  this.kills = 0;
+  this.deaths = 0;
+  this.scores = 0;
 
   this.executeMove = function(){
     this.actions[this.nextAction]();

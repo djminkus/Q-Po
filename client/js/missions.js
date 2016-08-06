@@ -1,8 +1,8 @@
 qpo.Mission = function(args){
-  //args: [array of 2 strings, int, function]
-  this.snippets = args[0] || ['',''];
-  this.number = args[1] || -1; //mission number
-  this.specifics = args[2] || function(){}; //a function to be executed when mission is begun
+  //args: {snippets, number, specifics}
+  this.snippets = args.snippets || ['','']; //The mission text
+  this.number = args.number || -1; //mission number
+  this.specifics = args.specifics || function(){}; //a function to be executed when mission is begun
 
   this.begin = function(){
     this.textEls = c.set();
@@ -24,17 +24,36 @@ qpo.Mission = function(args){
   return this;
 }
 
-qpo.missions[1] = new qpo.Mission([['Use w/a/s/d to move the blue unit', 'across the enemy goal line.'],
-    1, function(){ //specifics for mission 1:
-
-    qpo.activeGame = new qpo.Game({'type': 'campaign', 'q':5, 'po':1, 'customScript': function(){
-      qpo.aiType = 'null';
-      qpo.activeGame.yAdj = 20;
-    } } );
-
-    var q = qpo.activeGame.q
+qpo.missions[1] = new qpo.Mission({
+  'snippets': ['Use w/a/s/d to move the blue unit', 'across the enemy goal line.'],
+  'number': 1,
+  'specifics': function(){
+    qpo.activeGame = new qpo.Game({'type': 'campaign', 'q':5, 'po':1,
+      'customScript': function(){
+        qpo.aiType = 'null';
+        this.yAdj = 20;
+        this.turns = 200;
+        // Adjust unit's .score() method to make it end the mission:
+        // setTimeout(function(){qpo.blue.units[0].score = qpo.activeMission.end}, 10000)
+        // ^^ doesn't work due to a scope issue.
+      }
+    })
     qpo.scoreboard.all.remove();
-  }]
-);
-qpo.missions[2] = new qpo.Mission([false, 2, function(){}])
+  }
+})
+qpo.missions[2] = new qpo.Mission({
+  'snippets': ['Eliminate both enemy units.','(Use e/spacebar to shoot.)'],
+  'number': 2,
+  'specifics': function(){
+    qpo.activeGame = new qpo.Game({'type': 'campaign', 'q':5, 'po':1,
+      'customScript': function(){
+        qpo.aiType = 'null';
+        this.yAdj = 20;
+        //spawn another red unit, make it so red units don't spawn, and end the game when the blue unit gets 2 kills.
+
+      }
+    })
+    qpo.scoreboard.all.remove();
+  }
+})
 qpo.missions[3] = new qpo.Mission([false, 3, function(){}])

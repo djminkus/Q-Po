@@ -197,6 +197,7 @@ qpo.MenuOption = function(gx, gy, textStr, action, menu, active, order, color, i
 
     this.unit = new qpo.Unit(this.color, this.gx, this.gy); // arg 'num' gets set to 0
     this.unit.setLevel(4);
+    this.unit.applyCoating('none');
     if(order){this.unit.setIcon(order)}
 
     this.text = qpo.xtext(this.unit.rect.attr('x')+this.unit.tx()+mtr*5/4,
@@ -372,7 +373,7 @@ qpo.displayTitleScreen = function(){ //Called whenever title screen is displayed
   var m = 100;
   this.board = new qpo.Board(2,1, c.width/2-m, c.height/2 - m*3/2, m);
   this.title = c.text(c.width/2, c.height/2-m, 'Q-Po').attr({qpoText:64})
-  this.promptt = c.text(c.width/2, c.height/2+100, "Press enter to start")
+  this.promptt = c.text(c.width/2, c.height/2+100, "press spacebar to start")
     .attr({qpoText:[32, qpo.COLOR_DICT["orange"]]});
   qpo.blink(this.promptt);
   this.layer3 = c.set().push(this.board.all, this.title, this.promptt);
