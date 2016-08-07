@@ -26,9 +26,6 @@ qpo.Game = function(args){ //"Game" class.
   }
   qpo.red = this.teams.red; //add a convenient pointer
   qpo.blue = this.teams.blue;
-  if(this.type=='single'){
-    //
-  }
 
   this.players = (new Array()).push(qpo.user.toPlayer());
 

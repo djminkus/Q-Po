@@ -225,7 +225,6 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
     }
   };
   this.levelDown = function(){ this.setLevel(this.level-1) };
-  this.resetLevel = function(){ this.setLevel(1) };
   this.updateLevel = function(){
     this.turnsToNextLevel--;
     if (this.turnsToNextLevel<0){this.levelUp()}
@@ -298,9 +297,9 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
     else { // anything else goes.
       this.setIcon(order);
       this.deactivate();
-      // qpo.blueMovesQueue[qpo.blueActiveUnit] = order;
       this.nextAction = order;
       if (!this.alive || this.willScore){ this.icon.hide();}
+      qpo.updateBlueAU(qpo.activeGame.po, "move"); //activate the new AU and board
     }
   }
   this.setIcon = function(order){
@@ -432,6 +431,7 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
       this.x = -1;
       this.y = -1;
       this.phys.attr({'opacity':1, 'transform':this.trans()});
+      this.setLevel(1);
     }.bind(this), 2000*qpo.timeScale)
   }
   this.kill = function(){
@@ -451,6 +451,7 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
       this.x = -1;
       this.y = -1;
       this.phys.attr({'opacity':1, 'transform':this.trans()});
+      this.setLevel(1);
     }.bind(this), 2000);
     if(qpo.mode == "game"){ //deal with scoreboard, AI, spawn, and ending game
       if(this.team=='blue'){qpo.red.addPoint()}
@@ -657,7 +658,6 @@ qpo.Unit = function(color, gx, gy, num){ //DEFINE UNIT TYPE/CLASS
   }
   this.spawn = function(){ //call this at the moment you want a new unit to spawn
     this.spawnTimer = -1;
-    this.resetLevel();
     var spawnLoc = qpo.findSpawn(this.team); //get the [row, column] for the spawn (loc is location)
     this.x = spawnLoc[1]; //update the grid positions, for qpo.snap
     this.y = spawnLoc[0]; //update the grid positions, for qpo.snap

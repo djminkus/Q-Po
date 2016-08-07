@@ -50,7 +50,6 @@ qpo.missions[2] = new qpo.Mission({
         qpo.aiType = 'null';
         this.yAdj = 20;
         //spawn another red unit, make it so red units don't spawn, and end the game when the blue unit gets 2 kills.
-
       }
     })
     qpo.scoreboard.all.remove();

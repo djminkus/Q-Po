@@ -838,64 +838,24 @@ qpo.detectCollisions = function(ts){ //ts is teamSize, aka po
     }//end iterating over bombs
   } //end iterating over bombs after checking if bombs exists
 
-  //ITERATE OVER UNITS HERE. We have the qpo.blue.units and qpo.red.units arrays as well
-  //  as the "units" array. Check for collisions with walls and for collisions between
-  //  units of opposite colors.
+  //CHECK FOR COLLISIONS BETWEEN UNITS:
   for (var i=0; i<ts; i++){ //iterate over blue team of units
-    //Get the blue unit's borders
-    var bu
-    if(qpo.blue.units[i].alive){ //detect some collisions
-      var box = qpo.blue.units[i].rect.getBBox();
-      var nBOU = box.y
-      var wBOU = box.x
-      var sBOU = box.y2
-      var eBOU = box.x2
-
-      //if the blue unit has hit a wall, stop the unit and place it snugly on the wall.
-      if( nBOU < qpo.board.tw ||
-          wBOU < qpo.board.lw ||
-          sBOU > qpo.board.bw ||
-          eBOU > qpo.board.rw
-        ){
-        if (sBOU > qpo.board.bw){ //South wall. Score.
-          // var testC = c.circle(300, qpo.board.bw ,20).attr({'stroke':'white'});
-          // var testC2 = c.circle(200, sBOU, 20).attr({'stroke':'purple'});
-          // var testC3 = c.circle(100, qpo.blue.units[i].rect.getBBox().y + qpo.guiDimens.squareSize -1, 20).attr({'stroke':'pink'}) ;
-          // setTimeout(function(){
-          //   testC.remove()
-          // }, 500);
-          qpo.blue.units[i].score('collision');
-        }
-        else{ //Other wall. Stop and snap
-          qpo.blue.units[i].phys.stop();
-          qpo.blue.units[i].snap();
-          console.log('unit snapped due to wall hit')
-        }
-      }
-
-      if(qpo.red.units[i].alive){ //wall detection red
-        //get the red unit's borders:
-        var boxr = qpo.red.units[i].rect.getBBox()
-        var nBOUr = boxr.y + 1
-        var wBOUr = boxr.x + 1
-        var sBOUr = boxr.y2 - 1
-        var eBOUr = boxr.x2 - 1
-
-        //if the red unit has hit a wall, stop the unit and place it snugly on the wall.
-        if (nBOUr < qpo.board.tw || wBOUr < qpo.board.lw ||
-            sBOUr > qpo.board.bw || eBOUr > qpo.board.rw) {
-          qpo.red.units[i].phys.stop();
-          qpo.red.units[i].snap();
-          if (nBOUr < qpo.board.tw){ qpo.red.units[i].score(); }
-        }
-      }
+    var bu = qpo.blue.units[i]
+    if(bu.alive){ //wall detection blue, and collisions with red units
+      var bbox = bu.phys.getBBox()
+      var nBOU = bbox.y + 1
+      var wBOU = bbox.x + 1
+      var sBOU = nBOU + qpo.guiDimens.squareSize - 2
+      var eBOU = wBOU + qpo.guiDimens.squareSize - 2
 
       for (var j=0; j<ts; j++) { //iterate over red team of units
-        if (qpo.red.units[j].alive){
-          var nBOU2 = qpo.red.units[j].rect.getBBox().y + 1;
-          var wBOU2 = qpo.red.units[j].rect.getBBox().x + 1;
-          var sBOU2 = nBOU2 + qpo.guiDimens.squareSize - 2;
-          var eBOU2 = wBOU2 + qpo.guiDimens.squareSize - 2;
+        var ru = qpo.red.units[j]
+        if (ru.alive){
+          var rbox = ru.phys.getBBox()
+          var nBOU2 = rbox.y + 1
+          var wBOU2 = rbox.x + 1
+          var sBOU2 = nBOU2 + qpo.guiDimens.squareSize - 2
+          var eBOU2 = wBOU2 + qpo.guiDimens.squareSize - 2
 
           if( (( nBOU <= nBOU2 && nBOU2 <= sBOU ) || //vertical overlap
               ( nBOU <= sBOU2 && sBOU2 <= sBOU ) ||
@@ -905,8 +865,11 @@ qpo.detectCollisions = function(ts){ //ts is teamSize, aka po
               ( wBOU <= eBOU2 && eBOU2 <= eBOU ) ||
               ( wBOU2 <= wBOU && wBOU <= eBOU2 ) ||
               ( wBOU2 <= eBOU && eBOU <= eBOU2 )) ) {
-            qpo.red.units[j].kill();
-            qpo.blue.units[i].kill();
+            var redCoat = ru.coating.data('type')
+            var blueCoat = bu.coating.data('type')
+            if (redCoat=='plasma' && blueCoat != 'plasma'){ bu.kill(); ru.applyCoating('none') }
+            else if (blueCoat=='plasma' && redCoat != 'plasma') { ru.kill(); bu.applyCoating('none') }
+            else { bu.kill(); ru.kill() }
           }
         }
       }//end iterating over red units
@@ -1056,10 +1019,7 @@ $(window).keydown(function(event){
             case 66:
             case 88: //qweasdx detected (order)
               var moveStr = qpo.keyCodes[event.keyCode];
-              // console.log('keypress detected: ' + event.keyCode + ', leading to moveStr' + qpo.keyCodes[event.keyCode]);
               qpo.blue.units[qpo.blueActiveUnit].order(moveStr);
-              qpo.updateBlueAU(qpo.activeGame.po, "move"); //activate the new AU and board
-              // controlPanel.accept(event);
               break;
             case 37:
             case 38:
