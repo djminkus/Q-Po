@@ -6,10 +6,6 @@ qpo.Player = function(units, handle, type, team){ // "Player" class. Can be huma
   this.type = type || null; // human or one of three AI types (random, rigid, neural)
   this.team = team || null; // 'red' or 'blue' (at least for now)
 
-  if(this.type == 'neural'){
-    
-  }
-
   this.addUnit = function(unit){ this.squad ? (this.squad.addItem(unit)) : (console.log('')) }
 
   return this;

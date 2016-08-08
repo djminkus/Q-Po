@@ -4,7 +4,7 @@ var temporal_window = 1; // amount of temporal memory. 0 = agent lives in-the-mo
 var network_size = num_inputs*temporal_window + num_actions*temporal_window + num_inputs;
 
 // the value function network computes a value of taking any of the possible actions
-// given an input state. Here we specify one explicitly the hard way
+// given an input state. Here we specify one explicitly the hard way,
 // but user could also equivalently instead use opt.hidden_layer_sizes = [20,20]
 // to just insert simple relu hidden layers.
 var layer_defs = [];
@@ -17,17 +17,18 @@ layer_defs.push({type:'regression', num_neurons:num_actions});
 // by backpropping the temporal difference learning rule.
 var tdtrainer_options = {learning_rate:0.001, momentum:0.0, batch_size:64, l2_decay:0.01};
 
-var opt = {};
-opt.temporal_window = temporal_window;
-opt.experience_size = 30000;
-opt.start_learn_threshold = 1000;
-opt.gamma = 0.7;
-opt.learning_steps_total = 200000;
-opt.learning_steps_burnin = 3000;
-opt.epsilon_min = 0.05;
-opt.epsilon_test_time = 0.05;
-opt.layer_defs = layer_defs;
-opt.tdtrainer_options = tdtrainer_options;
+var opt = {
+  'temporal_window': temporal_window,
+  'experience_size' : 30000,
+  'start_learn_threshold' : 1000,
+  'gamma' : 0.7,
+  'learning_steps_total' : 200000,
+  'learning_steps_burnin' : 3000,
+  'epsilon_min' : 0.05,
+  'epsilon_test_time' : 0.05,
+  'layer_defs' : layer_defs,
+  'tdtrainer_options' : tdtrainer_options
+};
 
 qpo.convertStateToInputs = function(state){
   var arr = new Array(); //final array to be fed to network as input
@@ -80,10 +81,7 @@ qpo.convertStateToInputs = function(state){
 qpo.actions = ["moveLeft","moveUp","moveRight","moveDown","shoot","bomb","stay"];
 
 qpo.redRewardQueue = new Array();
-qpo.sixty = {
-  "list" : new Array(),
-  "cursor" : 0
-};
+qpo.sixty = {"list" : new Array(), "cursor" : 0};
 
 var freshStart = false;
 
@@ -93,10 +91,7 @@ qpo.openingCode = function(){ //get an AI net ready, either from storage or fres
     console.log(localStorage['aliNN'] + ", Ali was deleted");
   };
   try { //retrieve saved AI or generate new one
-    qpo.ali = { //The OG qpo AI
-      "nn" : null,
-      "team" : "red"
-    };
+    qpo.ali = {  'nn': null,  "team": "red" };
     qpo.ali.nn = new deepqlearn.Brain(num_inputs, num_actions, opt);
     if(localStorage['aliNN'] !== "null"){ //retrieve saved network from local storage
       // console.log("generating Ali's net from localStorage");
@@ -108,10 +103,7 @@ qpo.openingCode = function(){ //get an AI net ready, either from storage or fres
       console.log("no net found in localStorage. making new one."); //no net found in localStorage
       var brain = new deepqlearn.Brain(num_inputs, num_actions, opt); // start fresh
       // console.log(brain);
-      qpo.ali = { //The OG qpo AI
-        "nn" : brain,
-        "team" : "red"
-      };
+      qpo.ali = {  "nn" : brain, "team" : "red" };
     }
   }
   catch(err){ console.log(err); }

@@ -1,10 +1,12 @@
+// 'rigid' AI.
+
 /* WAYS TO IMPROVE AI:
 Move back instead of left/right if shot is too close to avoid
 Don't fire a bomb if too close to a wall
 */
 
-function findMove(unit){ // returns a string representing the move to be executed
-                         //   by the computer player's selected unit.
+qpo.findMove = function(unit){ // returns a string representing the move to be executed
+                         //   by the computer player's unit in question.
   var chosenMove = null;
   var movesList = ["moveLeft","moveUp","moveRight","moveDown","bomb","shoot","stay"]; //different order than "qpo.moves", unfortunately
     //used at the end to return the proper string for the chosen move.

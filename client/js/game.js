@@ -151,12 +151,12 @@ qpo.Game = function(args){ //"Game" class.
     qpo.sixty.cursor = (qpo.sixty.cursor == 59) ? 0 : (qpo.sixty.cursor + 1); //cycle the cursor
     qpo.redRewardQueue = [];
     // Each turn, reward AI for favorable events, and get an action for each ai-controlled unit:
-    try{qpo.ali.nn.backward(qpo.sixty.list.reduce(qpo.add,0));} // try to reward
-    catch(err){console.log("can't train without having acted.");} // but will fail if no actions have been taken
+    try{qpo.ali.nn.backward(qpo.sixty.list.reduce(qpo.add, 0));} // try to reward
+    catch(err){console.log("Can't train without having acted.");} // but will fail if no actions have been taken
     // Manage the game state variables and get input array for nn:
     this.prevState = this.state;
     this.state = this.getState();
-    var input = qpo.convertStateToInputs(this.state);
+    qpo.inputForNeural = qpo.convertStateToInputs(this.state);
 
     //// MOVE GENERATION/EXECUTION SECTION
     for (var i=0; i<this.po; i++){ //snap all units into their correct positions prior to executing new moves
@@ -170,56 +170,8 @@ qpo.Game = function(args){ //"Game" class.
       ru = this.teams.red.units[i];
       bu = this.teams.blue.units[i];
 
-      if (this.type != 'multiplayer'){ // Generate AI moves
-        if(ru.alive){ //Generate a move from random, rigid, null, or neural AI
-          switch(qpo.aiType){
-            case "random": {
-              ru.nextAction = qpo.moves[Math.round(Math.random()*6)];
-              break;
-            }
-            case "rigid": {
-              ru.nextAction = findMove(qpo.red.units[i]);
-              break;
-            }
-            case "neural": {
-              input[217] = i-0.5-(po/2); //generate a zero-mean input representing chosen unit
-              var action = qpo.ali.nn.forward(input); // Have the AI net generate a move (integer)
-              ru.nextAction = qpo.actions[action]; //get the proper string
-              break;
-            }
-            case 'null' : { //just stay.
-              ru.nextAction = 'stay';
-              break;
-            }
-            default: {
-              console.log("this was unexpected");
-              break;
-            }
-          }
-        }
-        if(qpo.trainingMode && bu.alive){ // In training mode, generate a move for the blue unit, too.
-          switch(qpo.trainerOpponent){
-            case "random": {
-              bu.nextAction = qpo.moves[Math.round(Math.random()*6)];
-              break;
-            }
-            case "rigid": {
-              bu.nextAction = findMove(qpo.blue.units[i]);
-              break;
-            }
-            case "neural": {
-              input[217] = i-0.5-(po/2); //generate a zero-mean input representing chosen unit
-              var action = qpo.ali.nn.forward(input); // Have the AI net generate a move
-              bu.nextAction = qpo.actions[action]; //get the proper string
-              break;
-            }
-            default: {
-              console.log("this was unexpected");
-              break;
-            }
-          }
-        }
-      }
+      if (this.type != 'multiplayer'){ ru.generateMove(qpo.aiType) }
+      if(qpo.trainingMode && bu.alive){ bu.generateMove(qpo.trainerOpponent); }
       ru.executeMove();
       bu.executeMove();
       bu.resetIcon(); //reset the icons for the player's team
