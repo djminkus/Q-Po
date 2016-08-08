@@ -127,7 +127,7 @@ qpo.Menu = function(titleStr, itemList, parent, placeholder){ // A Menu contains
           break;
         }
         case 'game' : { //start a game
-          qpo.activeGame = new qpo.Game({'q':obj.q, 'po': obj.po, 'type':obj.type});
+          qpo.activeGame = new qpo.Game({'q':obj.q, 'po': obj.po, 'type':obj.type, 'ppt': obj.ppt});
           break;
         }
         default : {
@@ -291,15 +291,15 @@ qpo.makeMenus = function(){ //Lay out the menu skeletons (without creating Rapha
   ], 'Main Menu');
   qpo.menus['vs. Computer'].cl.list[0].action = function(){ qpo.menus['vs. Computer'].close({
     'destination':'game',
-    'type':'single', 'q':7, 'po':2
+    'type':'single', 'q':8, 'po':2, 'ppt': 2
   }, 1000); }
   qpo.menus['vs. Computer'].cl.list[1].action = function(){ qpo.menus['vs. Computer'].close({
     'destination':'game',
-    'type':'single', 'q':8, 'po':3
+    'type':'single', 'q':9, 'po':3, 'ppt': 3
   }, 1000); }
   qpo.menus['vs. Computer'].cl.list[2].action = function(){ qpo.menus['vs. Computer'].close({
     'destination':'game',
-    'type':'single', 'q':9, 'po':4
+    'type':'single', 'q':11, 'po':4, 'ppt':3
   }, 1000); }
 
   qpo.menus['Multiplayer'] = new qpo.Menu('Multiplayer', [

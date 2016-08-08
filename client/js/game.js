@@ -5,9 +5,14 @@ qpo.Game = function(args){ //"Game" class.
   this.q = args.q || 7;
   this.po = args.po || 3;
   this.type = args.type || 'single'; //What kind of game is this? (tutorial, single, multi, campaign)
-  this.turns = (args.turns || 30); //How many turns does this game consist of?
+  this.turns = (args.turns || 50); //How many turns does this game consist of?
   this.ppt = args.ppt || 1; //players per team
   this.customScript = args.customScript || function(){};
+  this.players = args.players || [qpo.user.toPlayer(), ]
+
+  this.addPlayer = function(player, team){
+
+  }
 
   qpo.aiType = 'neural';
 
@@ -140,9 +145,9 @@ qpo.Game = function(args){ //"Game" class.
 
     qpo.moment = new Date();
 
-    //// AI SECTION
+    //// AI REWARD SECTION
     // Record reward events that happened this turn:
-    qpo.sixty.list[qpo.sixty.cursor] = qpo.redRewardQueue.reduce(qpo.add,0);
+    qpo.sixty.list[qpo.sixty.cursor] = qpo.redRewardQueue.reduce(qpo.add, 0);
     qpo.sixty.cursor = (qpo.sixty.cursor == 59) ? 0 : (qpo.sixty.cursor + 1); //cycle the cursor
     qpo.redRewardQueue = [];
     // Each turn, reward AI for favorable events, and get an action for each ai-controlled unit:
@@ -153,7 +158,7 @@ qpo.Game = function(args){ //"Game" class.
     this.state = this.getState();
     var input = qpo.convertStateToInputs(this.state);
 
-    //// MOVE EXECUTION SECTION
+    //// MOVE GENERATION/EXECUTION SECTION
     for (var i=0; i<this.po; i++){ //snap all units into their correct positions prior to executing new moves
       if(qpo.blue.units[i].alive){ qpo.blue.units[i].snap(); }
       if(qpo.red.units[i].alive){ qpo.red.units[i].snap(); }
