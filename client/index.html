@@ -7,12 +7,11 @@
     <link rel="stylesheet" type="text/css" href="css/style.css"></link>
 	  <link rel="stylesheet" type="text/css" href="css/bootstrap.min.css"></link>
     <link href='http://fonts.googleapis.com/css?family=Open+Sans:300,400' rel='stylesheet' type='text/css'></link>
-
   </head>
 
   <body>
 
-    <!-- top menu -->
+    <!-- top menu (not in use)-->
     <!-- <nav id="header" class="navbar navbar-default"> -->
       <!-- <div class="container-fluid"> -->
         <!-- Brand and toggle get grouped for better mobile display -->
@@ -25,7 +24,6 @@
           </button>
           <a class="navbar-brand" href="# ">Q-Po</a> -->
         <!-- </div> -->
-
         <!-- Collect the nav links, forms, and other content for toggling -->
         <!-- <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
           <ul class="nav navbar-nav">
@@ -51,7 +49,6 @@
     <!-- <script type="text/javascript" src="js/socket-init.js"></script> -->
 
     <!-- Other libraries -->
-
     <script type="text/javascript" src="js/libs/minx.js"></script>
     <script type="text/javascript" src="js/libs/raphael-min.js"></script>
     <script type="text/javascript" src="js/libs/jquery-1.11.1.min.js"></script>
@@ -59,9 +56,13 @@
     <script type="text/javascript" src="js/libs/util.js"></script>
     <script type="text/javascript" src="js/libs/deepqlearn.js"></script>
 
-    <!-- get the game code -->
+    <!-- Make the qpo object, establish some constants, make some utility functions, detect input, etc. -->
     <script type="text/javascript" src="js/qpo.js"></script>
+
+    <!-- Classes and other organized code -->
+    <script type="text/javascript" src="../server/Smartbot.js"></script>
     <script type="text/javascript" src="js/player.js"></script>
+    <script type="text/javascript" src="js/Squad.js"></script>
     <script type="text/javascript" src="js/user.js"></script>
     <script type="text/javascript" src="js/team.js"></script>
     <script type="text/javascript" src="js/game.js"></script>
@@ -75,10 +76,8 @@
     <script type="text/javascript" src="js/tut.js"></script>
     <script type="text/javascript" src="js/missions.js"></script>
 
-    <!-- start rendering things -->
+    <!-- Entry point: Start actually rendering things -->
     <script type="text/javascript" src="js/newMenus.js"></script>
 
-
-
   </body>
-  </html>
+</html>

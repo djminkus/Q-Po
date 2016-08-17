@@ -84,7 +84,7 @@ qpo.Menu = function(titleStr, itemList, parent, placeholder){ // A Menu contains
 
     this.background = c.rect(0,0, c.width, c.height).attr({'fill':qpo.COLOR_DICT['background']});
     this.title = c.text(c.width/2, 60, this.titleStr).attr({qpoText:[this.TITLE_SIZE, qpo.COLOR_DICT['foreground']]});
-    this.layer1 = c.set().push(this.background, this.title, this.upperPanel);
+    this.layer1 = c.set().push(this.background, this.title);
 
     qpo.makeMuteButton();
 
@@ -108,28 +108,16 @@ qpo.Menu = function(titleStr, itemList, parent, placeholder){ // A Menu contains
   this.up = function(){ this.close({'destination':'parent'}); }
 
   this.close = function(obj, time){ //clear the canvas and open the next screen
-    qpo.ignoreInput = true;
-    qpo.fadeOutGlow(qpo.glows, function(){qpo.ignoreInput = false;}, time);
+    qpo.ignore(time)
+    qpo.fadeOutGlow(qpo.glows, function(){}, time);
     qpo.fadeOut(this.all, function(){
       c.clear();
       this.all = null; //remove reference to raphs too
       switch(obj.destination){
-        case 'title': { //display title screen
-          qpo.titleScreen = new qpo.displayTitleScreen();
-          break;
-        }
-        case 'parent' : { //display parent menu
-          this.parent.open();
-          break;
-        }
-        case 'mission' : { //start a mission
-          qpo.missions[obj.missionNum].begin();
-          break;
-        }
-        case 'game' : { //start a game
-          qpo.activeGame = new qpo.Game({'q':obj.q, 'po': obj.po, 'type':obj.type, 'ppt': obj.ppt});
-          break;
-        }
+        case 'title': { qpo.titleScreen = new qpo.displayTitleScreen(); break; }
+        case 'parent' : { this.parent.open(); break; }
+        case 'mission' : { qpo.missions[obj.missionNum].begin(); break;}
+        case 'game' : { qpo.activeGame = new qpo.Game(obj.gameArgs); break; }
         default : {
           try{qpo.menus[obj].open();}
           catch(e){console.log(obj, qpo.menus[obj])}
@@ -291,15 +279,24 @@ qpo.makeMenus = function(){ //Lay out the menu skeletons (without creating Rapha
   ], 'Main Menu');
   qpo.menus['vs. Computer'].cl.list[0].action = function(){ qpo.menus['vs. Computer'].close({
     'destination':'game',
-    'type':'single', 'q':8, 'po':2, 'ppt': 2
+    'gameArgs': {
+      'type':'single', 'q':8, 'po':4, 'ppt': 2,
+      'bluePlayers': [qpo.user.toPlayer({'team':'blue', 'number': 0})]
+    }
   }, 1000); }
   qpo.menus['vs. Computer'].cl.list[1].action = function(){ qpo.menus['vs. Computer'].close({
     'destination':'game',
-    'type':'single', 'q':9, 'po':3, 'ppt': 3
+    'gameArgs': {
+      'type':'single', 'q':9, 'po':9, 'ppt': 3,
+      'bluePlayers': [qpo.user.toPlayer({'team':'blue', 'number': 0})]
+    }
   }, 1000); }
   qpo.menus['vs. Computer'].cl.list[2].action = function(){ qpo.menus['vs. Computer'].close({
     'destination':'game',
-    'type':'single', 'q':11, 'po':4, 'ppt':3
+    'gameArgs': {
+      'type':'single', 'q':11, 'po':12, 'ppt':3,
+      'bluePlayers': [qpo.user.toPlayer({'team':'blue', 'number': 0})]
+    }
   }, 1000); }
 
   qpo.menus['Multiplayer'] = new qpo.Menu('Multiplayer', [
@@ -384,6 +381,7 @@ qpo.displayTitleScreen = function(){ //Called whenever title screen is displayed
   qpo.fadeIn(this.all);
 
   this.close = function(){ //clear screen and make main menu
+    qpo.ignore(400)
     this.promptt.stop();
     qpo.fadeOut(this.promptt, function(){}, 200);
     qpo.fadeOut(this.all, function(){
@@ -401,4 +399,5 @@ qpo.displayTitleScreen = function(){ //Called whenever title screen is displayed
 //CREATE TITLE SCREEN AND MENUS:
 qpo.titleScreen = new qpo.displayTitleScreen(); // ******
 qpo.makeMenus();
-qpo.user = localStorage['user'] || new qpo.User('epicGuest');
+if(qpo.devMode){ qpo.user = localStorage['minx'] || new qpo.User('devMinx')}
+else {qpo.user = localStorage['user'] || new qpo.User('epicGuest');}

@@ -20,14 +20,16 @@ qpo.shotAtts = {
   'stroke-width':2
 }
 qpo.scr = 2 //shot corner radius
-qpo.levelTurns = [3,5,8,13] //qpo.levelTurns[level-1] gives how many turns it takes to get to that level from previous level
+qpo.levelTurns = [3,5,8,999] //qpo.levelTurns[level-1] gives how many turns it takes to get to that level from previous level
 qpo.levelSAs = ['.', '-.', '-', ''] //stroke-dasharrays for each level
 
-qpo.Unit = function(color, gx, gy, num, player){ //DEFINE UNIT TYPE/CLASS
+qpo.Unit = function(color, gx, gy, num, player, belongs){ //DEFINE UNIT TYPE/CLASS
   // color is 'blue' or 'red' -- "Which team is the unit on?"
   // gx and gy are the initial grid values (the "spawn point, per se)
   // num is this unit's number (within its team)
   //   (For now, only blue units are numbered (6-20-15) )
+  // player is the Player that owns this unit
+  // belongs is a boolean -- true if this unit belongs to this client.
 
   var mtr = qpo.guiDimens.squareSize; //mtr for meter, meaning one 'unit' of length
   this.mtr = mtr; // side length of unit with coating
@@ -39,6 +41,9 @@ qpo.Unit = function(color, gx, gy, num, player){ //DEFINE UNIT TYPE/CLASS
   var yo = tw+3 //y origin of inner rect
 
   this.team = color; //"red" or "blue"
+  this.belongsToUser = belongs;
+  this.player = player; //the Player that this unit belongs to
+
   this.x = gx; // grid position. (column number, 0 to q-1)
   this.y = gy; // grid position (row number, 0 to q-1)
   this.tx = function(){return (mtr*this.x);}; //raphael transform, x value
@@ -173,12 +178,16 @@ qpo.Unit = function(color, gx, gy, num, player){ //DEFINE UNIT TYPE/CLASS
       'stroke-width': qpo.unitStroke,
       'stroke-dasharray': qpo.levelSAs[0]
     });
-  this.icon = c.circle(lw + mtr/2, tw + mtr/2).attr(qpo.circleAtts(color));
-  // this.coatingType='none'; //'none', 'shield', 'plasma', 'antimatter'
   this.coating = c.rect(lw,tw,mtr,mtr)
     .attr({'fill':'none', 'stroke-width':2, 'stroke':'none'})
     .data('type','none')
-  this.phys = c.set(this.rect, this.icon, this.coating);
+  this.phys = c.set(this.rect, this.coating);
+  if(this.belongsToUser){ //make the icon and add it to the phys
+    this.icon = c.circle(lw + mtr/2, tw + mtr/2).attr(qpo.circleAtts(color))
+    this.phys.push(this.icon)
+  } else { //a placeholder icon so the methods don't break
+    this.icon = c.rect(-500,0, 1,1)
+  }
   this.snap = function(){this.phys.attr({'transform':this.trans()});} //.bind(this) if glitchy
 
   this.applyCoating = function(which){
@@ -292,71 +301,74 @@ qpo.Unit = function(color, gx, gy, num, player){ //DEFINE UNIT TYPE/CLASS
 
   //METHODS
   var easingType = '>';
-  this.order = function(order){ // Set the unit's icon, deactivate the unit, and add order to queue.
+  this.order = function(order){ // Set this unit's icon and update its .nextAction, then update the user's active unit
     if(order == 'bomb' && this.level == 1){false} //lv. 1 units can't bomb.
-    else { // anything else goes.
+    else {
       this.setIcon(order);
-      this.deactivate();
       this.nextAction = order;
       if (!this.alive || this.willScore){ this.icon.hide();}
-      qpo.updateBlueAU(qpo.activeGame.po, "move"); //activate the new AU and board
+      qpo.user.updateActiveUnit("move");
     }
   }
   this.setIcon = function(order){
-    this.phys.exclude(this.icon);
-    this.icon.remove(); //remove the old icon from the paper
-    var newIcon;
-    var color = qpo.COLOR_DICT[this.team];
-    switch(order){ //add the new icon
-      case 'moveUp':
-        newIcon = qpo.arrow(lw+mtr/2, tw+mtr/2, color, 'up');
-        // args[3] = 'up';
-        break;
-      case 'moveDown':
-        newIcon = qpo.arrow(lw+mtr/2, tw+mtr/2, color, 'down');
-        break;
-      case 'moveLeft':
-        newIcon = qpo.arrow(lw+mtr/2, tw+mtr/2, color, 'left');
-        break;
-      case 'moveRight':
-        newIcon = qpo.arrow(lw+mtr/2, tw+mtr/2, color, 'right');
-        break;
-      case 'shoot':
-        newIcon = c.rect(lw+mtr/2-2, tw+mtr/2-7.5, 4, 15, 2).attr({
-          // "fill":qpo.COLOR_DICT['green'],
-          'stroke':qpo.COLOR_DICT['green'],
-          'stroke-width':2
-        });
-        break;
-      case 'bomb':
-        newIcon = c.rect(lw+mtr/2 - 5, tw+mtr/2 - 5, 10*mtr/50, 10*mtr/50, 2).attr({
-          // "fill":qpo.COLOR_DICT['purple'],
-          'stroke':qpo.COLOR_DICT['purple'],
-          'stroke-width':3,
-        });
-        break;
-      case 'stay':
-        newIcon = c.circle(lw+mtr/2, tw+mtr/2, mtr/10).attr(qpo.circleAtts(this.team));
-        break;
-      default:
-        console.log('this was unexpected');
-        console.log(order)
+    if (this.belongsToUser){ //update the icon, but not for non-user units.
+      this.phys.exclude(this.icon);
+      this.icon.remove(); //remove the old icon from the paper
+      var newIcon;
+      var color = qpo.COLOR_DICT[this.team];
+      switch(order){ //add the new icon
+        case 'moveUp':
+          newIcon = qpo.arrow(lw+mtr/2, tw+mtr/2, color, 'up');
+          // args[3] = 'up';
+          break;
+        case 'moveDown':
+          newIcon = qpo.arrow(lw+mtr/2, tw+mtr/2, color, 'down');
+          break;
+        case 'moveLeft':
+          newIcon = qpo.arrow(lw+mtr/2, tw+mtr/2, color, 'left');
+          break;
+        case 'moveRight':
+          newIcon = qpo.arrow(lw+mtr/2, tw+mtr/2, color, 'right');
+          break;
+        case 'shoot':
+          newIcon = c.rect(lw+mtr/2-2, tw+mtr/2-7.5, 4, 15, 2).attr({
+            // "fill":qpo.COLOR_DICT['green'],
+            'stroke':qpo.COLOR_DICT['green'],
+            'stroke-width':2
+          });
+          break;
+        case 'bomb':
+          newIcon = c.rect(lw+mtr/2 - 5, tw+mtr/2 - 5, 10*mtr/50, 10*mtr/50, 2).attr({
+            // "fill":qpo.COLOR_DICT['purple'],
+            'stroke':qpo.COLOR_DICT['purple'],
+            'stroke-width':3,
+          });
+          break;
+        case 'stay':
+          newIcon = c.circle(lw+mtr/2, tw+mtr/2, mtr/10).attr(qpo.circleAtts(this.team));
+          break;
+        default:
+          console.log('this was unexpected');
+          console.log(order)
+      }
+      newIcon.attr({'transform':'t'+this.tx()+','+this.ty()});
+      this.phys.push(newIcon);
+      this.icon = newIcon;
     }
-    newIcon.attr({'transform':'t'+this.tx()+','+this.ty()});
-    this.phys.push(newIcon);
-    this.icon = newIcon;
   }
   this.resetIcon = function(){
-    this.phys.exclude(this.icon);
-    this.icon.remove();
-    this.icon = c.circle(lw + mtr/2, tw + mtr/2, mtr/7).attr(qpo.circleAtts(this.team));
-    this.phys.push(this.icon);
-    this.snap();
-    if(!this.alive){
-      this.icon.hide();
-      if (this.team == qpo.playerTeam){this.spawnText.attr({'text':this.spawnTimer});}
-      if (this.spawnTimer == 0){ //let the player queue a move in the spawn icon
-        // this.spawnText.hide();
+    if (this.belongsToUser){ //reset the icon, but not for non-user units.
+      this.phys.exclude(this.icon);
+      this.icon.remove();
+      this.icon = c.circle(lw + mtr/2, tw + mtr/2, mtr/7).attr(qpo.circleAtts(this.team));
+      this.phys.push(this.icon);
+      this.snap();
+      if(!this.alive){
+        this.icon.hide();
+        if (this.team == qpo.playerTeam){this.spawnText.attr({'text':this.spawnTimer});}
+        if (this.spawnTimer == 0){ //let the player queue a move in the spawn icon
+          // this.spawnText.hide();
+        }
       }
     }
   }
@@ -364,20 +376,25 @@ qpo.Unit = function(color, gx, gy, num, player){ //DEFINE UNIT TYPE/CLASS
     var choice = Math.floor(7*Math.random());
     this.setIcon(qpo.moves[choice]);
   }
-  this.activate = function(){
-    var pinchEls = qpo.pinch(this.rect);
-    this.turnOrange = setTimeout(function(){this.rects.attr({"stroke":qpo.COLOR_DICT["orange"]})}.bind(this), 200);
-    setTimeout(function(){pinchEls.remove()}.bind(this), 200);
-    if(!this.alive){ this.phys.hide(); };
-    this.phys.toFront();
-    this.active = true;
-    qpo.blueActiveUnit = this.num;
+  this.activate = function(){ // Highlight (with animation)
+    if(this.alive){ // Only works if unit is alive.
+      if(qpo.user.activeUnit){qpo.user.activeUnit.deactivate()} //make sure to deactivate old active unit
+
+      var pinchEls = qpo.pinch(this.rect);
+      this.turnOrange = setTimeout(function(){this.rects.attr({"stroke":qpo.COLOR_DICT["orange"]})}.bind(this), 200);
+      setTimeout(function(){pinchEls.remove()}.bind(this), 200);
+
+      this.phys.toFront();
+      this.active = true;
+      qpo.user.activeUnit = this;
+    } else { console.log("Oops... you tried to activate a dead unit.")}
   }
   this.deactivate = function(){
     clearTimeout(this.turnOrange);
     if(this.team == qpo.playerTeam){ this.rects.attr({inactiveUnit:this.team}); }
     else { this.rect.attr({inactiveUnit:this.team}); }
     this.active = false;
+    qpo.user.activeUnit = null;
   }
 
   this.score = function(why){
@@ -388,7 +405,7 @@ qpo.Unit = function(color, gx, gy, num, player){ //DEFINE UNIT TYPE/CLASS
     this.deactivate();
     if(qpo.activeGame.type == 'campaign' && qpo.activeMission.number==1){ qpo.activeMission.end() }
     else{ // set spawn timer, show spawn icon, update scoreboard, end game if necessary
-      this.spawnTimer = qpo.spawnTimers[qpo.activeGame.po];
+      this.spawnTimer = qpo.spawnTimers[qpo.activeGame.unitsPerPlayer];
       if (this.team==qpo.playerTeam){this.showSpawnIcon()}
       if(qpo.mode == "game"){ //deal with scoreboard, AI, spawn, and ending game
         qpo[this.team].addPoint();
@@ -418,8 +435,6 @@ qpo.Unit = function(color, gx, gy, num, player){ //DEFINE UNIT TYPE/CLASS
               winner = "red";
             }
           }, 2000*qpo.timeScale);
-          qpo.blueActiveUnit = -1;
-          qpo.redActiveUnit = -1;
           qpo.activeGame.isEnding = true;
           setTimeout(function(){qpo.activeGame.end(winner);}, 2000*qpo.timeScale);
         }
@@ -438,9 +453,9 @@ qpo.Unit = function(color, gx, gy, num, player){ //DEFINE UNIT TYPE/CLASS
     this.deaths++;
     this.alive = false;
     this.willScore = false;
-    this.deactivate();
+    if(this.active){ qpo.user.updateActiveUnit('death') }
     this.applyCoating('none');
-    this.spawnTimer = qpo.spawnTimers[qpo.activeGame.po];
+    this.spawnTimer = qpo.spawnTimers[qpo.activeGame.unitsPerPlayer];
     if(this.team==qpo.playerTeam){ this.showSpawnIcon(); }
     this.icon.attr({'opacity':0});
     this.phys.stop();
@@ -479,8 +494,6 @@ qpo.Unit = function(color, gx, gy, num, player){ //DEFINE UNIT TYPE/CLASS
             winner = "red";
           }
         }, 2000*qpo.timeScale);
-        qpo.blueActiveUnit = -1;
-        qpo.redActiveUnit = -1;
         qpo.activeGame.isEnding = true;
         setTimeout(function(){qpo.activeGame.end(winner);}, 2000*qpo.timeScale);
       }
@@ -630,6 +643,7 @@ qpo.Unit = function(color, gx, gy, num, player){ //DEFINE UNIT TYPE/CLASS
     this.rect.attr({ 'height':this.inner, 'width':this.inner, 'x': xo, 'y':yo});
     if(this.spawnIconSet){this.spawnIconSet.hide();}
     this.alive = true;
+    if(!qpo.user.activeUnit){this.activate()}
   };
   this.recharge = function(){ //count down spawn timer and, if needed, queue spawn
     this.spawnTimer--;
@@ -640,11 +654,12 @@ qpo.Unit = function(color, gx, gy, num, player){ //DEFINE UNIT TYPE/CLASS
   this.deaths = 0;
   this.scores = 0;
 
-  this.generateMove = function(aiType){ //set this.nextAction to a string generated by AI
+  this.generateMove = function(){ //set this.nextAction to a string generated by AI
     var generatedMove = '';
-    switch(aiType){ //generate a move using random, rigid, neural, or null AI
+    switch(this.player.type){ //generate a move using random, rigid, neural, or null AI
       case "random": {
         generatedMove = qpo.moves[Math.round(Math.random()*6)];
+        while (generatedMove == 'bomb' && this.level == 1){generatedMove = qpo.moves[Math.round(Math.random()*6)];}
         break;
       }
       case "rigid": { generatedMove = qpo.findMove(this); break; }
@@ -662,7 +677,7 @@ qpo.Unit = function(color, gx, gy, num, player){ //DEFINE UNIT TYPE/CLASS
     }
     if(this.alive){this.nextAction = generatedMove} //don't go through with it if unit is dead.
   }
-  this.executeMove = function(){
+  this.executeMove = function(){ //call the function named in this.nextAction
     this.actions[this.nextAction]();
     if(this.alive){this.nextAction = 'stay';}
   }

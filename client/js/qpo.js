@@ -110,7 +110,9 @@ qpo.setup = function(){ // set up global vars and stuff
   qpo.timeScale = 0.75; // Bigger means longer turns/slower gameplay; 1 is original 3-seconds-per-turn
   qpo.playMusic = false;
   qpo.trainingMode = false;
-  qpo.flashLengths = {'flash':1200, 'deflash':200}
+  qpo.devMode = true;
+  qpo.deflashLength = 200
+  qpo.flashLength = qpo.timeScale*3000-qpo.deflashLength
   qpo.waitTime = 100; //ms between moves
   qpo.unitStroke = 3;
   qpo.bombStroke = 3;
@@ -122,14 +124,14 @@ qpo.setup = function(){ // set up global vars and stuff
   // (DNA): STATIC DICTS N ARRAYS
   qpo.spawnTimers = [null, 1,2,2,2,3,3,3,4]; //index is po
   qpo.keyCodes = { //pair keycodes with move strings
-    81:"bomb",
-    69:"shoot",
-    65:"moveLeft",
-    87:"moveUp",
-    68:"moveRight",
-    83:"moveDown",
-    88:"stay",
-    32:'shoot',
+    81:"bomb", //q
+    32:'shoot', //spacebar
+    69:"shoot", //e
+    65:"moveLeft", //a
+    87:"moveUp", //w
+    68:"moveRight", //d
+    83:"moveDown", //s
+    88:"stay", //x
     66:'bomb'
   }
   qpo.COLOR_DICT = { //define colors using hex
@@ -176,7 +178,6 @@ qpo.setup = function(){ // set up global vars and stuff
   qpo.shots = [];
   qpo.bombs = [];
   qpo.blueActiveUnit = 0;
-  qpo.redActiveUnit = 0;
   qpo.board = {};
   playerColor = "blue"; // for now
   opponentColor = "red";
@@ -390,18 +391,23 @@ qpo.setup = function(){ // set up global vars and stuff
     })
     return set;
   }
+  qpo.ignore = function(time){
+    qpo.ignoreInput = true
+    setTimeout(function(){qpo.ignoreInput=false},time)
+  }
 }();
 
 qpo.findSpawn = function(color){
   //CHOOSE A ROW.
-  var foundSpawn;
-  var demerits = [new Array(), new Array()];
-  var po = qpo.activeGame.po;
+  var foundSpawn
+  var po = qpo.activeGame.po
   var q = qpo.activeGame.q
+  var demerits = [new Array(), new Array()]; //demerits[0] is rows, demerits[1] is columns
   for(var i=0; i<q; i++){ //populate demerits with zeros
-    demerits[0].push(0);
-    demerits[1].push(0);
+    demerits[0].push(0); //rows
+    demerits[1].push(0); //columns
   }
+
   //APPLY BLOCKS : enemy side (TODO: enemy proximity, shots/bombs)
   if (color == "blue"){ //block red side (rows po/2 through po-1)
     for (var i=0; i<Math.floor(q/2); i++){ demerits[0][i+Math.floor(q/2)]++; }
@@ -413,10 +419,10 @@ qpo.findSpawn = function(color){
   }
   //TODO: APPLY BOOSTS : friendly side, friendly proximity
 
-  //TODO: SELECT row and column based on demerits. (base this on rigid ai.)
   // console.log("demerits: " + demerits);
   // console.log("demerits[0]: " + demerits[0]);
 
+  //CHOOSE SPAWN BASED ON DEMERITS
   var fewestDemerits = [100,100]; //a comparer
   for (var i=0; i<demerits[0].length;i++){ //find the lowest number of demerits
     if(demerits[0][i]<fewestDemerits[0]){ fewestDemerits[0] = demerits[0][i]; }
@@ -571,20 +577,27 @@ qpo.Board = function(cols, rows, x, y, m){ //Board class constructor
   else{ qpo.glows.show(); }
   qpo.gui.push(this.all);
 
-  this.deflash = function(first){
-    first ? (false) : (this.surface.animate({
-      '0%'  :{'opacity' : 1},
-      '100%':{'opacity' : 0}
-    }, qpo.flashLengths.deflash))
+  this.flash = function(first){
+    if(!first) { //don't deflash surface on first turn
+      this.surface.animate({
+        '0%'  :{'opacity' : 1},
+        '100%':{'opacity' : 0}
+      }, qpo.deflashLength)
+    }
     this.zs.attr({'opacity':0});
-    this.zs.animate({'opacity' : 1}, qpo.flashLengths.flash, '<')
+    this.zs.animate({ //make side 'charge up' (with a low-resolution stab at keyframes for now)
+      '0%'   : {'opacity':0},
+      '90%'  : {'opacity':.7},
+      '95%'  : {'opacity':.8},
+      '98%'  : {'opacity':.9},
+      '100%' : {'opacity' : 1}
+    }, qpo.flashLength)
    }
-  this.flash = function(){ this.surface.animate({'opacity' : 1}, qpo.flashLengths.flash, 'backIn') }
 
   return this; //return the constructed Board object
 }
 
-qpo.placeUnits = function(){ //called at the start of each game (from startGame)
+qpo.makeUnits = function(){ //called at the start of each game (from startGame)
   //  Place U units randomly but symmetrically on an NxM board (N columns, M rows)
   //  Remember that rows and columns are zero-indexed.
   //  Also, blue is on top, red on bottom.
@@ -594,10 +607,10 @@ qpo.placeUnits = function(){ //called at the start of each game (from startGame)
   //         spaces from these possiblities, and place units there.
   //    3. Don't place units in such a way that two opposing units spawn touching each other.
 
-  var gridXs = []; // the column numbers of each blue unit to be placed
-  var gridY = [] // the row numbers of each blue unit to be placed
+  var gridXs = [] // the column numbers of each blue unit to be placed
+  var gridYs = [] // the row numbers of each blue unit to be placed
 
-  qpo.units = []; //all Units (red and blue);
+  qpo.units = new Array(); //all Units (red and blue);
   var chooseSpots = function(unitsChosen){
     //CHOOSE A ROW.
     var row, column, badSpawn;
@@ -620,7 +633,7 @@ qpo.placeUnits = function(){ //called at the start of each game (from startGame)
         column = Math.floor((Math.random()*qpo.guiDimens.columns));
       }
       for (var j=0; j<unitsChosen; j++){ //set badSpawn to false if the spawn is fine.
-        if(!([row,column] == [gridY[j],gridXs[j]])){
+        if(!([row,column] == [gridYs[j],gridXs[j]])){
           badSpawn = false;
         } else { // set badSpawn and break out of this if the spawn overlaps.
           badSpawn = true;
@@ -630,60 +643,77 @@ qpo.placeUnits = function(){ //called at the start of each game (from startGame)
       badSpawn = false;
     }
 
-    gridY.push(row);
+    gridYs.push(row);
     gridXs.push(column);
   };
-  for (var i=0; i<qpo.activeGame.po; i++) { // Make a new unit at the spot & another at the opposing spot
-    chooseSpots(i);
-    qpo.blue.units[i] = new qpo.Unit("blue",gridXs[i],gridY[i],i);
-    qpo.red.units[i] = new qpo.Unit("red", qpo.guiDimens.columns-1-gridXs[i], qpo.guiDimens.rows-1-gridY[i],i);
-    qpo.units.push(qpo.blue.units[i]);
-    qpo.units.push(qpo.red.units[i]);
-    qpo.blue.units[i].phys.attr({'opacity':0});
-    qpo.red.units[i].phys.attr({'opacity':0});
 
-    (function(ind){ //fade in the new units over 1000 ms
-      qpo.fadeIn(qpo.blue.units[ind].phys, 1000);
-      qpo.fadeIn(qpo.red.units[ind].phys, 1000);
-    })(i); //closure for loop scope
+  for (var i=0; i<qpo.activeGame.ppt; i++) { //for each player, create a squad and assign it to that player
+    var newBlueUnits = new Array();
+    var newRedUnits = new Array();
+    for (var j=0; j<qpo.activeGame.unitsPerPlayer; j++){ //create some units for each squad.
+      var newUnitNum = i*qpo.activeGame.ppt+j
+      chooseSpots(newUnitNum) //choose initial spawn locations
 
-    (function(ind){ //highlight player's units in sequence
-      setTimeout(function(){
-        if(ind>0){qpo.blue.units[ind-1].deactivate();}
-        qpo.fadeIn(qpo.blue.units[ind].phys, 1000);
-        qpo.blue.units[ind].activate();
-      }, 3000 + i*(1500/qpo.activeGame.po));
-    })(i); //closure for loop scope
+      var newBlueUnit = new qpo.Unit('blue', gridXs[newUnitNum], gridYs[newUnitNum], newUnitNum,
+        qpo.blue.players[i], (i==qpo.user.player.num && 'blue'==qpo.user.player.team) )
+      newBlueUnits.push(newBlueUnit)
+      qpo.blue.addUnit(newBlueUnit)
+      newBlueUnit.phys.attr({'opacity':0})
+      qpo.fadeIn(newBlueUnit.phys, 1000);
+      qpo.units.push(newBlueUnit)
+
+      var newRedUnit = new qpo.Unit('red', qpo.guiDimens.columns-1-gridXs[newUnitNum], qpo.guiDimens.rows-1-gridYs[newUnitNum], newUnitNum,
+        qpo.red.players[i], (i==qpo.user.player.num && 'red'==qpo.user.player.team) )
+      newRedUnits.push(newRedUnit)
+      qpo.red.addUnit(newRedUnit)
+      newRedUnit.phys.attr({'opacity':0})
+      qpo.fadeIn(newRedUnit.phys, 1000)
+      qpo.units.push(newRedUnit)
+    }
+    qpo.blue.players[i].makeSquad(newBlueUnits)
+    qpo.red.players[i].makeSquad(newRedUnits)
+
+    // console.log(playerNum, qpo.user.player.num)
+    // if(qpo.user.player.num == playerNum){ // Some new units will belong to the user. Highlight them in sequence
+    //   setTimeout(function(){
+    //     console.log('activating unit '+newBlueUnit.num)
+    //     if(qpo.user.player.team=='blue'){newBlueUnit.activate(); }
+    //     else { newRedUnit.activate(); }
+    //   }.bind(this), 3000 + (i%qpo.activeGame.unitsPerPlayer)*(1500/qpo.activeGame.unitsPerPlayer))
+    //
+    //   (function(ind){ // Highlight this unit on a schedule (closure for loop scope)
+    //     setTimeout(function(){ //de-highlight old one, highlight new one
+    //       console.log('activating unit '+newBlueUnit.num)
+    //       if(qpo.user.player.team=='blue'){newBlueUnit.activate(); }
+    //       else { newRedUnit.activate(); }
+    //     }.bind(this), 3000 + (i%qpo.activeGame.unitsPerPlayer)*(1500/qpo.activeGame.unitsPerPlayer));
+    //   })(i);
+    // }
   }
-
-  setTimeout(function(){ //activate first unit in prep for game
-    qpo.blue.units[qpo.activeGame.po-1].deactivate();
-    qpo.blue.units[0].activate();
-    setTimeout(function(){qpo.blue.units[0].deactivate()},100);
-    setTimeout(function(){qpo.blue.units[0].activate()},200);
-    setTimeout(function(){qpo.blue.units[0].deactivate()},300);
-    setTimeout(function(){qpo.blue.units[0].activate()},400);
-  }, 4500);
 }
 
-qpo.Scoreboard = function(yAdj){ //draw the scoreboard and push to gui
+qpo.Scoreboard = function(yAdj, initialClockValue){ //draw the scoreboard and push to gui
   this.redScore = 0;
   this.blueScore = 0;
+  this.gameClock = initialClockValue;
   var y = 30;
   var xOff = 100;
 
   this.redScoreText = c.text(300-xOff, y+yAdj, "0").attr({qpoText: [25, qpo.COLOR_DICT["red"]]});
   this.redSection = c.set().push(this.redScoreText);
 
+  this.gameClockText = c.text(300, y+yAdj, new String(this.gameClock)).attr({qpoText: [40, qpo.COLOR_DICT['foreground']]});
+
   this.blueScoreText = c.text(300+xOff, y+yAdj, "0").attr({qpoText: [25, qpo.COLOR_DICT["blue"]]});
   this.blueSection = c.set().push(this.blueScoreText);
 
-  this.update = function(color){ //update display from qpo.red.points and qpo.blue.points.
-    this.redScoreText.attr({"text":qpo.red.points});
-    this.blueScoreText.attr({"text":qpo.blue.points});
+  this.update = function(){ //update display from qpo.red.points and qpo.blue.points.
+    this.redScoreText.attr({'text':qpo.red.points});
+    this.gameClockText.attr({'text':qpo.activeGame.turns - qpo.activeGame.turnNumber});
+    this.blueScoreText.attr({'text':qpo.blue.points});
   }
 
-  this.all = c.set().push(this.redSection, this.blueSection).attr({'opacity':0});
+  this.all = c.set().push(this.redSection, this.gameClockText, this.blueSection).attr({'opacity':0});
 
   setTimeout(function(){qpo.fadeIn(this.all, 1500);}.bind(this), 3000);
   qpo.gui.push(this.all);
@@ -884,29 +914,6 @@ qpo.detectCollisions = function(ts){ //ts is teamSize, aka po
   }
 }
 
-qpo.updateBlueAU = function(po, cond){ //Called when a command is sent and when a unit dies.
-  // Cond is condition (either "move" or "death"), the reason this function's being called.
-  // Deactivate the old active unit. Find the next living unit and activate it.
-  // Update the "blueActiveUnit" var.
-  var findingUnit = true;
-  var ind = qpo.blueActiveUnit + 1;
-  var tries = 0;
-  var oldBlueAU, newBlueAU;
-  while (findingUnit) { // keep looking until you find the new active unit.
-    if (ind == po) { ind = 0; }
-    newBlueAU = qpo.blue.units[ind]; //potential new active unit
-    oldBlueAU = qpo.blue.units[qpo.blueActiveUnit];
-    //When you find the new one, deactivate the old unit, activate the new one, and update qpo.blueActiveUnit.
-    if ((newBlueAU.alive) && (qpo.activeGame.isEnding == false)){ // This is our new active unit. Do stuff.
-      findingUnit = false; //unit has now been found. Exit the While loop after this iteration.
-      qpo.blueActiveUnit = ind;
-      qpo.blue.units[ind].activate();
-    }
-    ind++;
-    tries++;
-    if (tries == po) { findingUnit = false; } // No other units are eligibile for activation. Stop looking. Make sure the loop exits.
-  }
-}
 qpo.sendMoveToServer = function(moveStr){
   // console.log(eval("new Date().getTime()"));
   qpo.timeSinceLastMove = ( eval("new Date().getTime()") - qpo.lastMoveTime );
@@ -930,7 +937,7 @@ $(window).keydown(function(event){
     default:
       break;
   }
-  if(qpo.ignoreInput){return;}
+  if(qpo.ignoreInput){console.log('input ignored.'); return;}
   switch(qpo.mode){ //do the right thing based on what type of screen the user is in (menu, game, tutorial, etc)
     case "menu":
       switch(event.keyCode){
@@ -1003,44 +1010,36 @@ $(window).keydown(function(event){
       break;
     case "game":
       try { //try to respond to the keypress appropriately
-        if (qpo.blue.units[qpo.blueActiveUnit].spawnTimer>-1){ //If active unit is dead and not spawning next turn, try moving to another unit (as a fallback:)
-          event.preventDefault();
-          qpo.updateBlueAU(qpo.activeGame.po, "dead");
-        }
-        else { //Otherwise, respond to the keypress
-          switch(event.keyCode){
-            case 81:
-            case 69:
-            case 65:
-            case 87:
-            case 68:
-            case 83:
-            case 32: // (spacebar)
-            case 66:
-            case 88: //qweasdx detected (order)
-              var moveStr = qpo.keyCodes[event.keyCode];
-              qpo.blue.units[qpo.blueActiveUnit].order(moveStr);
-              break;
-            case 37:
-            case 38:
-            case 39:
-            case 40: //up/left/right/down arrows (move highlight)
-              if(!qpo.gameEnding){ qpo.blue.units[qpo.blueActiveUnit].search(qpo.dirMap[event.keyCode]); }
-              break;
-            default: //some other key detected (invalid)
-              //left = 37
-              // up = 38
-              // right = 39
-              // down = 40
-              "some other key";
-              // tab = 9
-              break;
-          }
+        switch(event.keyCode){
+          case 81:
+          case 69:
+          case 65:
+          case 87:
+          case 68:
+          case 83:
+          case 32:
+          case 66:
+          case 88: //order detected (qweasdx/spacebar)
+            var moveStr = qpo.keyCodes[event.keyCode];
+            if(qpo.user.activeUnit != null){qpo.user.activeUnit.order(moveStr);}
+            break;
+          case 37:
+          case 38:
+          case 39:
+          case 40: //up/left/right/down arrows (move highlight)
+            if(!qpo.gameEnding){ qpo.user.activeUnit.search(qpo.dirMap[event.keyCode]); }
+            break;
+          default: //some other key detected (invalid)
+            //left = 37
+            // up = 38
+            // right = 39
+            // down = 40
+            "some other key";
+            // tab = 9
+            break;
         }
       }
-      catch(err){ //probably because qpo.blue.units[-1] doesn't exist. do nothing.
-        ;
-      }
+      catch(err){ ; } //legacy: probably because qpo.blue.units[-1] doesn't exist. do nothing.
       break;
     case "tut":
       switch(event.keyCode){

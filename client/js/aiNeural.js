@@ -17,7 +17,7 @@ layer_defs.push({type:'regression', num_neurons:num_actions});
 // by backpropping the temporal difference learning rule.
 var tdtrainer_options = {learning_rate:0.001, momentum:0.0, batch_size:64, l2_decay:0.01};
 
-var opt = {
+var opt = { //more options for the neural net
   'temporal_window': temporal_window,
   'experience_size' : 30000,
   'start_learn_threshold' : 1000,
@@ -91,7 +91,7 @@ qpo.openingCode = function(){ //get an AI net ready, either from storage or fres
     console.log(localStorage['aliNN'] + ", Ali was deleted");
   };
   try { //retrieve saved AI or generate new one
-    qpo.ali = {  'nn': null,  "team": "red" };
+    qpo.ali = {'nn': null,  "team": "red"};
     qpo.ali.nn = new deepqlearn.Brain(num_inputs, num_actions, opt);
     if(localStorage['aliNN'] !== "null"){ //retrieve saved network from local storage
       // console.log("generating Ali's net from localStorage");
