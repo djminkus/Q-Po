@@ -6,11 +6,11 @@ qpo.Team = function(args){
 
   this.addPoint = function(howMany){ //give this team a point and update the scoreboard
     howMany ? (this.points+=howMany) : (this.points++) //if not told how many, just add 1
-    qpo.scoreboard.update();
+    qpo.scoreboard.update()
   }
 
-  this.addPlayer = function(player){ this.players.push(player); }
-  this.addUnit = function(unit){ this.units.push(unit); }
+  this.addPlayer = function(player){ this.players.push(player) }
+  this.addUnit = function(unit){ this.units.push(unit) }
 
   return this;
 }

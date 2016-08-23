@@ -173,11 +173,12 @@ qpo.Unit = function(color, gx, gy, num, player, belongs){ //DEFINE UNIT TYPE/CLA
       "fill":qpo.COLOR_DICT[color],
       'fill-opacity': 0.10,
       "opacity":1,
-      'stroke-opacity':1,
+      // 'stroke-opacity':1,
       'stroke':qpo.COLOR_DICT[color],
       'stroke-width': qpo.unitStroke,
       'stroke-dasharray': qpo.levelSAs[0]
     });
+  // if ( !this.belongsToUser && this.color == qpo.user.player.team){ this.rect.attr({'stroke-opacity':0.5}) }
   this.coating = c.rect(lw,tw,mtr,mtr)
     .attr({'fill':'none', 'stroke-width':2, 'stroke':'none'})
     .data('type','none')
@@ -643,7 +644,7 @@ qpo.Unit = function(color, gx, gy, num, player, belongs){ //DEFINE UNIT TYPE/CLA
     this.rect.attr({ 'height':this.inner, 'width':this.inner, 'x': xo, 'y':yo});
     if(this.spawnIconSet){this.spawnIconSet.hide();}
     this.alive = true;
-    if(!qpo.user.activeUnit){this.activate()}
+    if(!qpo.user.activeUnit && this.belongsToUser){this.activate()}
   };
   this.recharge = function(){ //count down spawn timer and, if needed, queue spawn
     this.spawnTimer--;

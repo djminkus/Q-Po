@@ -77,7 +77,7 @@ qpo.Menu = function(titleStr, itemList, parent, placeholder){ // A Menu contains
   this.cl = new qpo.CursorList(itemList);
 
   this.open = function(h){ // (re)create all the raphs for this menu.
-    //h is index in cl of menu option to highlight on load.
+    //h is index (in this.cl) of menu option to highlight on load.
     var h = h || 0;
     qpo.mode = 'menu';
     qpo.activeMenu = this.titleStr;
@@ -109,6 +109,7 @@ qpo.Menu = function(titleStr, itemList, parent, placeholder){ // A Menu contains
 
   this.close = function(obj, time){ //clear the canvas and open the next screen
     qpo.ignore(time)
+    this.all.stop()
     qpo.fadeOutGlow(qpo.glows, function(){}, time);
     qpo.fadeOut(this.all, function(){
       c.clear();
@@ -343,34 +344,39 @@ qpo.displayTitleScreen = function(){ //Called whenever title screen is displayed
 
   //2ND LAYER (foreground) :
   this.bits = c.set()
+  this.bitsLeft = c.set();
+  this.bitsRight = c.set();
   var colors = [qpo.COLOR_DICT['green'], qpo.COLOR_DICT['purple']]
   for (var i=0; i<23; i++){ //generate some pixelly starlike things.
     var size = 13 * Math.random()
-    var time = 43*size
+    var time = 67*size
 
     var ind = Math.floor(2*Math.random())
     var color1 = colors[ind]
     var color2;
     ind ? (color2 = colors[ind-1]): (color2 = colors[ind+1])
 
-    var x = c.width*Math.random()
+    var x = c.width/2*Math.random()
     var y = c.height*Math.random()
 
-    var newBit1 = c.rect(x, y, size, size).attr({'fill':color1})
+
+    var newBit1 = c.rect(x, y, size, size).attr({'stroke':color1}).data('i', i)
     qpo.blink(newBit1, time)
-    var newBit2 = c.circle(c.width-x, c.height-y, size/Math.sqrt(2)).attr({'fill':color2})
+    var newBit2 = c.circle(c.width-x, c.height-y, size/Math.sqrt(2)).attr({'stroke':color2}).data('i', i)
     qpo.blink(newBit2, time)
 
     this.bits.push(newBit1, newBit2)
+    this.bitsLeft.push(newBit1)
+    this.bitsRight.push(newBit2)
   }
-  this.bits.attr({'stroke':'none'});
+  this.bits.attr({'fill':'none', 'stroke-width': 2});
   this.layer2 = c.set().push(this.bits);
 
-  //3rd layer (title and prompt)
+  //3rd layer (board, title, and prompt)
   var m = 100;
   this.board = new qpo.Board(2,1, c.width/2-m, c.height/2 - m*3/2, m);
   this.title = c.text(c.width/2, c.height/2-m, 'Q-Po').attr({qpoText:64})
-  this.promptt = c.text(c.width/2, c.height/2+100, "press spacebar to start")
+  this.promptt = c.text(c.width/2, c.height/2+m, "press spacebar to start")
     .attr({qpoText:[32, qpo.COLOR_DICT["orange"]]});
   qpo.blink(this.promptt);
   this.layer3 = c.set().push(this.board.all, this.title, this.promptt);
@@ -381,15 +387,48 @@ qpo.displayTitleScreen = function(){ //Called whenever title screen is displayed
   qpo.fadeIn(this.all);
 
   this.close = function(){ //clear screen and make main menu
-    qpo.ignore(400)
+    // this.all.stop();
+
+    var timeScale = 4
+    var totalLength = 500 //length of closing animation if timeScale is 1
+    var HW = c.width/2 //half width
+
+    var bitAnimLength = .2
+    this.bitsLeft.forEach(function(item, index){
+      var DISPLACEMENT = 1 - ( item.getBBox().x / HW ) // displacement from center
+      var DELAY = DISPLACEMENT * ( (1-bitAnimLength) * timeScale)
+      // console.log(delay)
+      setTimeout(function(){
+        item.animate({'transform':'t-'+(HW + DISPLACEMENT + 20)+',0'}, (bitAnimLength*totalLength*timeScale), '>')
+        // console.log(item)
+        // debugger;
+      }.bind(this), DELAY)
+    })
+    this.bitsRight.forEach(function(item, index){
+      var DISPLACEMENT = 1 - (c.width-item.getBBox().x2)/HW
+      var DELAY = DISPLACEMENT * (1-bitAnimLength * timeScale)
+      setTimeout(function(){
+        item.animate({'transform':'t'+(HW + DISPLACEMENT + 20)+',0'}, (bitAnimLength*totalLength*timeScale), '>')
+      }.bind(this), DELAY)
+    })
+    qpo.ignore(400*timeScale)
     this.promptt.stop();
-    qpo.fadeOut(this.promptt, function(){}, 200);
-    qpo.fadeOut(this.all, function(){
-      c.clear();
-      qpo.guiCoords.gameBoard.leftWall = 25;
-      qpo.guiCoords.gameBoard.topWall = 75;
-      qpo.menus['Main Menu'].open();
-    }, 400);
+    qpo.fadeOut(this.promptt, function(){}, .25*totalLength*timeScale);
+    qpo.fadeOutGlow(qpo.glows, function(){}, .25*totalLength*timeScale);
+    qpo.fadeOut(this.board.all, function(){}, .25*totalLength*timeScale);
+    this.title.animate({
+      '40%': {'opacity':.3},
+      '100%': {'opacity':1}
+    }, .4*totalLength*timeScale, function(){ qpo.glows.push( this.title.glow({'color':'white'}) ) }.bind(this) )
+    setTimeout(function(){
+      qpo.fadeOutGlow(qpo.glows, function(){}, .6*totalLength*timeScale)
+      qpo.fadeOut(this.title, function(){
+        c.clear();
+        qpo.guiCoords.gameBoard.leftWall = 25;
+        qpo.guiCoords.gameBoard.topWall = 75;
+        qpo.menus['Main Menu'].open();
+      }, .6*totalLength*timeScale)
+    }.bind(this), .4*totalLength*timeScale)
   };
   this.all.click(function(){ this.close() }.bind(this));
 

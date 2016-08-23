@@ -2,7 +2,7 @@ qpo.Game = function(args){ //"Game" class.
   //{q, po, type, turns, ppt, customScript}
   qpo.mode = 'game';
 
-  //Grab the arguments:
+  //Grab the arguments (and fill in missing ones with default values):
   this.q = args.q || 7; // Number of rows, columns on the board
   this.po = args.po || 3; // Number of units on each team
   this.type = args.type || 'single'; //What kind of game is this? (tutorial, single, multi, campaign)
@@ -17,10 +17,6 @@ qpo.Game = function(args){ //"Game" class.
   // Do some things with the args:
   qpo.red = this.teams.red; //convenient pointer
   qpo.blue = this.teams.blue; //convenient pointer
-  // console.log(qpo.blue.players[0])
-  // console.log(typeof qpo.blue.players[0])
-  // console.log(qpo.blue.players)
-  // console.log(args.bluePlayers)
 
   this.scoreToWin = 10*this.po;
   this.unitsPerPlayer = this.po/this.ppt;
@@ -153,13 +149,17 @@ qpo.Game = function(args){ //"Game" class.
     qpo.bombs = new Array();
 
     this.drawGUI(this.xAdj, this.yAdj)
-    setTimeout(function(){ // Make the unitsand set initial state after 1500 ms
-      qpo.makeUnits(); // puts the units on the board
+    setTimeout(function(){ // After 1500 ms, make the units and capture initial state
+      qpo.makeUnits(); // puts the units on the board (with 1000 ms fade-in)
       this.state = this.getState();
-
     }.bind(this), 1500);
 
-    setTimeout(function(){ //activate user's first unit in prep for game and flash it three times
+    setTimeout(function(){qpo.board.notify('3')}, 3000)
+    setTimeout(function(){qpo.board.notify('2')}, 4500)
+    setTimeout(function(){qpo.board.notify('1')}, 6000)
+    // setTimeout(function(){qpo.board.notify('Go')}, 3000)
+
+    setTimeout(function(){ // After 6000 ms, activate user's first unit in prep for game and flash it three times
       qpo.user.player.squad.list[0].activate();
       setTimeout(function(){qpo.blue.units[0].deactivate()}, 100);
       setTimeout(function(){qpo.blue.units[0].activate()},   200);
@@ -167,14 +167,12 @@ qpo.Game = function(args){ //"Game" class.
       setTimeout(function(){qpo.blue.units[0].activate()},   400);
     }.bind(this), 6000);
 
-    setTimeout(function(){ //Set up the newTurn interval, wall motion, and the collision detection
+    setTimeout(function(){ //After 7500 ms, start the game in earnest: Set up the newTurn interval, and the collision detection
       qpo.turnStarter = setInterval(this.newTurn.bind(this), 3000*qpo.timeScale);
       this.board.flash(true)
       // setTimeout(function(){this.board.flash()}.bind(this), 3000*qpo.timeScale-qpo.flashLengths.flash);
       qpo.collisionDetector = setInterval(function(){qpo.detectCollisions(qpo.activeGame.po)}, 50);
     }.bind(this), 7500);
-
-
 
     console.log('NEW GAME');
   }
