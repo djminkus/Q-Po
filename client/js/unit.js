@@ -20,7 +20,7 @@ qpo.shotAtts = {
   'stroke-width':2
 }
 qpo.scr = 2 //shot corner radius
-qpo.levelTurns = [3,5,8,999] //qpo.levelTurns[level-1] gives how many turns it takes to get to that level from previous level
+qpo.levelTurns = [3, 5, 8, 999] //qpo.levelTurns[level-1] gives how many turns it takes to get to that level from previous level
 qpo.levelSAs = ['.', '-.', '-', ''] //stroke-dasharrays for each level
 
 qpo.Unit = function(color, gx, gy, num, player, belongs){ //DEFINE UNIT TYPE/CLASS

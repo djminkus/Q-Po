@@ -146,6 +146,9 @@ qpo.setup = function(){ // set up global vars and stuff
     "grey": "#bbbbbb",
     "foreground": "#ffffff" //white is f
   };
+  qpo.colors = [qpo.COLOR_DICT.blue, qpo.COLOR_DICT.red, qpo.COLOR_DICT.orange,
+    qpo.COLOR_DICT.green, qpo.COLOR_DICT.purple, qpo.COLOR_DICT.foreground
+  ]
   qpo.moves = ["moveUp","moveDown","moveLeft","moveRight","shoot","bomb","stay"];
   qpo.dirMap = {
     37: 'left',
@@ -316,7 +319,7 @@ qpo.setup = function(){ // set up global vars and stuff
     var d = { //dimensions
       'l': 10, //length (half of arrow's body)
       't': 8, //tips
-      's': qpo.activeGame.scaling, //scaling
+      's': 1, //scaling -- previously tied to qpo.activeGame.scaling, removed to fix menu icons bug
       'q' : .8 //ratio between tip's x and y dimens
     }
     //Make the arrow
